@@ -159,7 +159,7 @@ class MyParent4{
 
 #### 测试5：接口初始化
 
-当一个接口在初始化时，并不要求其父接口都完成了初始化   ，只有在真正使用到父接口的时候（如引用接口中定义的常量），才会初始化
+当一个接口或类在初始化时，并不要求其父接口都完成了初始化   ，只有在真正使用到父接口的时候（如引用接口中定义的常量），才会初始化。
 
 #### 测试6：准备阶段和初始化的顺序问题（初始化时按照静态定义的顺序，从上到下赋值）
 
@@ -190,3 +190,102 @@ class Singleton{
    }
 }
 ```
+
+### 类加载器
+
+​	**类加载器并不需要等到某个类被“首次主动使用”时再加载它**
+
+​	JVM规范允许类加载器在预料某个类将要被使用时就预先加载它，如果在预先加载的过程中遇到了.class文件缺失或存在错误，类加载器必须在**程序首次主动**使用该类才报告错误（LinkageError错误），如果这个类没有被程序**主动使用**，那么类加载器就**不会**报告错误。
+
+​	类加载器用来把类加载到java虚拟机中。从JDK1.2版本开始，类的加载过程采用父亲委托机制，这种机制能更好地保证Java平台的安全。在此委托机制中，除了java虚拟机自带的根类加载器以外，其余的类加载器都有且只有一个父加载器。当java程序请求加载器loader1加载Sample类时，loader1首先委托自己的父加载器去加载Sample类，若父加载器能加载，则由父加载器完成加载任务，否则才由加载器loader1本身加载Sample类。
+
+1. Java虚拟机自带的加载器
+   - **根类加载器**（Bootstrap）：该加载器没有父加载器，它负责加载虚拟机中的核心类库，如java.lang.* 。根类加载器从系统属性sun.boot.class.path所指定的目录中加载类库。类加载器的实现依赖于底层操作系统，属于虚拟机的实现的一部分，它并没有继承java.lang.ClassLoader类。
+   - **扩展类加载器**（Extension）：它的父加载器为根类加载器。它从java.ext.dirs系统属性所指定的目录中加载类库，或者从JDK的安装目录的jre\lib\ext子目录（扩展目录）下加载类库，如果把用户创建的jar文件放在这个目录下，也会自动由扩展类加载器加载，扩展类加载器是纯java类，是java.lang.ClassLoader的子类。
+   - **系统应用类加载器**（System）：也称为应用类加载器，它的父加载器为扩展类加载器，它从环境变量classpath或者系统属性java.class.path所指定的目录中加载类，他是用户自定义的类加载器的默认父加载器。系统类加载器时纯java类，是java.lang.ClassLoader的子类。
+2. 用户自定义的类加载器
+   - java.lang.ClassLoader的子类
+   - 用户可以定制类的加载方式
+
+#### 类加载器的父亲委托机制
+
+在父亲委托机制中，各个加载器按照父子关系形成了树形结构，除了根加载器之外，其余的类加载器都有一个父加载器
+
+若有一个类能够成功加载Test类，那么这个类加载器被称为**定义类加载器**，所有能成功返回Class对象引用的类加载器（包括定义类加载器）称为**初始类加载器**。
+
+**The ClassLoader class uses a delegation model to search for classes and resources. Each instance of ClassLoader has an associated parent class loader. When requested to find a class or resource, a ClassLoader instance will delegate the search for the class or resource to its parent class loader before attempting to find the class or resource itself. The virtual machine's built-in class loader, called the "bootstrap class loader", does not itself have a parent but may serve as the parent of a ClassLoader instance.**
+
+并行加载：
+
+
+
+![类加载顺序](.\img\1.png)
+
+#### 测试1
+
+```eng
+Class::getClassLoader()
+Returns the class loader for the class.  Some implementations may use
+null to represent the bootstrap class loader. This method will return
+null in such implementations if this class was loaded by the bootstrap
+class loader.
+```
+
+```java
+/**
+ java.lang.String是由根加载器加载，在rt.jar包下。
+ */
+public class ClassLoader{
+      public static void main(String[] args) throws ClassNotFoundException {
+         Class<?> clazz=Class.forName("java.lang.String");
+         System.out.println(clazz.getClassLoader());  //返回null，根类加载器没有继承java.lang.ClassLoader类。
+
+         Class<?> clazz2=Class.forName("org.example.C");
+         System.out.println(clazz2.getClassLoader());  //输出sun.misc.Launcher$AppClassLoader@18b4aac2  其中AppClassLoader:系统应用类加载器
+   }
+}
+class C{
+}
+```
+
+```
+A class loader is an object that is responsible for loading classes. The class ClassLoader is an abstract class. Given the binary name of a class, a class loader should attempt to locate or generate data that constitutes a definition for the class. A typical strategy is to transform the name into a file name and then read a "class file" of that name from a file system.
+Every Class object contains a reference to the ClassLoader that defined it.
+Class objects for array classes are not created by class loaders, but are created automatically as required by the Java runtime. The class loader for an array class, as returned by Class.getClassLoader() is the same as the class loader for its element type; if the element type is a primitive type, then the array class has no class loader.
+Applications implement subclasses of ClassLoader in order to extend the manner in which the Java virtual machine dynamically loads classes.
+Class loaders may typically be used by security managers to indicate security domains.
+The ClassLoader class uses a delegation model to search for classes and resources. Each instance of ClassLoader has an associated parent class loader. When requested to find a class or resource, a ClassLoader instance will delegate the search for the class or resource to its parent class loader before attempting to find the class or resource itself. The virtual machine's built-in class loader, called the "bootstrap class loader", does not itself have a parent but may serve as the parent of a ClassLoader instance.
+Class loaders that support concurrent loading of classes are known as parallel capable class loaders and are required to register themselves at their class initialization time by invoking the ClassLoader.register As ParallelCapable method. Note that the ClassLoader class is registered as parallel capable by default. However, its subclasses still need to register themselves if they are parallel capable. In environments in which the delegation model is not strictly hierarchical, class loaders need to be parallel capable, otherwise class loading can lead to deadlocks because the loader lock is held for the duration of the class loading process (see loadClass methods).
+Normally, the Java virtual machine loads classes from the local file system in a platform-dependent manner. For example, on UNIX systems, the virtual machine loads classes from the directory defined by the CLASSPATH environment variable.
+However, some classes may not originate from a file; they may originate from other sources, such as the network, or they could be constructed by an application. The method defineClass converts an array of bytes into an instance of class Class. Instances of this newly defined class can be created using Class.newInstance.
+The methods and constructors of objects created by a class loader may reference other classes. To determine the class(es) referred to, the Java virtual machine invokes the loadClass method of the class loader that originally created the class.
+For example, an application could create a network class loader to download class files from a server. Sample code might look like:
+     ClassLoader loader = new NetworkClassLoader(host, port);
+     Object main = loader.loadClass("Main", true).newInstance();
+          . . .
+   
+The network class loader subclass must define the methods findClass and loadClassData to load a class from the network. Once it has downloaded the bytes that make up the class, it should use the method defineClass to create a class instance. A sample implementation is:
+       class NetworkClassLoader extends ClassLoader {
+           String host;
+           int port;
+  
+           public Class findClass(String name) {
+               byte[] b = loadClassData(name);
+               return defineClass(name, b, 0, b.length);
+           }
+  
+           private byte[] loadClassData(String name) {
+               // load the class data from the connection
+                . . .
+           }
+       }
+   
+Binary names
+Any class name provided as a String parameter to methods in ClassLoader must be a binary name as defined by The Java™ Language Specification.
+Examples of valid class names include:
+     "java.lang.String"
+     "javax.swing.JSpinner$DefaultEditor"
+     "java.security.KeyStore$Builder$FileBuilder$1"
+     "java.net.URLClassLoader$3$1"
+```
+
