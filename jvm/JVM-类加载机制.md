@@ -26,9 +26,36 @@
    - 访问某个类或接口的静态变量。 getstatic（助记符），或者对该静态变量赋值 putstatic
    - 调用类的静态方法 invokestatic
    - 反射（Class.forName(“com.test.Test”)）
-   - 初始化一个类的**子类** ，**父类也要初始化**
+   - 初始化一个类的**子类** ，**父类也 先 要初始化**
    - Java虚拟机启动时被标明**启动**类的类。包含main()函数的类
    - JDK1.7开始提供的动态语言支持（了解）
+
+   注意：
+
+   ​	1，通过子类引用父类的静态变量其实是对父类的主动使用。（对子类并没有主动使用）
+
+   ​	2，调用ClassLoader 类的loadClass方法加载一个类，并不是对类的主动使用， 不会导致类的初始化
+
+   ```java
+   class CL{
+   	static {
+   		System.out.println("Class CL");
+   	}
+   }
+   
+   public class Test1 {
+   	public static void main(String[] args) throws ClassNotFoundException {
+   		java.lang.ClassLoader classLoader = Test1.class.getClassLoader();
+   		Class<?> aClass = classLoader.loadClass("org.example.CL");
+   		System.out.println(aClass);
+   		System.out.println("-----");
+   		Class clazz = Class.forName("org.example.CL");
+   		System.out.println(clazz);
+   	}
+   }
+   ```
+
+   
 
 2. 被动使用
 
@@ -204,7 +231,7 @@ class Singleton{
    - **扩展类加载器**（Extension）：它的父加载器为根类加载器。它从java.ext.dirs系统属性所指定的目录中加载类库，或者从JDK的安装目录的jre\lib\ext子目录（扩展目录）下加载类库，如果把用户创建的jar文件放在这个目录下，也会自动由扩展类加载器加载，扩展类加载器是纯java类，是java.lang.ClassLoader的子类。
    - **系统应用类加载器**（System）：也称为应用类加载器，它的父加载器为扩展类加载器，它从环境变量classpath或者系统属性java.class.path所指定的目录中加载类，他是用户自定义的类加载器的默认父加载器。系统类加载器时纯java类，是java.lang.ClassLoader的子类。
 2. 用户自定义的类加载器
-   - java.lang.ClassLoader的子类
+   - java.lang.ClassLoader的子类 
    - 用户可以定制类的加载方式
 
 #### 类加载器的父亲委托机制
@@ -250,7 +277,162 @@ class C{
 }
 ```
 
+获取类加载器的途径：
+（1）clazz.getClassLoader(); --获取当前类的加载器
+（2）Thread.currentThread().getContextClassLoader(); --获取当前线程上下文的加载器
+（3）ClassLoader.getSystemClassLoader(); --获取系统的加载器
+（4）DriverManager.getCallerClassLoader(); --获取调用者的加载器
+
+#### 自定义类加载器
+
+```java
+package org.example;
+
+import java.io.*;
+
+/**
+ * @author TylerChen
+ * @date 2020/9/3 - 22:37
+ */
+public class MyClassLoader extends ClassLoader {
+	private  String classLoaderName;
+
+	private final String fileExt = ".class";
+
+	public MyClassLoader(String classLoaderName){
+		super();
+		this.classLoaderName = classLoaderName;
+	}
+
+	public MyClassLoader(ClassLoader parent, String classLoaderName){
+		super(parent);
+		this.classLoaderName = classLoaderName;
+	}
+
+
+	private byte[] loadClassData(String name)  {
+		InputStream is = null;
+		byte[] data = null;
+		name = name.replace(".", "/");
+		ByteArrayOutputStream bos;
+		try {
+			is = new FileInputStream("D:/Files/aaaa/"+name + fileExt);
+			bos = new ByteArrayOutputStream();
+			int ch = 0;
+			while((ch = is.read()) != -1){
+				bos.write(ch);
+			}
+			data = bos.toByteArray();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return data;
+	}
+
+	@Override
+	protected Class<?> findClass(String className){
+		System.out.println("loaderName="+this.classLoaderName);
+		byte[] data=loadClassData(className);
+		return defineClass(className,data,0,data.length); //define方法为父类方法
+	}
+
+
+
+	@Override
+	public String toString() {
+		return "MyClassLoader{" +
+				"classLoaderName='" + classLoaderName + '\'' +
+				'}';
+	}
+
+	public static void main(String[] args) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+		MyClassLoader loader1=new MyClassLoader(null,"loader1");
+		System.out.println("===loader1===");
+		test(loader1);
+
+		test(loader1); //在 loader1中，同一个binary name只被加载了一次
+
+		System.out.println("===loader2===");
+		MyClassLoader loader2=new MyClassLoader(null,"loader2");
+		test(loader2);
+		//loader1和loader2是两个不同对象，也就是不同的命名空间
+
+
+		MyClassLoader loader3=new MyClassLoader("loader3");
+		MyClassLoader loader4=new MyClassLoader("loader4");
+
+		System.out.println("===loader3===");
+		test(loader3);
+
+		System.out.println("===loader4===");
+		test(loader4);
+		//loader3,和loader4都委托了应用类加载器，是同一个对象，也就是同一个命名空间，所以只被加载一次
+
+		System.out.println("===loader5===");
+		//loader5 的父亲加载器是loader1可以加载，loader1已经将对应的类加载过了
+		MyClassLoader loader5=new MyClassLoader(loader1,"loader5");
+		test(loader5);
+
+
+	}
+
+	public static void test(ClassLoader classLoader) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		Class<?> clazz=classLoader.loadClass("org.example.Test1");
+		System.out.println("class hash " + clazz.hashCode());
+		//loadClass是父类方法，在方法内部调用findClass
+		Object  object=clazz.newInstance();
+//		System.out.println(object);
+	}
+}
+
+
 ```
 
+#### 命名空间
+
+- 每个类加载器都有自己的命名空间，**命名空间由该加载器及所有父加载器所加载的类构成**；
+- 在同一个命名空间中，不会出现类的完整名字（包括类的包名）相同的两个类；
+- 在不同的命名空间中，有可能会出现类的完整名字（包括类的包名）相同的两个类；
+- 同一命名空间内的类是互相可见的，**非同一命名空间内的类是不可见的**；
+- 子加载器可以见到父加载器加载的类，**但是父加载器不能见到子加载器加载的类**。
+
+#### 类的卸载
+
+- 当一个类被加载、连接和初始化之后，它的生命周期就开始了。当此类的Class对象不再被引用，即不可触及时，Class对象就会结束生命周期，类在方法区内的数据也会被卸载。
+
+- 一个类何时结束生命周期，取决于代表它的Class对象何时结束生命周期。
+
+- **由Java虚拟机自带的类加载器所加载的类，在虚拟机的生命周期中，始终不会被卸载。**Java虚拟机本身会始终引用这些加载器，而这些类加载器则会始终引用他们所加载的类的Class对象，因此这些Class对象是可触及的。
+
+- 由用户**自定义**的类加载器所加载的类是可以被卸载的。
+
+  ##### 卸载测试
+
+```java
+	public static void main(String[] args) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+		MyClassLoader loader1=new MyClassLoader(null,"loader1");
+		System.out.println("===loader1===");
+		test(loader1);
+		loader1 = null;
+		System.gc();
+		System.out.println("===loader2===");
+		loader1=new MyClassLoader(null,"loader1_2");
+		test(loader1);
+	}
+```
+
+#### 打印类加载器加载路径
+
+```java
+public class Test2 {
+	public static void main(String[] args) {
+		//启动类加载器的加载路径
+		System.out.println(System.getProperty("sun.boot.class.path"));
+		// 扩展类加载器加载路径
+		System.out.println(System.getProperty("java.ext.dirs"));
+		//应用类加载器加载路径
+		System.out.println(System.getProperty("java.class.path"));
+	}
+}
 ```
 
