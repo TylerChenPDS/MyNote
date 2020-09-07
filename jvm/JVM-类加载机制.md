@@ -436,3 +436,343 @@ public class Test2 {
 }
 ```
 
+```java
+ class Person{
+    private Person person;
+    public setPerson(Object object){
+        this.person=(Person)object;
+    }
+ }
+
+ public class MyTest21{
+    public static void main(String[] args){
+        MyTest16 loader1=new MyTest16("loader1");
+        MyTest16 loader2=new MyTest16("loader2");
+        loader1.setPath("C:\Users\weichengjie\Desktop");
+        loader2.setPath("C:\Users\weichengjie\Desktop");
+        //删掉classpath下的Person类
+        Class<?> clazz1=load1.loadClass("Person");
+        Class<?> clazz2=load1.loadClass("Person");
+        //clazz1和clazz由loader1和loader2加载，结果为false
+        System.out.println(clazz1==clazz2);
+        
+        Object object1=clazz1.getInstance();
+        Object object2=clazz2.getInstance();
+        
+        Method method=clazz1.getMethod("setPerson",Object.class);
+        //此处报错，loader1和loader2所处不用的命名空间
+        method.invoke(object1,object2);
+    }
+ }
+```
+
+#### 类加载器双亲委托模型的好处
+
+- 可以确保Java和核心库的安全：所有的Java应用都会引用java.lang中的类，也就是说在运行期java.lang中的类会被加载到虚拟机中，如果这个加载过程如果是由自己的类加载器所加载，那么很可能就会在JVM中存在多个版本的java.lang中的类，而且这些类是相互不可见的（命名空间的作用）。借助于双亲委托机制，Java核心类库中的类的加载工作都是由启动根加载器去加载，从而确保了Java应用所使用的的都是同一个版本的Java核心类库，他们之间是相互兼容的；
+- 确保Java核心类库中的类不会被自定义的类所替代；
+- 不同的类加载器可以为相同名称的类（binary name）创建额外的命名空间。相同名称的类可以并存在Java虚拟机中，只需要用不同的类加载器去加载即可。相当于在Java虚拟机内部建立了一个又一个相互隔离的Java类空间。
+
+#### 注意：扩展类加载器只加载jar包，需要把class文件打成jar
+
+```java
+/*
+    在运行期，一个Java类是由该类的完全限定名（binary name）和用于加载该类的定义类加载器所共同决定的。如果同样名字（完全相同限定名）是由两个不同的加载器所加载，那么这些类就是不同的，即便.class文件字节码相同，并且从相同的位置加载亦如此。
+    在oracle的hotspot，系统属性sun.boot.class.path如果修改错了，则运行会出错：
+    Error occurred during initialization of VM
+    java/lang/NoClassDeFoundError: java/lang/Object
+*/
+ public class MyTest23{
+    public static void main(String[] args){
+        System.out.println(System.getProperty("sun.boot.class.path"));
+        System.out.println(System.getProperty("java.ext.dirs"));
+        System.out.println(System.getProperty("java.calss.path"));
+        //可以通过 java -Djava.class.loader=... 来改变系统类加载器
+        
+        System.out.println(ClassLoader.class.getClassLoader);
+        System.out.println(Launcher.class.getClassLoader);
+        
+        //下面的系统属性指定系统类加载器，默认是AppClassLoader
+        System.out.println(System.getProperty("java.system.class.loader"));
+    }
+ }
+```
+
+- 类加载器本身也是类加载器，类加载器又是谁加载的呢？？（先有鸡还是现有蛋）
+  类加载器是由启动类加载器去加载的，启动类加载器是C++写的，内嵌在JVM中。
+- 内嵌于JVM中的启动类加载器会加载java.lang.ClassLoader以及其他的Java平台类。当JVM启动时，一块特殊的机器码会运行，它会加载扩展类加载器以及系统类加载器，这块特殊的机器码叫做启动类加载器。
+- 启动类加载器并不是java类，其他的加载器都是java类。
+- 启动类加载器是特定于平台的机器指令，它负责开启整个加载过程。
+
+```java
+public static void main(String[] args) {
+   System.out.println(Thread.currentThread().getContextClassLoader());
+   //
+   System.out.println(Thread.class.getClassLoader());
+
+}
+```
+
+#### **当前类加载器(Current ClassLoader)**
+
+每个类都会尝试使用自己的类加载器去加载依赖的类。
+如果ClassX引用ClassY，那么ClassX的类加载器会尝试加载ClassY。（前提是ClassY尚未被加载）
+
+#### **线程上下文类加载器(Context ClassLoader)**
+
+线程上下文加载器 @ jdk1.2
+线程Thread类中的 getContextClassLoader() 与 setContextClassLoader(ClassLoader loader)
+如果没有通过setContextClassLoader()方法设置，线程将继承父线程的上下文类加载器，java应用运行时的初始线程的上下文类加载器是系统类加载器。该线程中运行的代码可以通过该类加载器加载类和资源。
+
+java 类库是由启动类加载器加载的，但是具体JDBC的实现是由厂商提供的，只能由系统类加载器加载，也就是说，这些接口，看不到它的实现命名空间。
+
+（父）ClassLoader可以使用当前线程Thread.currentThread().getContextClassLoader()所制定的ClassLoader加载的类，这就改变了父加载器加载的类无法使用子加载器或是其他没有父子关系的ClassLoader加载的类的情况，即改变了双亲委托模型。
+
+**线程上下文类加载器就是当前线程的Current ClassLoader。**
+在双亲委托模型下，类加载是由下至上的，即下层的类加载器会委托父加载器进行加载。但是有些接口是Java核心库所提供的的（如JDBC），Java核心库是由启动类记载器去加载的，而这些接口的实现却来自不同的jar包（厂商提供），Java的启动类加载器是不会加载其他来源的jar包，这样传统的双亲委托模型就无法满足要求。通过给当前线程设置上下文类加载器，就可以由设置的上下文类加载器来实现对于接口实现类的加载。
+
+#### 线程上下文类加载器的使用方法：
+
+线程上下文类加载器的一般使用模式：**获取-使用-还原**
+伪代码：
+
+```java
+ClassLoader classLoader=Thread.currentThread().getContextLoader();
+try{
+Thread.currentThread().setContextLoader(targetTccl);
+myMethod();
+}finally{
+Thread.currentThread().setContextLoader(classLoader);
+}
+```
+
+1. 在myMethod中调用Thread.currentThread().getContextLoader()做某些事情
+2. ContextClassLoader的目的就是为了破坏类加载委托机制
+3. 使用线程上下文类加载器就可以成功的加载到当前的类的加载器无法加载到的类—
+4. 当高层提供了统一的接口让底层去实现，同时又要在高层加载（或实例化）底层的类时，就必须通过上下文类加载器来帮助高层的ClassLoader找到并加载该类
+
+#### SPI：Service Provide Interface 服务提供者接口
+
+双亲委托机制在父类加载器加载的类中访问子类加载器加载的类时会出现问题，比如JDBC。JDBC中规定，Driver(数据库驱动)必须向DriverManage注册自己，而DriverManage是BootStrapClassloader加载的，所以DriverManage 中是无法加载到具体的Driver。
+此时，服务提供者可以将配置文件放到资源目录的META-INF/services下，高层的接口通过SPI的方式，读取META-INF/services下文件中的类名。
+
+#### ServiceLoader  直接读document
+
+```java
+public static void main(String[] args) {
+
+				      //Thread.currentThread().setContextClassLoader(MyClassLoader.class.getClassLoader().getParent());
+
+		ServiceLoader<Driver> loader = ServiceLoader.load(Driver.class);
+		Iterator<Driver> iterator = loader.iterator();
+		while (iterator.hasNext()){
+			Driver driver = iterator.next();
+			System.out.println("driver: " + driver.getClass() + "  loader: " + driver.getClass().getClassLoader());
+		}
+
+		//打印上下文类加载器
+		System.out.println(Thread.currentThread().getContextClassLoader());
+
+		System.out.println(loader.getClass().getClassLoader());
+	} 
+```
+
+### JDBC示例
+
+```java
+public static void main(String[] args) throws ClassNotFoundException, SQLException {
+   Class.forName("com.mysql.jdbc.Driver");
+   Connection connection = DriverManager.getConnection("url", "username", "password");
+}
+```
+
+1. Class.forName(classanme) 属于主动使用一个类，会使 com.mysql.jdbc.Driver 这个类初始化。
+
+   Driver 里面的静态代码块执行。
+
+   ```java
+   static {
+       try {
+           java.sql.DriverManager.registerDriver(new Driver());
+       } catch (SQLException E) {
+           throw new RuntimeException("Can't register driver!");
+       }
+   }
+   ```
+
+   里面调用了DriverManager 的静态方法，从而DriverManager 也会被初始化。执行其中的static代码块
+
+```java
+/**
+     * Load the initial JDBC drivers by checking the System property
+     * jdbc.properties and then use the {@code ServiceLoader} mechanism
+     */
+static {
+    loadInitialDrivers();
+    println("JDBC DriverManager initialized");
+}
+```
+
+```java
+private static void loadInitialDrivers() {
+       String drivers;
+        try {
+            drivers = AccessController.doPrivileged(new PrivilegedAction<String>() {
+                public String run() {
+                    return System.getProperty("jdbc.drivers");
+                }
+            });
+        } catch (Exception ex) {
+            drivers = null;
+        }
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            public Void run() {
+                ServiceLoader<Driver> loadedDrivers = ServiceLoader.load(Driver.class);
+                Iterator<Driver> driversIterator = loadedDrivers.iterator();
+                try{
+                    while(driversIterator.hasNext()) {
+                        driversIterator.next();
+                    }
+                } catch(Throwable t) {
+                }
+                return null;
+            }
+        });
+        println("DriverManager.initialize: jdbc.drivers = " + drivers);
+        if (drivers == null || drivers.equals("")) {
+            return;
+        }
+        String[] driversList = drivers.split(":");
+        println("number of Drivers:" + driversList.length);
+        for (String aDriver : driversList) {
+            try {
+                println("DriverManager.Initialize: loading " + aDriver);
+                Class.forName(aDriver, true, ClassLoader.getSystemClassLoader());
+            } catch (Exception ex) {
+                println("DriverManager.Initialize: load failed: " + ex);
+            }
+        }
+    }
+```
+
+在loadInitialDrivers()方法的代码中，可以发现DriverManager加载Driver的包括两部分：
+1.通过System.getProperty(“jdbc.drivers”)进行获取，使用系统类加载器进行加载。但是系统参数"jdbc.drivers"为null，因此不会进行Driver的加载；
+2.通过SPI的方式，读取META-INF/services文件夹下的类名，使用当前线程类加载器进行加载。
+
+#### ServiceLoader
+
+ServiceLoader是由BootStrap Classloader加载的，所以类中引用的其它类也会由BootStrap 尝试去加载。
+
+```java
+public static <S> ServiceLoader<S> load(Class<S> service) {
+        //ServiceLoader中会尝试用BootStrap 加载具体的Mysql Driver，
+        //但ServiceLoader中是不可见的，这样就无法加载。
+        //所以取出当前线程的上下文类加载器即appCL，用于后面加载具体的Mysql Driver
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        return ServiceLoader.load(service, cl);
+    }
+    
+ public static <S> ServiceLoader<S> load(Class<S> service,ClassLoader loader)
+    {
+        return new ServiceLoader<>(service, loader);
+    }
+
+private ServiceLoader(Class<S> svc, ClassLoader cl) {
+        service = Objects.requireNonNull(svc, "Service interface cannot be null");
+    
+        //loader 为ServiceLoader的私有常量，在后面加载具体实现类时会用该加载器进行加载。
+        // loader 在构造方法内赋了值，即为上文取到的线程上下文类加载器。
+        loader = (cl == null) ? ClassLoader.getSystemClassLoader() : cl
+        acc = (System.getSecurityManager() != null) ? AccessController.getContext() : null;
+        reload();
+    }
+    
+public void reload() {
+        providers.clear();
+        lookupIterator = new LazyIterator(service, loader);
+    }
+//LazyIterator是一个ServiceLoader的私有内部
+```
+
+然后，调用DriverManager.registerDriver方法，将自身加载到一个名为registeredDrivers的静态成员CopyOnWriteArrayList中。但是实际中，Driver已经在初始化的过程总使用SPI的方式将其进行了注册。
+
+到此为止，DriverManager类在初始化的过程中，已经使用SPI的方式将mysql提供的Driver加载完毕。
+最后再来看看DriverManager调用DriverManager.getConnection( “URL”,“user”,“password”)的内容：
+
+```java
+public static Connection getConnection(String url,tring user, String password) throws SQLException {
+        //将用户名和密码加入到Properties中
+        java.util.Properties info = new java.util.Properties();
+        if (user != null) {
+            info.put("user", user);
+        }
+        if (password != null) {
+            info.put("password", password);
+        }
+        return (getConnection(url, info, Reflection.getCallerClass()));
+    }
+```
+
+```java
+private static Connection getConnection(String url, java.util.Properties info, Class<?> caller) throws SQLException {
+        ClassLoader callerCL = caller != null ? caller.getClassLoader() : null;
+        synchronized(DriverManager.class) {
+            if (callerCL == null) {
+                callerCL = Thread.currentThread().getContextClassLoader();
+            }
+        }
+        if(url == null) {
+            throw new SQLException("The url cannot be null", "08001");、
+        }
+        println("DriverManager.getConnection(\"" + url + "\")");
+        SQLException reason = null;
+        
+        //遍历注册到registeredDrivers的Driver类
+        for(DriverInfo aDriver : registeredDrivers) {
+            //检查Driver类的有效性
+            if(isDriverAllowed(aDriver.driver, callerCL)) {
+                try {
+                    println("    trying " + aDriver.driver.getClass().getName());
+                    //调用com.myql.jdbc.Driver.connect(...)方法获取连接
+                    Connection con = aDriver.driver.connect(url, info);
+                    if (con != null) {
+                        println("getConnection returning " + 
+aDriver.driver.getClass().getName());
+                        return (con);
+                    }
+                } catch (SQLException ex) {
+                    if (reason == null) {
+                        reason = ex;
+                    }
+                }
+            } else {
+                println("    skipping: " + aDriver.getClass().getName());
+            }
+        }
+        if (reason != null)    {
+            println("getConnection failed: " + reason);
+            throw reason;
+        }
+        println("getConnection: no suitable driver found for "+ url);
+        throw new SQLException("No suitable driver found for "+ url, "08001");
+    }
+}
+private static boolean isDriverAllowed(Driver driver, ClassLoader 
+classLoader) {
+        boolean result = false;
+        if(driver != null) {
+            Class<?> aClass = null;
+            try {
+                //传入的classloader为调用getConnection的当前类加载器，从而寻找driver的class对象  
+                aClass =  Class.forName(driver.getClass().getName(), true, classLoader);
+            } catch (Exception ex) {
+                result = false;
+            }
+            
+            //注意，只有同一个类加载器的Class使用==比较时才会相等，此处就是校验用户注册Driver时该Driver所属的类加载器和调用的类加载器是否是同一个
+            //driver.getClass()拿到的就是当初执行Class.forName("com.mysql.jdbc.Driver")时的应用AppClassLoader
+             result = ( aClass == driver.getClass() ) ? true : false;
+        }
+        return result;
+    }
+```
+
