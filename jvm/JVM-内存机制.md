@@ -52,3 +52,8 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ```
 
 jvisualvm 打开转出的文件
+
+JVM参数
+
+-Xms5m -Xmx5m -XX:+HeapDumpOnOutOfMemoryError
+-Xxs160k 设置堆栈的大小
