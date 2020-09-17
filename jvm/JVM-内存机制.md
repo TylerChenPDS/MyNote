@@ -1,3 +1,7 @@
+https://blog.csdn.net/weixin_38405354/article/details/104712746
+
+https://www.infoq.cn/article/Java-PERMGEN-Removed/ 永久代去哪了？
+
 ![](./img/10.png)
 
 每个方法在执行的时候，都会生成与这个方法相关的**栈帧**；
@@ -57,3 +61,183 @@ JVM参数
 
 -Xms5m -Xmx5m -XX:+HeapDumpOnOutOfMemoryError
 -Xxs160k 设置堆栈的大小
+
+### 死锁测试
+
+```java
+/**
+ * @author TylerChen
+ * @date 2020/9/17 - 15:31
+ * 死锁测试
+ */
+public class MyTest3 {
+	public static void main(String[] args) {
+		Runnable a = () -> A.method();
+
+		Runnable b = () -> B.method();
+
+		new Thread(a, "Thread A").start();
+		new Thread(b, "Thread B").start();
+	}
+}
+
+class A {
+	public static synchronized void method() {
+		System.out.println("method from A");
+		try {
+			Thread.sleep(5000);
+			B.method();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+	}
+}
+
+class B {
+	public static synchronized void method() {
+		System.out.println("method from B");
+		try {
+			Thread.sleep(5000);
+			A.method();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+}
+```
+
+**jconsole**
+
+![](./img/11.png)
+
+**jvisualvm**
+
+![](./img/12.png)
+
+
+
+**元空间溢出测试**
+
+```xml
+引入jar
+<dependency>
+      <groupId>cglib</groupId>
+       <artifactId>cglib</artifactId>
+       <version>3.2.8</version>
+</dependency>
+```
+
+
+
+```java
+/**
+ * 方法区产生内存溢出错误
+ * ：jdk8中引入元空间，默认的初始大小为21m，如果超过21m，元空间虚拟机会进行垃圾回收，如果还不够就进行空间扩容，扩容的上限为物理内存的上限。
+ * 本次测试使用cglib进行元空间内存错误演示。
+ * 启动时，修改vm参数: -XX:MaxMetaspaceSize=10m。
+ */
+public class Test4 {
+       public static void main(String[] args) {
+             //程序在运行过程中，会不断的创建Test.class的子类，并放置到元空间中
+             for(;;) {
+                    Enhancer enhancer=new Enhancer();
+                    enhancer.setSuperclass(Test4.class);
+                    enhancer.setUseCache(false);
+                    enhancer.setCallback((MethodInterceptor)(obj,method,arg1,proxy)-> 
+                                        proxy.invokeSuper(obj, arg1));
+                    System.out.println("hello world");
+                    enhancer.create();
+             }
+       }
+}
+
+程序运行结果报错：
+java.lang.OutOfMemoryError: Metaspace     元空间内存溢出
+```
+
+**使用jvisualvm工具观察元空间的变化：**
+
+![](./img/13.png)
+
+https://www.infoq.cn/article/Java-PERMGEN-Removed/ 永久代去哪了？
+
+### 命令行测试
+
+#### **jps**
+
+使用jps命令获取java进程
+
+**jps -l**
+
+![](./img/14.png)
+
+
+
+#### **jmap** 使用
+
+```java
+
+C:\Users\19699>jmap
+Usage:
+    jmap [option] <pid>
+        (to connect to running process)
+    jmap [option] <executable <core>
+        (to connect to a core file)
+    jmap [option] [server_id@]<remote server IP or hostname>
+        (to connect to remote debug server)
+
+where <option> is one of:
+    <none>               to print same info as Solaris pmap
+    -heap                to print java heap summary
+    -histo[:live]        to print histogram of java object heap; if the "live"
+                         suboption is specified, only count live objects
+    -clstats             to print class loader statistics
+    -finalizerinfo       to print information on objects awaiting finalization
+    -dump:<dump-options> to dump java heap in hprof binary format
+                         dump-options:
+                           live         dump only live objects; if not specified,
+                                        all objects in the heap are dumped.
+                           format=b     binary format
+                           file=<file>  dump heap to <file>
+                         Example: jmap -dump:live,format=b,file=heap.bin <pid>
+    -F                   force. Use with -dump:<dump-options> <pid> or -histo
+                         to force a heap dump or histogram when <pid> does not
+                         respond. The "live" suboption is not supported
+                         in this mode.
+    -h | -help           to print this help message
+    -J<flag>             to pass <flag> directly to the runtime system
+```
+
+**jmap -clstats 11684**
+
+#### **jstat -gc LVMID** 用来打印元空间的信息，具体内容如下
+
+![](./img/1.jpg)
+
+#### jcmd
+
+jcmd pid VM.flag 查看对应pid进程的启动参数
+
+![](./img/15.png)
+
+**jcmd PID GC.class_stats** 一个新的诊断命令，用来连接到运行的 JVM 并输出详尽的类元数据的柱状图。
+
+- jcmd pid VM.flags 查看虚拟机启动参数
+- jcmd pid help 列出当前的java进程可以进行的操作
+- jcmd pid help JFR.dump ：查看具体命令的选项
+- jcmd pid ProfCounter.print : 查看当前进程性能相关的参数
+- jcmd pid VM.uptime : **查看jvm的启动时长**
+- jcmd pid GC.class_histogram ：查看系统中类的统计信息
+- jcmd pid Thread.print : 查看线程堆栈信息
+- jcmd pid GC.heap_dump C:\Users\Administrator\Desktop 导出heap dump文件，可以使用jvisualvm查看
+- jcmd pid VM.system_properties ： 查看JVM的属性信息
+- jcmd pid VM.version : 查看目标JVM进程的版本信息
+- jcmd pid VM.command_line : 查看JVM启动的命令行参数信息
+
+#### jstack 
+
+- jstack pid : 查看或者导出java应用程序中线程的堆栈信息
+
+### **图形化界面工具** jmc :Java Mission Control
+
