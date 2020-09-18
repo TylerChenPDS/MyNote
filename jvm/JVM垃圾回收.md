@@ -153,7 +153,7 @@
 
 - 对整个JVM进行整理，包括Young、Old和Perm
 - 主要的出发时机：1） Old满了；2）Perm满了；3）system.gc()
-- 效率很低，尽量减少GC。
+- 效率很低，尽量减少Full GC。
 
 ### 4.3.3 垃圾回收器（Garbage Collector）
 
@@ -219,4 +219,195 @@
 - 只有在多CPU环境下才有意义；
 - 使用-XX:+UseConcMarkSweepGC打开。
 
-​	
+# 5 内存泄漏的经典原因
+
+- 对象定义在错误的范围（Wrong Scope）
+- 异常（Exception）处理不当
+- 集合数据管理不当
+
+## 5.1 对象定义在错误的范围（Wrong Scope）
+
+如果Foo实例对象的声明较长，会导致临时性内存泄漏。（这里的names变量其实只有临时作用）
+
+```java
+class Foo{
+    private String[] names;
+    public void doIt(int length){
+        if(names==null||names.length<length)
+            names=new Sting[length];
+        populate(names);
+        print(names);
+    }
+}
+```
+
+JVM喜欢声明周期短的对象，这样做已经足够高效
+
+```java
+class Fol{
+    public void doIt(int length){
+        private String[] names=new Sting[length];
+        populate(names);
+        print(names);
+    }
+}
+```
+
+## 5.2 异常（Exception）处理不当
+
+```java
+Connection conn=DriverManager.getConnection(url,name,password);
+
+try{
+    String sql="do a query sql";
+    PreparedStatement stmt=conn.prepareStatement(sql);
+    ResultSet rs=stmt.executeQuery();
+    while(rs.next()){
+        doSomeStuff();
+    }
+    rs.close();
+    conn.close();
+}catch(Exception e){
+    //如果doSomeStuff()抛出异常，rs.close();和conn.close();不会被调用，会导致内存泄漏和db连接泄漏。
+    //正确的做法应该是把关闭操作放到finally块中。
+}
+```
+
+## 5.3 集合数据管理不当
+
+- 当使用Array-based的数据结构时（ArrayList、HashMap等）时，尽量减少resize比如new ArrayList时，尽量估算size，在创建的时候把size确定；减少resize可以避免没有必要的array copying，gc碎片等问题
+- 如果一个List只需要顺序访问，不需要随机访问（Random Access），用LinkedList代替ArrayList
+  LinkedList本质是链表，不需要resize，但只适用于顺序访问。
+
+# 6 垃圾回收日志与算法
+
+```java
+/*
+ * JVM参数：
+ * -verbose:gc 输出垃圾回收详情
+ * -Xms20M jvm启动时堆容量的大小，初始大小
+ * -Xmx20M jvm堆最大值
+ * -Xmn10M 堆空间中新生代的大小
+ * -XX:+PrintGCDetails 打印垃圾回收的日志
+ * -XX:SurvivorRatio=8 Eden空间和Survivor空间比例是81，即Eden:From:To=8:1:1
+ *
+ * PSYoungGen: Parallel Scavenge （新生代垃圾收集器）
+ * ParOldGen: Parallel Old （老年代垃圾收集器）
+ */
+public class MyTest5 {
+	public static void main(String[] args) {
+		int size=1024*1024;
+		byte[] myAllocl1=new byte[2*size];
+		byte[] myAllocl2=new byte[2*size];
+		byte[] myAllocl3=new byte[3*size];
+		byte[] myAllocl4=new byte[3*size];
+		System.out.println("hello world");
+	}
+}
+
+
+[GC (Allocation Failure) [PSYoungGen: 6275K->728K(9216K)] 6275K->4832K(19456K), 0.0040179 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+// 6275-728=5547K //执行完GC,新生代释放的空间容量
+// 6275-4832=1143K// 执行完GV，总的堆空间释放的容量
+// 5547-1143=4104 //新生代晋升到老年代对象所占的空间
+hello world
+Heap
+    // 虽然设置的新生代的容量为10m，但是，eden与suvior比例为8：1：1 有一个 suvior区中是不会使用的，所以，实际新生代的空间为 10m * (8 + 1)/(8 + 1 +1) = 9m
+ PSYoungGen      total 9216K, used 5145K [0x00000000ff600000, 0x0000000100000000, 0x0000000100000000)
+  eden space 8192K, 53% used [0x00000000ff600000,0x00000000ffa50660,0x00000000ffe00000)
+  from space 1024K, 71% used [0x00000000ffe00000,0x00000000ffeb6030,0x00000000fff00000)
+  to   space 1024K, 0% used [0x00000000fff00000,0x00000000fff00000,0x0000000100000000)
+ 
+ ParOldGen       total 10240K, used 4104K [0x00000000fec00000, 0x00000000ff600000, 0x00000000ff600000)
+  object space 10240K, 40% used [0x00000000fec00000,0x00000000ff002020,0x00000000ff600000)
+ Metaspace       used 3238K, capacity 4496K, committed 4864K, reserved 1056768K
+  class space    used 350K, capacity 388K, committed 512K, reserved 1048576K
+```
+
+当把2 * 2 * 2 * 2 ，改成2 * 2 * 3 * 3，Full GC 没了！
+原因是：当新生代已经无法容纳下新创建的对象的话，新对象将直接在老年代创建。当创建第一个3M的时候，新生代无法容纳，直接在老年代创建，而第二个3M创建的时候，程序已经发生了GC，容量又足够使用。
+
+# 7 阈值和垃圾回收器类型对对象分配的影响
+
+```java
+/*
+ * JVM参数：
+ * -verbose:gc 输出垃圾回收详情
+ * -Xms20M <u>jvm</u>启时堆容量的大小，初始大小
+ * -Xmx20M <u>jvm</u>堆最大值
+ * -Xmn10m 堆空间中新生代的大小
+ * -XX:+PrintGCDetails 打印垃圾回收的日志
+ * -XX:SurvivorRatio=8 Eden空间和Survivor空间比例是8:1，即Eden:From:To=8:1:1
+ * -XX:PretenureSizeThreshold=4194304    设置对象超过多大时，则直接在老年代创建
+ * -XX:+UseSerialGC   使用串行收集器 （PretenureSizeThreshold必须结合这个参数一起使用）
+ */
+
+public class Test2 {
+       public static void main(String[] args) {
+             int size=1024*1024;
+             byte[] myAlloc=new byte[5*size];
+       }
+}
+
+运行结果：
+Heap
+ def new generation   total 9216K, used 1311K 。。。
+  eden space 8192K,  16% used [。。。
+  from space 1024K,   0% used [。。。
+  to   space 1024K,   0% used [。。。
+ tenured generation   total 10240K, used 5120K [。。。  //此处可以发现，5M的对象直接进入老年代
+   the space 10240K,  50% used [。。。
+ Metaspace       used 2779K, capacity 4486K, committed 4864K, reserved 1056768K
+  class space    used 293K, capacity 386K, committed 512K, reserved 1048576K
+```
+
+**经过多轮Minor GC无法进行回收的对象，就会晋升到老年代。**
+
+```java
+/*
+* * -verbose:gc -Xms20M -Xmx20M -Xmn10m -XX:+PrintGCDetails -XX:SurvivorRatio=8 
+* -XX:+PrintCommandLineFlags ： 打印命令行的标志，打印JVM的启动参数
+* -XX:MaxTenuringThreshold =5： 可以自动调节对象晋升（Promote）到老年代的阈值，设置该阈值的最大值。（理论上的最大值，默认值为15，CMS的默认值是6，G1默认值为15，在JVM中，该数值是由4bit来表示的，所以最大值为1111）
+* -XX:+PrintTenuringDistribution ： 打印出GC过程中对象信息。
+
+经历过多次GC以后，存活的对象会在From Survivor和To Survivor之间来回存放，而这里面的前提是这两个空间有足够的大小来存放这些数据。在GC算法中，会计算每个对象年龄的大小，如果达到某个年龄后发现总大小已经大于了Survivor总空间的50%，那么这时候就需要调整阈值，让存活的对象尽快完成晋升。不能再继续等到默认的15此GC后才完成晋升，因为这样会导致Survivor空间不足。
+*/
+public class Test3 {
+       public static void main(String[] args) {
+              int size=1024*1024;
+             byte[] myAllocl1=new byte[2*size];
+             byte[] myAllocl2=new byte[2*size];
+             byte[] myAllocl3=new byte[2*size];
+             byte[] myAllocl4=new byte[2*size];
+             System.out.println("hello world");
+       }
+}
+
+
+运行结果：
+-XX:InitialHeapSize=20971520 -XX:InitialTenuringThreshold=5 
+-XX:MaxHeapSize=20971520 -XX:MaxNewSize=10485760 -XX:MaxTenuringThreshold=5 
+-XX:NewSize=10485760 -XX:+PrintCommandLineFlags -XX:+PrintGC -XX:+PrintGCDetails 
+-XX:+PrintTenuringDistribution -XX:SurvivorRatio=8 
+-XX:+UseCompressedClassPointers -XX:+UseCompressedOops 
+-XX:-UseLargePagesIndividualAllocation -XX:+UseParallelGC 
+
+[GC (Allocation Failure) 
+Desired survivor size 1048576 bytes, new threshold 5 (max 5)
+[PSYoungGen: 7291K->776K(9216K)] 7291K->6928K(19456K), 0.0028395 secs] [Times: 
+[Full GC (Ergonomics) [PSYoungGen: 776K->0K(9216K)] [ParOldGen: 
+6152K->6682K(10240K)] 6928K->6682K(19456K), [Metaspace: 2773K->2773K(1056768K)], 
+
+hello world
+
+Heap
+ PSYoungGen      total 9216K, used 2288K 。。。
+  eden space 8192K, 27% used 。。。
+  from space 1024K, 0% used 。。。
+  to   space 1024K, 0% used 。。。
+ ParOldGen       total 10240K, used 6682K [
+  object space 10240K, 65% used 。。。
+ Metaspace       used 2781K, capacity 4486K, committed 4864K, reserved 1056768K
+  class space    used 293K, capacity 386K, committed 512K, reserved 1048576K
+```
+
