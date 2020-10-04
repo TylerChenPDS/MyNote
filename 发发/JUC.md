@@ -2069,7 +2069,7 @@ class PrintTask extends RecursiveAction{
 ```
 
 ```java
-通过RecursiveTask的返回值，来对一个长度为300的数组元素进行累加。
+//通过RecursiveTask的返回值，来对一个长度为300的数组元素进行累加。
 public class ForJoinPollTask {
     public static void main(String[] args) throws Exception {
         int[] arr = new int[300];
