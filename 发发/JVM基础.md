@@ -1,3 +1,15 @@
+## ※ Some Url
+
+**权威文档：**
+
+https://www.oracle.com/technetwork/tutorials
+
+/tutorials-1876574.html
+
+https://docs.oracle.com/en/java/javase/
+
+https://docs.oracle.com/javase/specs/index.html
+
 # 1，JVM 内存区域的划分
 
 ​		Java虚拟机在执行Java程序的过程中会把它所管理的内存划分为若干个不同的数据区域。这些区域有各自的用途和各自的生命周期，有的区域随着虚拟机进程的启动而一直存在，有些区域则是依赖用户线程的启动和结束而建立和销毁。
@@ -680,7 +692,7 @@ capacity有可能在一对最小值和最大值之间浮动。最大值就是上
 
 ​		OopMap的作用是为了在GC的时候，快速进行可达性分析，所以OopMap并不需要一发生改变就去更新这个映射表。只要这个更新在GC发生之前就可以了。所以OopMap只需要在预先选定的一些位置上记录变化的OopMap就行了。**这些特定的点就是SafePoint（安全点）**。由此也可以知道，程序并不是在所有的位置上都可以进行GC的，只有在达到这样的安全点才能暂停下来进行GC。既然安全点决定了GC的时机，那么安全点的选择就至为重要了。安全点太少，会让GC等待的时间太长，太多会浪费性能。一般会在如下几个位置选择安全点：1，循环的末尾 ，2，方法临返回前 / 调用方法的call指令后 ，3，可能抛异常的位置
 
-### 5.1.3**增量更新和原始快照**
+### 5.1.3 **增量更新和原始快照**
 
 ​		当垃圾回收的线程和用户的线程并发执行的时候，垃圾线程从GC Roots开始扫描，扫描过的对象，又被用户线程改变了引用关系，会造成本应该标记存活的对象，被错误标记为垃圾对象的问题！由此分别产生了两种解决这个问题的方案:**增量更新(Incremental Update)和原始快照(Snapshot At The Beginning,SATB)**
 
@@ -846,3 +858,370 @@ CMS是一款优秀的收集器， 它最主要的优点在名字上已经体现�
   年轻代的并行收集线程数默认是(cpu <= 8) ? cpu : 3 + ((cpu * 5) / 8)，如果你希望降低这个线程数，可以通过**-XX:ParallelGCThreads=N** 来调整。
 
 ## 5.4  实际配置例子
+
+**java启动参数共分为三类：**
+
+其一是标准参数（-），所有的JVM实现都必须实现这些参数的功能，而且向后兼容；
+
+其二是非标准参数（-X），默认jvm实现这些参数的功能，但是并不保证所有jvm实现都满足，且不保证向后兼容；
+
+其三是非Stable参数（-XX），此类参数各个jvm实现会有所不同，将来可能会随时取消，需要慎重使用；
+
+**//JDK 版本 "1.8.0_45"**
+
+```java
+-Xms5324m -Xmx5324m -Xss512k
+// 设置堆内存为5G, 栈内存为0.5M    
+-XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m 
+//设置元空间为256M
+-XX:NewSize=2048m -XX:MaxNewSize=2048m  
+//设置Yong Generation的大小，相当于 -Xmn2048m
+-XX:SurvivorRatio=8 
+//设置Survivor区的比率 一个survivor区的空间为 5G*1/(8+2) = 0.5G
+-XX:MaxTenuringThreshold=9   
+//该参数主要是控制新生代需要经历多少次GC晋升到老年代中的最大阈值。
+-XX:+UseConcMarkSweepGC 
+//使用CMS收集器，同时新生代使用parNew收集器
+-XX:CMSInitiatingOccupancyFraction=80
+// 设置CMS回收垃圾的阈值80%，老年代占用率超过80%开始回收
+-XX:+UseCMSInitiatingOccupancyOnly 
+ //只是用设定的回收阈值( -XX:CMSInitiatingOccupancyFraction),如果不指定,JVM仅在第一次使用设定值,后续则自动调整.
+-XX:+ScavengeBeforeFullGC   
+//在Full GC前触发一次Minor GC
+-XX:+UseCMSCompactAtFullCollection -XX:CMSFullGCsBeforeCompaction=9 
+//发生第9次Full GC时CMS开启整理碎片。
+-XX:+CMSParallelRemarkEnabled
+//CMS开启并行标记，如果多核CPU的话
+-XX:+CMSPermGenSweepingEnabled  -XX:+CMSClassUnloadingEnabled 
+// 为了避免方法区满引起的full gc，建议开启CMS回收方法区选项
+-XX:SoftRefLRUPolicyMSPerMB=0   //软引用的容忍度
+/*
+    我们知道软引用，是在空间不足的情况下才会被回收，当然这个只是一个比较简单的解释。
+实际上软引用的回收机制复杂得多，要理解SoftRefLRUPolicyMSPerMB的意思，
+就先明白soft-reference在代码逻辑上需要满足的条件是什么，如下：
+clock - timestamp <= freespace * SoftRefLRUPolicyMSPerMB （当条件满足则不会被回收）
+clock记录是上一次GC的时间戳，timestamp则是最近一次读取soft-reference所引用的对象（即最近调用get()）的时间戳。
+他们的差【clock - timestamp】表示了soft-reference有多久没用了，越大表示越久没用。如果他们的差为负数，表示刚刚用过。
+而【freespace * SoftRefLRUPolicyMSPerMB】表示能够VM的忍耐度，VM能够忍耐软引用对象多久没有被回收，
+而VM的忍耐度从公式可以知道是由VM计算得出的空闲空间大小和用户指定的忍耐度SoftRefLRUPolicyMSPerMB来决定的。
+也就是说，如果软引用上次被get()的时间离最近一次GC的时间不会太久远的话就可以不被当前GC回收。
+*/
+-XX:-ReduceInitialCardMarks  
+//防止大对象导致JVM崩溃的bug解决参数 - JDK 1.6u18发现的已知bug
+-XX:CMSInitiatingPermOccupancyFraction=80  
+//设置Perm Gen使用到达多少比率时触发GC
+-XX:+ExplicitGCInvokesConcurrent  
+// 即并行FULL GC，可提高FULL GC效率
+-XX:+PrintGCDetails 
+-XX:+PrintGCDateStamps 
+-XX:+PrintGCApplicationConcurrentTime 
+-XX:+PrintGCApplicationStoppedTime 
+-XX:+PrintHeapAtGC
+-Xloggc:/data/applogs/heap_trace.txt 
+-XX:-HeapDumpOnOutOfMemoryError 
+-XX:HeapDumpPath=/data/applogs/HeapDumpOnOutOfMemoryError
+-XX:+IgnoreUnrecognizedVMOptions  
+//忽略不正确的VM选项
+```
+
+## 5.5 G1收集器
+
+### 5.5.1 概念
+
+​		Garbage First (简称G1)收集器是**垃圾收集器技术发展历史上的里程碑式的成果，**它开创了收集器面向局部收集的设计思路和基于Region的内存布局形式。G1是一款主要面向服务端应用的垃圾收集器。JDK9发布之日，G1宣告取代Parallel Scavenge加Parallel Old组合，成为服务端模式下的默认垃圾收集器。
+
+​		G1收集器出现之前的所有其他收集器，包括CMS在内，垃圾收集的目标范围要么是整个新生代(MinorGC)， 要么就是整个老年代(MajorGC)， 再要么就是整个Java堆(Full GC)。而G1跳出了这个樊笼，它可以面向堆内存任何部分来组成回收集(Collection Set,一般简称CSet)进行回收，衡量标准不再是它属于哪个分代，而是哪块内存中存放的垃圾数量最多，回收收益最大，这就是G1收集器的Mixed GC模式。
+
+​		G1开创的基于Region的堆内存布局是它能够实现这个目标的关键。虽然G1也仍是遵循分代收集理论设计的，**但其堆内存的布局与其他收集器有非常明显的差异:** 传统的GC收集器将连续的内存空间划分为新生代、老年代和永久代。
+
+![](./img/19.png)
+
+而G1的各代存储地址是不连续的，每一代都使用了n个不连续的大小相同的Region，每个Region占有一块连续的虚拟内存地址。
+
+![](./img/20.png)
+
+每一个Region都可以根据需要，扮演新生代的Eden空间、Survivor空间， 或者老年代空间。收集器能够对扮演不同角色的Region采用不同的策略去处理，这样无论是新创建的对象还是已经存活了一段时间、熬过多次收集的旧对象都能获取很好的收集效果。**Region中还有一类特殊的Humongous区域，专门用来存储大对象**。G1认为只要大小超过了一个Region容量一半的对象即可判定为大对象。每个Region的大小可以通过参数
+**-XX: G1HeapRegionSize**设定，取值范围为1MB ~ 32MB，且应为2的N次幂。而对于那些超过了整个Region容量的超级大对象，将会被存放在N个连续的Humongous Region之中，G1的大多数行为都把Humongous Region作为老年代的一部分来进行看待。
+
+​		G1收集器去跟踪各个Region里面的垃圾堆积的**“价值”**大小，**价值**即回收所获得的空间大小以及回收所需时间的经验值，然后在后台维护一个优先级列表，每次根据用户设定允许的收集停顿时间(**使用参数**
+**-XX: MaxGCPauseMilis指定， 默认值是200毫秒**)，优先处理回收价值最大的那些Region,这也就是"Garbage First"名字的由来。这种使用Region划分内存空间，以及具有优先级的区域回收方式，**保证了G1收集器在有限的时间内获取尽可能高的收集效率。**
+
+### 5.5.2 G1的GC模式 --   G1 Young GC  & G1 Mix GC
+
+**G1 Young GC**
+		它在Eden空间耗尽时会被触发，开始对Eden区进行GC，在这种情况下，Eden空间的数据移动到Survivor空间中，如果Survivor空间不够，Eden空间的部分数据会直接晋升到年老代空间。Survivor区的数据移动到新的Survivor区中，也有部分数据晋升到老年代空间中。最终Eden空间的数据为空，GC停止工作，应用线程继续执行。
+
+​		这时，我们需要考虑一个问题，如果**仅仅**GC新生代对象，Young区的对象可能还存在Old区的引用， 这就是跨代引用的问题。为了避免对整个堆扫描下来会耗费大量的时间。于是，G1引进了RSet（Remembered Set）和卡表（card table）的概念。基本思想就是用空间换时间。
+
+**Remembered Set**
+
+​		新生代 GC（发生得非常频繁）。一般来说， GC过程是这样的：首先枚举根节点。根节点有可能在新生代中，也有可能在老年代中。这里由于我们只想收集新生代（换句话说，不想收集老年代），所以没有必要对位于老年代的 GC Roots 做全面的可达性分析。但问题是，确实可能存在位于老年代的某个 GC Root，它引用了新生代的某个对象，这个对象是不能清除的，G1模式是活对象。
+
+![](./img/21.png)
+
+​		事实上，对于位于不同年代对象之间的引用关系，虚拟机会在程序运行过程中给记录下来。对应上面所举的例子，“老年代对象引用新生代对象”这种关系，会在引用关系发生时，在新生代边上专门开辟一块空间记录下来，这就是Remembered Set，Remembered Set记录的是新生代的对象被老年代引用的关系。所以“新生代的 GC Roots ” + “ Remembered Set 存储的内容”，才是新生代收集时真正的 GC Roots 。
+
+​		G1中每个Region都有一个与之对应的Remembered Set ，在各个 Region 上记录自家的对象被外面对象引用的情况。当进行内存回收时，在GC根节点的枚举范围中加入Remembered Set 即可保证不对全堆扫描也不会有遗漏。
+
+ G1 GC只在两个场景中依赖RSet：
+
+- 老年代到年轻代的引用：G1 GC维护了从老年代区间到年轻代区间的指针，这个指针保存在年轻代的RSet里面。
+- 老年代到老年代的引用：从老年代到老年代的指针保存在老年代的RSet里面。
+
+**卡表（Card Table）**
+
+​		如果老年代和新生代之间的引用关系很多，要对每个引用都记录在Rset里，Rset会占很大空间，这样得不偿失，为了解决这个问题，在G1 中又引入了另外一个概念，卡表（Card Table）。卡表作为一个比特位的集合，每一个比特位可以用来标识老年代某一子区域（这个区域称之为卡。G1是512字节）。以此判断其中的所有的对象是否持有新生代对象的引用，这样新生代GC可以不用花大量的时间扫描老年代对象。确定每一个对象的引用，而可以先扫描卡表，只有卡表标识为1，才需要扫描该区域的老年代对象，为0则一定不包含新生代的引用。
+
+![](./img/22.png)
+
+​		一般情况下，这个RSet其实是一个Hash Table，Key是别的Region的起始地址，Value是一个集合，里面的元素是Card Table的Index。
+
+![](./img/23.png)
+
+**G1 Mix GC**
+
+Mix GC不仅进行正常的新生代垃圾收集，同时也回收部分后台扫描线程标记的老年代分区。它的GC步骤分4步：
+
+1、初始标记（initial mark，STW）
+
+在此阶段，G1 GC 对根进行标记。
+
+**2、并发标记（Concurrent Marking）**
+
+G1 GC 在整个堆中查找可访问的（存活的）对象。
+
+3、最终标记（Remark，STW）
+
+帮助完成标记周期。
+
+**4、清除垃圾（Evacuation，STW）**
+
+识别所有空闲分区；整理堆分区，为混合垃圾回收识别出有高回收价值的老年代分区；RSet梳理。
+
+![](./img/24.png)
+
+**原始快照(Snapshot At The Beginning,SATB)**
+
+提到并发标记，就离不开SATB，说清楚STAB，就要说**三色标记算法**
+
+**三色标记算法**是描述追踪式回收器的一种有用的方法，利用它可以推演收集器并发标记的正确性。
+
+首先，我们将对象分成三种类型的。
+
+- 黑色:根对象，或者该对象与它的子对象都被扫描了，确定是活的
+- 灰色:对象本身已被扫描,但还没扫描完该对象中的子对象，也就是对象里的字段属性引用的关系还没扫描完
+- 白色:未被扫描对象，扫描完成所有对象之后，最终为白色的为不可达对象，即垃圾对象
+
+当GC开始扫描对象时，按照如下图步骤进行对象的扫描：
+
+根对象被置为黑色，子对象被置为灰色。
+
+![](./img/25.png)
+
+在GC并发扫描后的结果如下：
+
+![](./img/26.png)
+
+在并发标记阶段，应用线程改变了这种引用关系**A.c=C**
+
+![](./img/27.png)
+
+在重新标记阶段扫描结果如下
+
+![](./img/28.png)
+
+​		这种情况下C会被当做垃圾进行回收。Snapshot的存活对象原来是A、B，实际存活对象变成现在A、B、C了，Snapshot的完整遭到破坏了，显然这个做法是不合理。
+
+​		G1采用的是pre-write barrier解决这个问题。简单说就是在并发标记阶段，当引用关系发生变化的时候，通过pre-write barrier函数会把这种这种变化记录并保存在一个队列里，在JVM源码中这个队列叫satb_mark_queue。在remark阶段会扫描这个队列，通过这种方式，旧的引用所指向的对象就会被标记上，其子孙也会被递归标记上，**这样就不会漏标记任何对象，snapshot的完整性也就得到了保证。**
+
+​		CMS的incremental update设计使得它在remark阶段必须重新扫描所有线程栈和整个young gen作为root；G1的SATB设计在remark阶段则只需要扫描剩下的satb_mark_queue ，解决了CMS垃圾收集器重新标记阶段长时间STW的潜在风险。
+
+​		SATB的方式记录活对象，也就是那一时刻对象snapshot, 但是在之后这里面的对象可能会变成垃圾, 叫做浮动垃圾，这种对象只能等到下一次收集回收掉。在GC过程中新分配的对象都当做是活的，其他不可达的对象就是死的。
+
+**如何知道哪些对象是GC开始之后新分配的呢？**
+
+​		在Region中通过top-at-mark-start（TAMS）指针，分别为prevTAMS和nextTAMS来记录新配的对象。示意图如下：
+
+![](./img/29.png)
+
+其中top是该region的当前分配指针，[bottom, top)是当前该region已用（used）的部分，[top, end)是尚未使用的可分配空间（unused）。
+
+(1): [bottom, prevTAMS): 这部分里的对象第n-1轮concurrent marking已经标记过的对象
+
+(2): [prevTAMS, nextTAMS): 这部分里的对象在第n-1轮concurrent marking是隐式存活的
+
+(3): **[nextTAMS, top):** 这部分里的对象在第n轮concurrent marking是隐式存活的
+
+**清除垃圾（Evacuation）**
+
+​		Evacuation阶段是全暂停的。它负责把一部分region里的活对象拷贝到空region里去（并行拷贝），然后回收原本的region的空间。Evacuation阶段可以自由选择任意多个region来独立收集，这些被选中的region构成收集集合（collection set，简称CSet），CSet集合中Region的选定依赖于用户设定允许的收集停顿时间(**使用参数-XX: MaxGCPauseMilis指定， 默认值是200毫秒**)，该阶段并不是选择evacuate所有有活对象的region，只选择回收价值高的少量region来evacuate，这种暂停的开销就可以（在一定范围内）可控。
+
+**Full GC**
+
+G1的垃圾回收过程是和应用程序并发执行的，当Mixed GC的速度赶不上应用程序申请内存的速度的时候，Mixed G1就会降级到Full GC，使用的是Serial GC。Full GC会导致长时间的STW，应该要尽量避免。
+
+导致G1 Full GC的原因可能有两个：
+
+1. Evacuation的时候没有足够的to-space来存放晋升的对象；
+2. 并发处理过程完成之前空间耗尽
+
+**相关核心配置参数用JDK8做环境：**
+
+G1 GC给我们提供了很多的命令行选项，也就是参数，这些参数一类以布尔类型打头，“+”表示启用该选项，“-”表示关闭该选项。另一类采用数字赋值，不需要布尔类型打头。
+
+- **-XX:+UseG1GC**
+
+  启用G1垃圾收集器
+
+- **-XX:G1HeapRegionSize=nM（要带单位）**
+
+  这是G1GC独有的选项，Region的大小默认为堆大小的1/200，也可以设置为1MB、2MB、4MB、8MB、16MB，以及32MB，这六个划分档次。增大Region块的大小有利于处理大对象。前面介绍过，大对象没有按照普通对象方式进行管理和分配空间，如果增大Region块的大小，则一些原本走特殊处理通道的大对象就可以被纳入普通处理通道了。反之，如果Region大小设置过小，则会降低G1的灵活性，对于各个年龄代的大小都会造成分配问题。
+
+- **-XX:MaxGCPauseMillis=200**
+
+  最长暂停时间设置目标值。默认值是200 毫秒。(尽可能达到这个目标)
+
+- **-XX:G1NewSizePercent=5**
+
+  将要使用的堆百分比设置为年轻代大小的最小值。默认值是Java堆的5%这是一个实验性的标志。有关示例，请参见如何解锁实验性VM标志。要求先配置：-XX:+UnlockExperimentalVMOptions
+
+- **-XX:G1MaxNewSizePercent=60**
+
+  将要使用的堆大小百分比设置为年轻代大小的最大值。默认值是Java堆的60%这是一个实验性的标志。要求前面先配置：-XX:+UnlockExperimentalVMOptions
+
+- **-XX:ParallelGCThreads=n**
+
+  设置STW工作线程的值。将n的值设置为逻辑处理器的数量。n的值与逻辑处理器的数量相同，最多为8。如果有超过8个逻辑处理器，则将n的值设置为大约5/8个逻辑处理器。这在大多数情况下都是可行的，除了较大的SPARC系统，其中n的值大约是逻辑处理器的5/16。
+
+- **-XX:ConcGCThreads=n**
+
+  设置并行标记线程的数目。将n设置为并行垃圾收集线程(ParallelGCThreads)数量的大约1/4。
+
+- **-XX:InitiatingHeapOccupancyPercent=45**
+
+  这个选项决定了是否开始一次老年代回收动作，即年轻代GC结束之后，G1会评估剩余的对象是否达到了整个Java堆的45%这个阈值。
+
+- **-XX:G1MixedGCLiveThresholdPercent=85**
+
+  在并发标记阶段识别需要被回收的old region，标记成candidate old region，以便在Mixed GC阶段进入CSet而被回收。是通过G1MixedGCLiveThresholdPercent来控制的，当region中的存活数据占比率不超过该阈值时，则表示要被回收，默认占用率为85%。
+
+  在并发标记阶段每个region中的存活数据占比率会被重新计算，那些存活数据占比较多的region，回收时的代价相对较昂贵，它们还会被标记为expensive region。如果在MixedGC阶段这种region大量进入CSet中可能会导致MixedGC的停顿时间过长。G1为了区分开这些region而做了分开标记，在MixedGC阶段优先回收candidate old region，如果代价许可，会尝试回收expensive region。
+
+- **-XX:G1HeapWastePercent=5**
+
+  可容忍的浪费堆空间百分比。如果可回收百分比小于该设置的百分比，JVM不会启动混合垃圾回收周期。
+
+- **-XX:G1MixedGCCountTarget=8**
+
+  老年代Region的回收时间通常来说比年轻代Region稍长一些，这个选项可以设置一个并发标记之后启动多少个混合GC，默认值是8个。设置一个比较大的值可以让G1 GC在老年代Region回收时多花一些时间，如果一个混合GC的停顿时间很长，说明它要做的事情很多，所以可以增大这个值的设置，缩短停顿时间，但是如果这个值过大，也会造成并行循环等待混合GC完成的时间相应的增加。
+
+- **-XX:G1OldCSetRegionThresholdPercent=10**
+
+  混合垃圾收集期间，**每次能进入CSet的old region的最大阈值**（进入CSet表示要垃圾收集）。实验室性标记默认值是Java堆的 10%。**如果该值设置过大**，则每次Mixed GC需要收集的old region数量会变多，导致停顿时间拉长。该值可以限制每次Mixed GC**最多**能回收的old region数量。
+
+- **-XX:G1ReservePercent=10** 
+
+  选项的值（并相应增加总的堆大小），为**“目标空间”**（to-suvivor）增加预留内存量;  相对保证晋升对象不会分配失败！
+
+- **-XX:+UnlockExperimentalVMOptions**
+
+  要更改实验性标志的值，必须先对其解锁。显式地设置该参数。
+
+## 5.6 新一代收集器
+
+### 5.6.1 **Shenandoah**
+
+​		最初Shenandoah是由RedHat公司独立发展的新型收集器项目,在2014年RedHat把Shenandoah贡献给了OpenJDK，并推动它成为OpenJDK 12的正式特性之一，但是OracleJDK不支持。
+
+​		Shenandoah也是使用基于Region的堆内存布局，同样有保存大对象的Humongous Region,默认的回收策略也同样是优先处理回收价值最大的Region。但在管理堆内存方面，它与G1至少有三个明显的不同之处：
+
+- 最重要的当然是支持并发的整理算法，G1的回收阶段是可以多线程并行的，但却不能与用户线程并发，但是Shenandoah最核心的功能就是回收清理的线程不仅是多线程还可以和用户线程并发。
+
+- Shenandoah (目前)是默不使用分代收集，不会有专门的新生代Region和老年代Region。
+
+- Shenandoah和G1有不同的数据结构记录夸Region的引用关系，使用的是“链接矩阵”，
+
+  ![](./img/30.png)
+
+Shenandoah 具体的工作过程，可以参见2016年RedHat发表的Shenandoah垃圾收集器的论文。
+
+https://www.researchgate.net/publication/306112816_Shenandoah_An_open-source_concurrent_compacting_garbage_collector_for_OpenJDK
+
+这里说一下2016年RedHat公司发表的实际应用性能对比：
+
+![](./img/31.png)
+
+### 5.6.2 **ZGC**
+
+​		ZGC ("Z"” 并非什么专业名词的缩写，这款收集器的名字就叫作Z Garbage Collector) 是一款在JDK 11中新加入的具有实验性质的低延迟垃圾收集器，是由Oracle公司研发的。2018年将ZGC提交给OpenJDK，推动其进入OpenJDK 11的发布清单之中。
+
+​		ZGC和Shenandoah的目标是高度相似，但实现技术上区别很大，简单了解一下ZGC的技术特点：
+
+​		**1）首先从ZGC的内存布局说起。**与Shenandoah和G1一样，ZGC也采用基于Region的堆内存布局，但与它们不同的是，ZGC 的Region (在一些官方资料中将它称为Page或者ZPage)具有动态性，能动态创建和销毁， 以及动态的区域容量大小。在x64硬件平台下，ZGC的Region可以具有大、中、小三类容量:
+
+**小型Region (Small Region):**容量固定为2MB，用于放置小于256KB的小对象。
+
+**中型Region (Medium Region):** 容量固定为32MB，用于放置大于等于256KB但小于4MB的对象。
+
+**大型Region (Large Region):**容量不固定，可以动态变化，但必须为2MB的整数倍，用于放置4MB或以上的大对象。每个大型Region中只会存放一个大对象，这也预示着虽然名字叫作"大型Region"，但它的实际容量完全有可能小于中型Region,最小容量可低至4MB
+
+​		**2）ZGC的核心功能，和Shenandoah一样实现了并发整理功能，**
+
+​		但实现方式和Shenandoah不太一样，它用了一种关键技术，染色指针技术
+
+​		而在ZGC的强项停顿时间测试上，它就毫不留情地与Parallel Scavenge、G1拉开了两个数量级的差距。不论是平均停顿，还是95%停顿、99%停顿、99.9%停顿， 抑或是最大停顿时间，ZGC均能不费劲地控制在十毫秒之内，以至于把它和另外两款停顿数百近千毫秒的收集器放到一起对比，就几乎显示不了ZGC的柱状条：
+
+![](./img/32.png)
+
+**相关参数：**
+
+1、激活ZGC：**-XX:+UnlockExperimentalVMOptions**   -XX:UseZGC
+
+### 5.6.3 **Epsilon（ε）**
+
+​		在G1、Shenandoah或者ZGC这些越来越复杂、越来越先进的垃圾收集器相继出现的同时，也有一个“反其道而行”的新垃圾收集器出现在JDK 11的特征清单中一Epsilon, 这是一款以不能够进行垃圾收集为"卖点”的垃圾收集器，"不干活”的收集器。
+
+​		Epsilon收集器由RedHat公司在JEP 318中提出，在此提案里Epsilon被形容成一个无操作的收集器，而事实上只要Java虚拟机能够工作，垃圾收集器便不可能是真正“无操作”的。原因是“垃圾收集器”这个名字并不能形容它全部的职责，更贴切的名字应该是“自动内存管理子系统”。一个垃圾收集器除了垃圾收集这个本职工作之外，它还要负责堆的管理与布局、对象的分配、与解释器的协作、与编译器的协作、与监控子系统协作等职责，其中至少堆的管理和对象的分配这部分功能是Java虚拟机能够正常运作的必要支持，是一个最小化功能的垃圾收集器也必须实现的内容。从JDK 10开始，为了隔离垃圾收集器与Java虚拟机解释、编译、监控等子系统的关系，RedHat提出**了垃圾收集器的统一接口**，即JEP 304提案，
+
+​		Epsilon是这个接口的有效性验证和参考实现，同时也用于需要剥离垃圾收集器影响的性能测试和压力测试。在实际生产环境中，不能进行垃圾收集的Epsilon也仍有用武之地。很长一段时间以来，Java技 术体系的发展重心都在面向长时间、大规模的企业级应用和服务端应用，可是近年来大型系统从传统单体应用向微服务化、无服务化向发展的趋势已越发明显，Java在这方面比起Golang等后起之秀来确实有一些先天不足， 使用率正渐渐下降。传统Java有着内存占用较大，在容器中启动时间长，即时编译需要缓慢优化等特点，这对大型应用来说并不是什么太大的问题，但对短时间、小规模的服务形式就有诸多不适。为了应对新的技术潮流，最近几个版本的JDK逐渐加入了提前编译、面向应用的类数据共享等支持。Epsilon也是有着类似的目标，如果应用只要运行数分钟甚至数秒，只要Java虚拟机能正确分配内存，在堆耗尽之前就会退出，那显然运行负载极小、没有任何回收行为的Epsilon便是很恰当的选择。
+
+**相关参数：**
+
+**-XX:+UnlockExperimentalVMOptions** 
+
+**-XX:+UseEpsilonGC**
+
+## 5.7 **选择合适的垃圾收集器**
+
+​		HotSpot虚拟机提供了种类繁多的垃圾收集器，选择太多反而令人踌躇难决，若只挑最先进的显然不可能满足全部应用场景，下面来探讨一下如何选择合适的垃圾收集器。
+
+这个问题的答案主要受以下三个因素影响:
+
+**1）应用程序的主要关注点是什么?**
+
+​		如果是数据分析、科学计算类的任务，目标是能尽快算出结果，那吞吐量就是主要关注点;
+
+​		如果是客户端/服务器模式的应用，那停顿时间直接影响服务质量，严重的甚至会导致事务超时，这样延迟就是主要关注点;
+
+​		而如果是客户端应用或者嵌入式应用，那垃圾收集的内存占用则是不可忽视的。
+
+**2）运行应用的基础设施如何?**
+
+​		譬如硬件规格，要涉及的系统架构是X86-32/64、SPARC还是ARM/Aarch64;
+
+​		处理器的数量多少，分配内存的大小;
+
+​		选择的操作系统是Linux、Solaris还是Windows等。
+
+**3）使用JDK的发行商是什么?版本号是多少?**
+
+​		是ZingJDK/Azul、OracleJDK、Open-JDK、 OpenJ9抑或是其他公司的发行版?
+
+​		该JDK对应了《Java虚拟机规范》的哪个版本?
+
+​		一般来说，收集器的选择就从以上这几点出发来考虑。
+
+​		假设某个直接面向用户提供服务的B/S系统准备选择垃圾收集器，一般来说延迟时间是这类应用的主要关注点，那么:
+
+​		如果你有充足的预算但没有太多调优经验，那么一套带商业技术支持的专有硬件或者软件解决方案是不错的选择,Azul公司以前主推的Vega系统和现在主推的Zing VM是这方面的代表，这样你就可以使用传说中的C4收集器了。如果你虽然没有足够预算去使用商业解决方案，但能够掌控软硬件型号，使用较新的版本，同时又特别注重延迟，那ZGC很值得尝试。如果你对还处于实验状态的收集器的稳定性有所顾虑，或者应用必须运行在Windows操作系统下，那ZGC就无缘了，试试Shenandoah吧。如果你接手的是遗留系统，软硬件基础设施和JDK版本都比较落后，那就根据内存规模衡量一下， 对于大概4GB到6GB以下的堆内存，CMS一般能处理得比较好，而对于更大的堆内存，可重点考察一下G1。
+
