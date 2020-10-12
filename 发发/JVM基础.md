@@ -1,4 +1,4 @@
-## ※ Some Url
+# ※ Some Url
 
 **权威文档：**
 
@@ -1224,4 +1224,115 @@ https://www.researchgate.net/publication/306112816_Shenandoah_An_open-source_con
 ​		假设某个直接面向用户提供服务的B/S系统准备选择垃圾收集器，一般来说延迟时间是这类应用的主要关注点，那么:
 
 ​		如果你有充足的预算但没有太多调优经验，那么一套带商业技术支持的专有硬件或者软件解决方案是不错的选择,Azul公司以前主推的Vega系统和现在主推的Zing VM是这方面的代表，这样你就可以使用传说中的C4收集器了。如果你虽然没有足够预算去使用商业解决方案，但能够掌控软硬件型号，使用较新的版本，同时又特别注重延迟，那ZGC很值得尝试。如果你对还处于实验状态的收集器的稳定性有所顾虑，或者应用必须运行在Windows操作系统下，那ZGC就无缘了，试试Shenandoah吧。如果你接手的是遗留系统，软硬件基础设施和JDK版本都比较落后，那就根据内存规模衡量一下， 对于大概4GB到6GB以下的堆内存，CMS一般能处理得比较好，而对于更大的堆内存，可重点考察一下G1。
+
+# 6  实战内存分配与回收策略
+
+## 6.1 JDK9之前和之后，日志信息打印相关命令的差别
+
+1)查看GC基本信息，在JDK 9之前使用-XX: +PrintGC， JDK 9后使用-Xlog: gc
+
+**2)查看GC详细信息，在JDK 9之前使用-XX: +PrintGCDetails,在JDK 9之后使用-Xlog: gc\***
+
+**3)查看GC前后的堆、方法区可用容量变化，在JDK 9之前使用-XX: +PrintHeapAtGC, JDK 9之后使用-Xlog:gc+heap=debug**
+
+4)查看GC过程中用户线程并发时间以及停顿的时间，在JDK 9之前使用-XX: +PrintGCApplicationConcurrentTime 以及-XX:+PrintGCApplicationStoppedTime,JDK 9之后使用-Xlog: safepoint
+
+5)查看收集器Ergonomics机制(自动设置堆空间各分代区域大小、收集目标等内容，从Parallel收集器开始支持)自动调节的相关信息。在JDK 9之前使用-XX: +PrintAdaptiveSizePolicy, JDK9之后使用-Xlog: gc+ergo*=trace
+
+**6)查看熬过收集后剩余对象的年龄分布信息，在JDK 9前使用-XX:+PrintTenuringDistribution， JDK 9之后使用-Xlog:gc+age=trace**
+
+## 6.2  对象优先在Eden里分配
+
+​		大多数情况下，对象在新生代Eden区中分配。当Eden区没有足够空间进行分配时，虚拟机将发起一次Minor GC。
+
+```java
+// -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+UseConcMarkSweepGC 
+public class Demo2 {
+    public static void main(String[] args) throws InterruptedException {
+        Set<byte[]> ss = new HashSet<>();
+        for(int i=1;i<=200;i++){
+            ss.add(new byte[1024*1024]);
+        }
+    }
+}
+```
+
+## 6.3 **大对象直接进入老年代**
+
+​		大对象就是指需要大量连续内存空间的Java对象，最典型的大对象便是那种很长的字符串，或者元素数量很庞大的数组，byte[]数组就是典型的大对象。大对象对虚拟机的内存分配来说就是一个不折不扣的坏消息，比遇到一个大对象更加坏的消息就是遇到一群"朝生夕灭”的"短命大对象”，我们写程序的时候应注意避免。
+
+​		在Java虚拟机中要避免大对象的原因是，在分配空间时，它容易导致内存明明还有不少空间时就提前触发垃圾收集，以获取足够的连续空间才能安置好它们，而当复制对象时，大对象就意味着高额的内存复制开销。
+
+​		HotSpot虚 拟机提供了-XX: PretenureSizeThreshold参数，指定大于该设置值的对象直接在老年代分配，这样做的目的就是避免在Eden区及两个Survivor区之间来回复制，产生大量的内存复制操作。
+
+​		**注意：**-XX: PretenureSizeThreshold参数只对Serial和ParNew两款新生代收集器有效，HotSpot的其他新生代收集器，如Parallel Scavenge并不支持这个参数。如果必须使用此参数进行调优，可考虑ParNew加CMS的收集器组合。
+
+```java
+//-XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+UseConcMarkSweepGC -XX:PretenureSizeThreshold=2M
+public class Demo2 {
+    public static void main(String[] args) throws InterruptedException {
+        Set<byte[]> ss = new HashSet<>();
+        for(int i=1;i<=10;i++){
+            ss.add(new byte[1024*1024]);
+            ss.add(new byte[1024*1024*3]);
+        }
+    }
+}
+```
+
+## 6.4  **长期存活的对象将进入老年代**
+
+​		HotSpot虚拟机中多数收集器都采用了分代收集来管理堆内存，那内存回收时就必须能决策哪些存活对象应当放在新生代，哪些存活对象放在老年代中。为做到这点，虚拟机给每个对象定义了一个对象年龄(Age) 计数器，对象通常在Eden区里诞生，如果经过第一次Minor GC后仍然存活，并且能被Survivor容纳的话，该对象会被移动到Survivor空间中，并且将其对象年龄设为1岁。对象在Survivor区中每熬过一次Minor GC，年龄就增加1岁，当它的年龄增加到一定程度(默认为15)，就会被晋升到老年代中。对象晋升老年代的年龄阈值，可以通过参数-XX:MaxTenuringThreshold设置。
+
+```java
+//-Xms1024M -Xmx1024M -Xmn512M -XX:SurvivorRatio=8 -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+UseConcMarkSweepGC -XX:+PrintTenuringDistribution -XX:MaxTenuringThreshold=15和1对比一下：
+public class Demo2 {
+    public static void main(String[] args) throws InterruptedException {
+        Set<byte[]> ss = new HashSet<>();
+        for(int i=1;i<=140*1024;i++){
+            byte[] bb = new byte[1024*1024];
+            bb = null;
+            ss.add(new byte[1024]);
+        }
+    }
+}
+```
+
+**这里还有一个经典问题："premature promotion"(过早提升)**
+
+```java
+//-Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8 -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+UseConcMarkSweepGC -XX:+PrintTenuringDistribution -XX:MaxTenuringThreshold=15
+public class Demo2 {
+    public static void main(String[] args) throws InterruptedException {
+        Set<byte[]> ss = new HashSet<>();
+        for(int i=1;i<=140*1024;i++){
+            ss.add(new byte[1024]);
+        }
+    }
+}
+```
+
+​		因为 Survivor 空间不足，那么从 Eden 存活下来的和原来在 Survivor 空间中不够老的对象占满 Survivor 后， 就会提升到老年代， "premature promotion” 在短期看来不会有问题， 但是经常性的"premature promotion”，最终会导致大量短期对象被提升到老年代， 最终导致老年代空间不足，引发另一个 JVM 内存问题 “promotion failure”（提升失败： 即老年代空间不足以容纳 Minor GC 中提升上来的对象）。 “promotion failure” 发生就会让 JVM 进行一次 CMS 垃圾收集进而腾出空间接受新生代提升上来的对象， CMS 垃圾收集时间比 Minor GC 长， 导致吞吐量下降、 时延上升， 将对用户体验造成影响。
+
+​		**对于上述的新生代问题， 如果服务器内存足够用， 建议是直接增大新生代空间(如 -Xmn)。如果内存不够用， 则增加 Survivor 空间， 减少 Eden 空间， 但是注意减少 Eden 空间会增加 Minor GC 频率， 要考虑到应用对延迟和吞吐量的指标最终是否符合。**
+
+## 6.5 **动态对象年龄判定**
+
+​		为了能更好地适应不同程序的内存状况，HotSpot虚拟机并不是永远要求对象的年龄必须达到
+-XX: MaxTenuringThreshold才能晋升老年代，如果**在Survivor空间中相同年龄所有对象大小的总和大于Survivor空间的一半**，年龄大于或等于该年龄的对象就可以直接进入老年代，无须等到
+-XX: MaxTenuringThreshold中要求的年龄。
+
+```java
+//-Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8 -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+UseConcMarkSweepGC -XX:+PrintTenuringDistribution -XX:MaxTenuringThreshold=15
+public class Demo2 {
+    public static void main(String[] args) throws InterruptedException {
+        Set<byte[]> ss = new HashSet<>();
+        for(int i=1;i<=4*1024;i++){
+            byte[] bb = new byte[1024*1024];
+            bb = null;
+            ss.add(new byte[1024]);
+        }
+    }
+}
+```
 
