@@ -64,6 +64,8 @@
   printf("%s",line);
   ```
 
+# 输入一行
+
 - **cin.getline(char buf[], int bufSize);** 读入一行（行长度不超过bufSize-1）或bufSize-1个字符到buf, 自动添加'\0' 回车换行符不会写入buf,但是会从输入流中去掉
 
   ```c++
@@ -85,13 +87,16 @@
 - T * p ; 
   - 通过表达式 * p，可以读写从地址p开始的 sizeof(T)个字节
   - *p 等价于存放在地址p处的一个 T 类型的变量
+  
 - 指针运算
   - 两个T * 类型的指针 p1和p2
     p1 – p2 = ( 地址p1 – 地址 p2 ) / sizeof(T)
   - p++, ++p : p指向 n + sizeof(T) p--, --p : p指向 n - sizeof(T)
   - p[n] 等价于 *(p+n)
+  
 - 可以用“NULL”关键字对任何类型的指针进行赋值。NULL实际上 就是整数0,值为NULL的指针就是空指针：
   int * pn = NULL; char * pc = NULL; int * p2 = 0;
+  
 - 作为函数形参时， T *p 和 T p[ ] 等价
 
 # 字符串操作
