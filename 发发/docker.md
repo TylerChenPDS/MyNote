@@ -456,3 +456,528 @@ worker容器启动后，使用tar cvf /backup/backup.tar  /dbdata 命令将/bdat
 $ docker run --volumes-from dbdata -v $(pwd):/backup  centos:7  tar xvf  /backup/backup.tar -C /
 ```
 
+# 5 端口映射与容器互联
+
+Docker提供的**两个很方便的功能，能满足服务访问的基本需求:**
+
+- 一个是允许映射容器内应用的服务端口到本地宿主主机;
+- 另一个是互联机制实现多个容器间便捷互访，多个容器中应用进行快速交互。
+
+## 5.1 **从外部访问容器**
+
+```shell
+docker run -d -p 8081:8080 tomcat:8.0.52
+```
+
+**小p后面跟着： 宿主机端口号：容器里的应用使用的端口号**
+
+```shell
+docker run -d -P tomcat:8.0.52
+```
+
+​     **//大P表示： 宿主机端口号取随机：容器里的应用使用的端口号**
+
+```shell
+docker run -d -p 8084:8080 -p 8082:8080  tomcat:8.0.52
+```
+
+**可以设置多组小p，映射多对端口号**
+
+```shell
+docker port 346cf7a666b5
+//或者
+docker ps
+```
+
+**查看端口配置**
+
+```shell
+docker inspect 346cf7a666b5
+```
+
+**创建出来的容器是有自己的内部网络和IP地址，使用docker [container] inspect + 容器ID可以获取容器的具体信息。**
+
+## 5.2 **容器互联**
+
+​		容器的互联(linking)是一种让**多个容器中的应用进行快速交互的方式。**它会在两个互联的容器之间创建连接关系，不用通过把端口映射到宿主机，通过宿主机作为桥梁来进行交互。
+
+**使用--link参数可以让容器之间安全地进行交互。**
+
+```shell
+docker run --name db  -e MYSQL_ROOT_PASSWORD=admin  -d mysql:5.7 
+docker run -d -p 80:8080 --name web --link db:dbbm  tomcat:8.0.52
+```
+
+**此时，db容器和web容器建立互联关系。  --link 参数的格式为--link name:alias，其中name是要链接的容器的名称，alias是别名。**
+
+**cat /etc/hosts** //查看是否建立成功
+
+![](./img/34.png)
+
+
+
+# 6 Dockerfile
+
+## 6.1 基础知识
+
+**我们可以使用Dockerfile来快速创建自定义的镜像。**
+
+**命指令句有分为:**
+
+- 配置指令
+- 操作指令
+
+**指令语句的基础知识：**
+
+1：每条保留字指令都必须为大写字母且后面要跟随至少一个参数
+
+2：指令按照从上到下，顺序执行
+
+3：#表示注释
+
+4：每条指令的执行都会创建一个新的镜像层
+
+**Dockerfile来创建镜像的过程：**
+
+- **新建一个目录/root/dockertest，作为我的上下文目录，一般情况下我们会默认放Dockerfile文件放这个目录**
+
+- **新建和编写Dockerfile文件**
+
+  FROM centos:7     //我们自己新建的镜像，一般都是在一个基础镜像上面，加工改进而来的。
+
+  VOLUME ["/votest1","/votest2"]     //创建数据卷。
+
+  CMD ["/bin/bash"]    //镜像被docker run命令创建并启动起来后，默认执行的第一条命令。
+
+- **用docker build命令创建新镜像放到本地镜像仓库**
+
+  ```shell
+  docker build  -t  builder/firstimage:1.0 .
+  ```
+
+  -t  builder/firstimage:1.0：指定了最终生成的镜像的名称
+
+  该命令将读取宿主机上指定的上下文路径下(包括子目录)的Dockerfile，默认情况下， Dockerfile放在上下文目录里，
+
+  **注意后面还有个点儿，表示将当前目录作为Dcoker构建镜像的上下文的目录，**
+
+- **刚刚通过Dockerfile新建的新的镜像，就可以run起来**
+
+  docker run -it  builder/firstimage:1.0
+
+## 6.2 配置指令
+
+![](./img/35.png)
+
+### 6.2.1 **ARG和FROM**
+
+**ARG**定义创建镜像过程中使用的变量。
+
+格式为ARG < name> [ =default value]。
+
+在执行docker build命令时， 可以通过**--build-arg <参数名>=<值>**来**覆盖**Dockerfile 中定义的变量值，${变量名}来取值。当镜像编译成功后，ARG指定的变量将不再存在。
+
+**FROM**指定所创建镜像的基础镜像。
+
+```
+FROM <image> [AS <name>] 或 FROM < image>:<tag> [AS <name>] 
+```
+
+例子：
+
+```dockerfile
+ARG VERSION=6
+FROM centos:${VERSION}
+```
+
+```shell
+docker build --build-arg VERSION=7  -t  builder/firstimage:1.0 .
+```
+
+### 6.2.2 **LABEL**
+
+LABEL指令可以为生成的镜像添加元数据标签信息。
+
+```dockerfile
+LABEL <key>=<value> <key>=<value> <key>=<value>
+
+#such as:
+LABEL version="1.0.0"
+LABEL author="发发编程"  date="2020-06-22"
+LABEL description="Message ..... "
+```
+
+这些信息可以用来辅助过滤出特定镜像
+
+```shell
+docker images --filter "label=author=发发编程"
+```
+
+**注意：**
+
+**1、等式中等号两边不能有空格**
+
+**2、每一个LABEL指令都会生成一个镜像层，在实践中，最好把多个标签合并成一个LABEL指令。**
+
+### 6.2.3 **EXPOSE** 
+
+功能为暴漏容器运行时的监听端口给外部。
+
+```dockerfile
+EXPOSE  <port>  [<port>/<protocol>...]
+
+# 例如
+EXPOSE 22 80 8443
+```
+
+### 6.2.4 **ENV**
+
+指定环境变量，在镜像生成过程中会被后续RUN指令使用，并且通过镜像启动的容器中也会存在。
+
+```dockerfile
+ENV <key> <value> 或ENV <key>=<value> 
+
+##例如
+ENV APP_VERSION=1.0.0
+ENV APP_HOME=/usr/local/app
+ENV PATH $PATH:/usr/local/bin11    
+```
+
+指令指定的环境变量在**运行时**可以被覆盖掉，如**docker run --env  =  built_image**，和前面的ARG相似。
+
+**注意：**当一条ENV指令中同时为多个环境变量赋值并且值也是从环境变量读取时，**会为变量都赋值后再更新**。
+
+如下面的指令:
+
+ENV key1=value2
+
+ENV key1=value1  key2=${key1}
+
+**最终结果为key1=value1  key2=value2**
+
+### 6.2.5 **ENTRYPOINT** 
+
+Dockerfile中有ENTRYPOINT ["tail","-f","/usr/local/aaa"]这句，那么你启动的时候镜像就执行了这个里面的内容。在启动容器的时候提供 **--entrypoint** 选项，会覆盖**Dockerfile中有ENTRYPOINT**。
+
+**ENTRYPOINT和CMD一般情况下是结合起来用：**
+
+```dockerfile
+FROM  centos
+ENTRYPOINT ["/bin/ls"]
+CMD ["-l", "/tmp"]  
+```
+
+相当于：
+
+```shell
+docker run --entrypoint=/bin/ls centos:7 -l /tmp       
+```
+
+当指定了 ENTRYPOINT 后，CMD 的含义就发生了改变，不再是直接的运行其命令，而是将 CMD 的内容作为参数传给 ENTRYPOINT 指令，换句话说实际执行时，将变为：< ENTRYPOINT> "< CMD>"
+
+**和CMD一样，每个Dockerfile中只能有一个ENTRYPOINT，当指定多个时，只有最后一个起效。**
+
+### 6.2.6 **VOLUME**
+
+创建一个数据卷挂载点。
+
+格式为VOLUME ["/data"] 。
+
+运行容器时可以从本地主机或其他容器**挂载数据卷**，一般用来存放数据库和需要持久保持的数据等。
+
+### 6.2.7 **WORKDIR**
+
+指定工作目录
+
+格式为 WORKDIR < 工作目录路径>
+
+使用 WORKDIR 指令可以来指定工作目录（或者称为当前目录），后面的指令工作的当前目录就是这个指定的目录，如该目录不存在，WORKDIR 会帮你建立目录。
+
+**还有一个作用，我们docker run 启动容器后，默认所在的目录，也会是这个指定的目录。**
+
+### 6.2.8 **USER**
+
+指定当前用户
+
+USER 指令是改变环境状态并影响以后的层。USER 改变之后层的执行 RUN, CMD 以及 ENTRYPOINT 这类命令的身份。USER 只是帮助你切换到指定用户而已，这个用户必须是事先建立好的，否则无法切换
+
+![](./img/36.png)
+
+实战中，建立 redis 用户后，我们推荐使用 gosu 来切换另一个用户
+
+```dockerfile
+RUN groupadd -r redis && useradd -r -g redis redis \
+	wget -O /usr/local/bin/gosu \ "https://github.com/tianon/gosu/releases/download/1.7/gosu-amd64" \
+	 && chmod +x /usr/local/bin/gosu \
+	 && gosu nobody true
+CMD [ "exec", "gosu", "redis", "redis-server" ]
+```
+
+### 6.2.9 **ONBUILD**
+
+​		ONBUILD 是一个特殊的指令，它后面跟的是其它指令，比如 RUN, COPY 等，而这些指令，在当前镜像构建时并不会被执行。只有当以当前镜像为基础镜像，去构建下一级镜像的时候才会被执行。Dockerfile 中的其它指令都是为了定制当前镜像而准备的，唯有 ONBUILD 是为了帮助别人定制镜像而准备的。
+
+**1、先编写一个Dockerfile文件，内容如下：**
+
+```dockerfile
+FROM centos:7
+LABEL author="发发编程"
+ONBUILD RUN mkdir /mydir
+```
+
+利用上面的dockerfile文件构建镜像： docker build -t imagea .
+
+利用imagea镜像创建容器： docker run --name test1 -it imagea /bin/bash
+
+我们发现test1容器的根目录下并没有mydir目录。说明ONBUILD指令指定的指令并不会在自己的构建中执行。
+
+**2, 再编写一个新的Dockerfile文件，内容如下**
+
+```dockerfile
+FROM imagea
+LABEL author="发发编程111"
+```
+
+注意，该构建准备使用的基础镜像是上面构造出的镜像imagea
+
+利用上面的dockerfile文件构建镜像： docker build -t imageb
+
+利用imagea镜像创建容器： docker run --name test2 -it imageb /bin/bash
+
+我们发现test2容器的根目录下有mydir目录，说明**ONBUILD**触发器执行了。 
+
+**注意：**什么时候执行的ONBUILD指令指定的指令，**FROM指令执行之后。**
+
+### 6.2.10 **STOPSIGNAL**
+
+​		这个指令和执行docker stop有相关性，执行docker stop时，docker会首先向容器内的当前主程序发送一个SIGTERM信号，用于容器内程序的退出。容器在收到SIGTERM后不会马上退出， 那么stop命令会在等待一段时间（默认是10s）后，再向容器发送SIGKILL信号，将容器杀死，变为退出状态。
+
+​	STOPSIGNAL允许我们覆盖发送到容器的默认信号值是SIGTERM，语法：STOPSIGNAL signals
+
+### 6.2.11 **HEALTHCHECK 健康检查**
+
+HEALTHCHECK 指令是告诉 Docker 应该如何进行判断容器的状态是否正常。
+
+通过HEALTHCHECK 指令，用来判断容器主进程的服务状态是否还正常，从而比较真实的反应容器实际状态。
+
+当在一个镜像指定了 HEALTHCHECK 指令后，用其启动容器，初始状态会为 starting，
+
+在 HEALTHCHECK 指令检查成功后变为 healthy，如果连续一定次数失败，则会变为 unhealthy。
+
+格式：
+
+- HEALTHCHECK  [选项]  CMD <命令>：设置检查容器健康状况的命令
+- HEALTHCHECK NONE：如果基础镜像有健康检查指令，使用这行可以屏蔽掉其健康检查指令
+
+HEALTHCHECK 支持下列选项：
+
+- --interval=<间隔>：两次健康检查的间隔，默认为 30 秒；
+- --timeout=<时长>：健康检查命令运行超时时间，如果超过这个时间，本次健康检查就被视为失败，默认 30 秒；
+- --retries=<次数>：当连续失败指定次数后，则将容器状态视为 unhealthy，默认 3 次。
+
+**注意：**
+
+和 CMD, ENTRYPOINT 一样，HEALTHCHECK 只可以出现一次，如果写了多个，只有最后一个生效。
+
+**命令的返回值决定了该次健康检查的成功与否：**0：成功；1：失败；2：保留，不要使用这个值。
+
+举例：
+
+```dockerfile
+FROM nginx:1.19.0
+RUN apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+HEALTHCHECK --interval=5s --timeout=3s CMD curl -fs http://localhost/ || exit 1
+```
+
+这里我们设置了每 5 秒检查一次（这里为了试验所以间隔非常短，实际应该相对较长），如果健康检查命令超过 3 秒没响应就视为失败，并且使用 curl -fs http://localhost/ || exit 1 作为健康检查命令。
+
+**curl 是常用的命令行工具，用来请求 Web 服务器。它的名字就是客户端（client）的 URL 工具的意思。**
+
+**-f参数将不输出错误信息。-s不输出内容。&&:用来执行条件成立后执行的命令 ||:用来执行条件不成立后的执行命令**
+
+```shell
+docker build -t myweb:v1 .
+docker run -d --name web -p 80:80 myweb:v1
+```
+
+## 6.3 操作指令	
+
+![](./img/37.png)
+
+### 6.3.1 RUN
+
+格式为RUN 或RUN["executable", "param1", "param2"]。 
+
+使用RUN 格式，默认使用的终端是/bin/sh -c;
+
+指定使用其他终端类型可以通过第二种方式实现，
+
+**例如：**
+
+```dockerfile
+RUN ["/bin/bash"，"-c","echo hello"] 
+```
+
+每条RUN指令将在当前镜像基础上执行指定命令，并提交为新的镜像层。
+
+当命令较长时可以使用**\**来换行。
+
+**例如:**
+
+```dockerfile
+RUN  apt-get install -y libsnappy-dev zliblg-dev libbz2-dev \
+&& rm -rf /var/cache/apt \
+&& rm -rf /var/lib/apt/lists/*
+```
+
+### 6.3.2 **CMD 容器启动命令**
+
+简单来理解CMD 相当于启动docker时候后面添加的参数。
+
+```shell
+docker run -it centos:7 /bin/bash
+docker run -it centos:7 cat /etc/os-release 
+```
+
+CMD 指令的格式：
+
+- shell 格式：CMD <命令>
+
+CMD echo "docker so easy"
+
+- exec 格式：CMD ["可执行文件", "参数1", "参数2"...]
+
+CMD ["echo","docker so easy"]
+
+- 参数列表格式：CMD ["参数1", "参数2"...]。在指定了 ENTRYPOINT 指令后，用 CMD 指定具体的参数。
+
+**shell格式和Exec格式区别：**
+
+- **Exec格式**指令会被解析为JSON数组，因此必须用双引号。
+
+- **Exec格式**使用exec执行，不会启动shell环境。
+
+如果使用 **shell 格式**的话，默认将在shell 终端中运行命令，实际的命令会被包装为 sh -c 的参数的形式进行执行。
+
+**比如：**
+
+CMD echo $HOME
+
+**在实际执行中，会将其变更为：**
+
+CMD [ "sh", "-c", "echo $HOME" ]
+
+这就是为什么我们可以使用环境变量的原因，因为这些环境变量会被 shell 进行解析处理。
+
+
+
+**进一步理解：**前面我们说了，可以把Docker当成极度精简后的虚拟机，
+
+**但是本质上Docker 不是虚拟机**，运行起来的容器本身就是一个进程。
+
+既然是进程，那么在启动容器的时候，需要指定所运行的程序及参数。
+
+CMD 指令就是用于指定默认的容器主进程的启动命令的。这也是为什么前面讲容器和容器里的应用是同生共死的关系。
+
+### 6.3.3 **COPY 复制文件**
+
+格式：
+
+- COPY <源路径>... <目标路径>
+- COPY ["<源路径1>",... "<目标路径>"]
+
+<源路径> （就是本地宿主机上的目录，构建镜像的那个上下文目录）中的文件/目录
+
+<目标路径> 可以是容器内的绝对路径，也可以是**相对于工作目录**的相对路径（工作目录是用 WORKDIR 指令来指定）。目标路径不需要事先创建，**如果目录不存在会在复制文件前先行创建缺失目录**。
+
+### 6.3.4  **ADD 更高级的复制文件**
+
+ADD 指令和 COPY 的格式和性质基本一致。但是在 COPY 基础上增加了一些功能。
+
+​		比如 <源路径> 可以是一个 URL，这种情况下，Docker 引擎会试图去下载这个链接的文件放到 <目标路径> 去。下载后的文件权限自动设置为 600，如果这并不是想要的权限，那么还需要增加额外的一层 RUN 进行权限调整，另外，如果下载的是个压缩包，需要解压缩，也一样还需要额外的一层 RUN 指令进行解压缩。所以不如直接使用 RUN 指令，然后使用 wget 或者 curl 工具下载，处理权限、解压缩、然后清理无用文件更合理。因此，这个功能其实并不实用，而且不推荐使用。
+
+​		如果 <源路径> 为一个宿主机上的 tar 压缩文件的话，压缩格式为 gzip, bzip2 以及 xz 的情况下，ADD 指令将会自动解压缩这个压缩文件到 <目标路径> 去。
+
+
+
+## 6.4 .dockerignore
+
+```dockerfile
+FROM centos:7
+COPY .   /abc
+CMD ["/bin/bash"]  
+```
+
+使用 Dockerfile 构建镜像时最好是将 Dockerfile 放置在一个新建的空目录下。
+
+然后将构建镜像所需要的文件添加到该目录中。
+
+不需要的文件就不要放进去，放进去的文件会被传送给容器。
+
+但是你硬要多放，为了提高构建镜像的效率，你可以在目录下新建一个 .dockerignore 文件来指定要忽略的文件和目录。
+
+![](./img/38.png)
+
+## 6.5 **多阶段构建**
+
+​		Docker 17.05版本以后，新增了Dockerfile多阶段构建。所谓多阶段构建，实际上是允许一个Dockerfile 中出现多个 FROM 指令。多个 FROM 指令并不是为了生成多根的层关系，最后生成的镜像，仍以最后一条 FROM 为准，之前的 FROM 会被抛弃，那么之前的FROM 又有什么意义呢？
+
+​		每一条 FROM 指令都是一个构建阶段，多条 FROM 就是多阶段构建，虽然最后生成的镜像只能是最后一个阶段的结果，但是，能够将前置阶段中的文件拷贝到后边的阶段中，说白了，把构建环境和运行环境分离，这就是多阶段构建的最大意义。
+
+​		之前没优化的做法，全部构建指令放入一个 Dockerfile在一个 Dockerfile 中，包括项目及其依赖库的编译、测试、打包等流程，这里可能会带来的一些问题：
+
+- Dockerfile 特别长，可维护性降低
+- 镜像层次多，镜像体积较大，部署时间变长
+- 源代码存在泄露的风险
+
+**以安装nginx为例**
+
+**1、未优化**
+
+```dockerfile
+FROM centos:7
+EXPOSE 80
+VOLUME ["/usr/local/nginx/html"]
+ADD  nginx-1.19.1.tar.gz /mnt
+RUN yum install -y gcc pcre-devel zlib-devel make
+WORKDIR /mnt/nginx-1.19.1
+RUN ./configure --prefix=/usr/local/nginx
+RUN make
+RUN make install
+CMD ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]
+
+# 创建镜像并查看镜像大小
+# docker build -t nginx:v1 .
+# docker images
+```
+
+**2、 清理中间缓存并尽量减少镜像层数**
+
+```dockerfile
+FROM centos:7
+EXPOSE 80
+VOLUME ["/usr/local/nginx/html"]
+ADD  nginx-1.19.1.tar.gz /mnt
+WORKDIR /mnt/nginx-1.19.1
+RUN yum install -y gcc pcre-devel zlib-devel make && yum clean all && ./configure --prefix=/usr/local/nginx && make && make install
+CMD ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]
+```
+
+**3、使用多阶段构建方法**
+
+我们需要的只不过是编译之后的软件包，那么我们就可以在一容器编译安装以后，将编译安装之后的安装包拷贝到另一个容器中，这样就减小了不需要的开销。并且将压缩包删除。
+
+```dockerfile
+FROM centos:7 as build   
+ADD  nginx-1.19.1.tar.gz /mnt
+WORKDIR /mnt/nginx-1.19.1
+RUN  yum install -y gcc pcre-devel zlib-devel make && yum clean all && ./configure --prefix=/usr/local/nginx && make && make install && rm -fr /mnt/nginx-1.19.1
+
+# 创建镜像，将编译好的文件直接拿过来用
+FROM centos:7   
+COPY --from=build  /usr/local/nginx /usr/local/nginx
+EXPOSE 80
+VOLUME ["/usr/local/nginx/html"]
+CMD ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]
+```
+
