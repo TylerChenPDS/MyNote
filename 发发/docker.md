@@ -981,3 +981,147 @@ VOLUME ["/usr/local/nginx/html"]
 CMD ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]
 ```
 
+# 实战
+
+## 构建 nginx
+
+1, 创建nginx.conf
+
+```
+worker_processes auto;
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+ 
+#pid        logs/nginx.pid;
+ 
+ 
+events {
+    worker_connections  1024;
+}
+ 
+ 
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+ 
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+ 
+    #access_log  logs/access.log  main;
+ 
+    sendfile        on;
+    #tcp_nopush     on;
+ 
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+ 
+    #gzip  on;
+ 
+    client_max_body_size   20m;
+    server {
+        listen       80;
+       # server_name  tylerchen;
+ 
+        #charset koi8-r;
+ 
+        #access_log  logs/host.access.log  main;
+     location / {
+        root   /usr/share/nginx/html;
+        index  dist/index.html dist/index.htm;
+        try_files $uri $uri/ /index.html;
+        }
+	location /api/ {
+            proxy_pass http://101.132.103.184:9999/;
+	    proxy_redirect off;
+	    proxy_cookie_path / /api/;
+        }
+        #error_page  404              /404.html;
+ 
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+ 
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+ 
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+        #    root           html;
+        #    fastcgi_pass   127.0.0.1:9000;
+        #    fastcgi_index  index.php;
+        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        #    include        fastcgi_params;
+        #}
+ 
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+ 
+ 
+    # another virtual host using mix of IP-, name-, and port-based configuration
+    #
+    #server {
+    #    listen       8000;
+    #    listen       somename:8080;
+    #    server_name  somename  alias  another.alias;
+ 
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+}
+
+```
+
+2, 创建Dockerfile
+
+创建数据卷目录app，和Dockerfile存放目录
+
+```shell
+mkdir -p /root/dockerfiles/nginx-test/app
+cd /root/dockerfiles/nginx-test
+vim Dockerfile
+#将需要展示的html等文件放到 /root/dockerfiles/nginx-test/app下面
+cp -r dist/* app
+```
+
+dockerfile文件配置如下：
+
+```dockerfile
+ARG VERSION=latest
+FROM nginx:${VERSION}
+MAINTAINER tylerchen
+COPY ./app  /usr/share/nginx/html/
+COPY ./nginx.conf /etc/nginx/nginx.conf
+RUN echo 'echo init ok!!'
+```
+
+```shell
+docker build --build-arg VERSION=1.19.1 -t mynginx:1.0.0 . 
+```
+
+```shell
+docker run --name mynginx -p 80:80 -v /root/dockerfiles/nginx-test/app:/usr/share/nginx/html -d mynginx:1.0.0
+```
+
+## 安装mysql5.7
+
+```shell
+docker search mysql:5.7
+docker run -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 --name mysql mysql:5.7
+```
+
