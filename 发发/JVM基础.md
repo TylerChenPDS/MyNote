@@ -1336,3 +1336,220 @@ public class Demo2 {
 }
 ```
 
+# 7  工具
+
+## 7.1 jps
+
+​		jps (JVM Process Status Tool)：**可以列出正在运行的虚拟机进程，并显示虚拟机执行主类(main()函数所在的类)名称，以及这些进程的本地虚拟机唯一ID (LVMID，Local Virtual Machine Identifier)。**虽然功能比较单一，但它绝对是使用频率最高的JDK命令行工具，因为其他的JDK工具大多需要输入它查询到的LVMID从而确定要监控的是哪一个虚拟机进程。
+
+**主要参数**
+
+![](./img/39.png)
+
+## 7.2 jstat
+
+​		jstat (JVM Statistics Monitoring Tool)是用于监视，**查看虚拟机各种运行状态信息的命令行工具**。它可以显示本地或者远程虚拟机进程中的**类加载、内存、垃圾收集、即时编译**等运行时数据，在没有GUI图形界面、只提供了纯文本控制台环境的服务器上，它将是运行期定位虚拟机性能问题的常用工具。
+
+​		**jstat命令格式为:**  **jstat  [option vmid [interval [s|ms] [count] ]**
+
+​		**参数interval和count代表查询间隔和次数**，
+
+如果省略这2个参数，说明只查询一次。假设需要每250毫秒查询一次进程2764垃圾收集状况，一共查询20次， 那命令应当是:
+		jstat -gc 2764 250 20
+
+​		**选项option代表用户希望查询的虚拟机信息，主要分为三类:** 类加载、垃圾收集、运行期编译状况。
+
+![](./img/40.png)
+
+例如：
+
+![](./img/41.png)
+
+**(E， 表示Eden)**使用了84.05%的空间，2个Survivor区**(S0、 S1， 表示Survivor0、Survivor1)**里面都是空的，老年代**(O,表示Old)**和元空间**(M，表示Metaspace)**则分别使用了0%和17.20%的空间。
+
+程序运行以来共发生Minor GC **(YGC，表示Young GC)** 0次， 总耗时0.0秒;发生Full GC **(FGC，表示Full GC)** 0次，总耗时**(FGCT， 表示Full GC Time)**为0.0秒; 所有GC总耗时**(GCT，表示GC Time)**为0.577秒。
+
+​		**CCS: Compressed class space** 压缩类空间利用率为百分比。在Java8以前，有一个选项是UseCompressedOops。所谓OOPS是指“ordinary object pointers“，就是原始指针。Java Runtime可以用这个指针直接访问指针对应的内存，做相应的操作（比如发起GC时做copy and sweep）。
+
+​		64bit的JVM出现后，OOPS的尺寸也变成了64bit，比之前的大了一倍。这会引入性能损耗，因为指针占据的内存double了，并且同尺寸的CPU Cache要少存一倍的OOPS。于是就有了UseCompressedOops这个选项。打开后，OOPS变成了32bit。32bit指针(内存地址)可以有2的32次方个组合，每个地址对应8K，所以能引用的空间是32GB，这远大于目前经常给jvm进程内存分配的空间。
+
+​		从JDK6_u23开始UseCompressedOops被默认打开了。因此既能享受64bit带来的好处，又避免了64bit带来的性能损耗。当然，如果你有机会使用超过32G的堆内存，记得把这个选项关了。
+
+​		到了Java8，永久代被干掉了，有了“meta space”的概念，存储jvm中的元数据，包括byte code，class等信息。Java8在UseCompressedOops之外，额外增加了一个新选项叫做UseCompressedClassPointer。这个选项打开后，class信息中的指针也用32bit的Compressed版本。而这些指针指向的空间被称作**“Compressed Class Space”**。可以通过“-XX:CompressedClassSpaceSize=size”调整。如果你的java程序引用了太多的包，有可能会造成这个空间不够用，于是会看到java.lang.OutOfMemoryError: Compressed class space这时，一般调大CompreseedClassSpaceSize就可以了。
+
+## 7.3  **jinfo: Java配置信息工具**
+
+​		jinfo (Configuration Info for Java)的作用是实时查看和调整虚拟机各项参数。使用**jps命令的  -v参数**可以查看虚拟机启动时显式指定的参数列表，但如果想知道未被显式指定的参数的系统默认值，除了去找资料外，就只能使用jinfo的flag选项进行查询了，如果只限于JDK6或以上版本的话，使用 java -XX:+PrintFlagsFinal查看参数默认值也是一个很好的选择。
+
+​		**jinfo命令格式:**  **jinfo [option]  pid**
+
+## 7.4  **jmap: Java内存映像工具**
+
+jmap (Memory Map for Java)命令用于生成堆转储快照(一般称为heapdump或dump文件)。如果不使用jmap命令，要想获取Java堆转储快照也还有一些比较"暴力”的手段:  譬如在用-XX: +HeapDumpOnOutOfMemoryError参数， 可以让虚拟机在内存溢出异常出现之后自动生成堆转储快照文件，通过-XX:+HeapDumpOnCtrlBreak参数则可以使用[Ctrl]+[Break]键让虚拟机生成堆转储快照文件，又或者在Linux系统下通过kill -3 pid命令发送进程退出信号“恐吓”一下虚拟机，也能顺利拿到堆转储快照。上面这些生成的dump文件保存位置：-XX:HeapDumpPath=c:\heapdump2.dump
+
+jmap的作用并不仅仅是为了获取堆转储快照，它还可以查询finalize执行队列、Java堆和方法区的详细信息，如空间使用率、当前用的是哪种收集器等。
+
+**jmap命令格式:**
+
+jmap [option] vmid
+
+![](./img/42.png)
+
+**命令例子：**
+
+jmap -dump:format=b,file=eclipse.bin  3500
+
+## 7.5  **jstack: Java堆栈跟踪工具**
+
+​		jstack (Stack Trace for Java)命令用于生成虚拟机当前时刻的线程快照(一般称为threaddump或者javacore文件) 。线程快照就是当前虚拟机内每一条线程正在执行的方法堆栈的集合，生成线程快照的目的通常是定位线程出现长时间停顿的原因，如线程间死锁、死循环、请求外部资源导致的长时间挂起等，都是导致线程长时间停顿的常见原因。线程出现停顿时通过jstack来查看各个线程的调用堆栈，就可以获知没有响应的线程到底在后台做些什么事情，或者等待着什么资源。
+
+​		**jstack命令格式:**
+
+​		jstack  [option] vmid
+
+![](./img/43.png)
+
+
+
+## 7.6 **jcmd**
+
+在JDK 1.7之后，新增了一个命令行工具jcmd。它是一个多功能工具，可以用来导出堆，查看java进程，导出线程信息，执行GC等。
+
+**命令格式**  
+
+```
+  jcmd <pid | main class> <command ... | PerfCounter.print | -f  file>
+  jcmd -l
+  jcmd -h
+```
+
+**描述**
+
+- **pid：**接收诊断命令请求的进程ID。
+- **main class ：**接收诊断命令请求的进程的main类。
+- **command：**对应的应用程序支持的jcmd的诊断命令，可以用**jcmd pid help查看**。
+- **Perfcounter.print：**打印目标Java进程上可用的性能计数器。性能计数器的列表可能会随着Java进程的不同而产生变化。
+- **-f file：**从文件file中读取命令，然后在目标Java进程上调用这些命令。在file中，每个命令必须写在单独的一行。以"#"开头的行会被忽略。当所有行的命令被调用完毕后，或者读取到含有stop关键字的命令，将会终止对file的处理。
+- **-l：**查看所有的进程列表信息。
+- **-h：**查看帮助信息。（同 -help）
+
+用法：
+
+```java
+//查看当前机器上所有的 jvm 进程信息. jcmd , jcmd -l , jps 这三个命令的效果是一样的
+jcmd -l
+    
+//查看 JVM 的启动时长：
+jcmd PID VM.uptime
+    
+//查看系统中类统计信息 
+jcmd PID GC.class_histogram
+
+//查看线程堆栈信息。该命令同 jstack 命令。
+jcmd PID Thread.print
+
+//创建 JVM 的Heap Dump
+jcmd PID GC.heap_dump FILE_NAME
+jcmd 10576 GC.heap_dump  d:\dump.hprof
+
+
+//查看 JVM 的属性信息
+jcmd PID VM.system_properties
+
+//查看 JVM 的启动参数
+jcmd PID VM.flags
+
+//查看 JVM 的启动命令行
+jcmd PID VM.command_line
+
+ //对 JVM 执行 java.lang.System.runFinalization()
+ jcmd PID GC.run_finalization
+ 
+// 对 JVM 执行 java.lang.System.gc()
+ jcmd PID GC.run
+ 
+ //查看 JVM 性能相关的参数
+ jcmd PID PerfCounter.print
+ 
+ //查看目标jvm进程的版本信息
+  jcmd PID VM.version
+```
+
+## 7.7 **VisualVM**
+
+​		一般情况下，VisualVM是要安装插件的，不安装插件就像操作系统不安装应用软件一样，无法发挥VisualVM 的强大功能。VisualVM的插件可以手工进行安装，在网站https://visualvm.github.io/pluginscenters.html上下载nbm包后,"工具->插件->已下载”菜单，然后在弹出对话框中指定nbm包路径便可完成安装。独立安装的插件存储在VisualVM的根目录，譬如JDK9之前自带的VisulalVM，插件安装后是放在JDK_HOME/ib/visualvm中的。手工安装插件并不常用，VisualVM的自动安装功能已可找到大多数所需的插件，在有网络连接的环境下，点击"工具->插件菜单”，选中插件后安装就好了！
+
+### 7.7.1 **生成、浏览堆转储快照**
+
+在VisualVM中生成堆转储快照文件有两种方式，可以执行下列任一操作:
+
+在“应用程序”窗口中右键单击应用程序节点，然后选择"堆Dump"
+
+在“应用程序”窗口中双击应用程序节点以打开应用程序标签,然后在“监视”标签中单击"堆Dump"。
+
+生成堆转储快照文件之后，应用程序预签会在该堆的应用程序下增加一个以[heap-dump]开头的子节点，
+
+![](./img/44.png)
+
+### 7.7.2**BTrace动态日志跟踪**
+
+​		BTrace是一 个很神奇的VisualVM插件， 它本身也是一个可运行的独立程序。BTrace的作用是在不中断目标程序运行的前提下，通过HotSpot虚拟机的Instrument功能动态加入原本并不存在的调试代码。这项功能对实际生产中的程序很有意义:如当程序出现问题时，排查错误的一些必要信息时(譬如方法参数、返回值等)，在开发时并没有打印到日志之中以侄于不得不停掉服务时，都可以通过调试来加入日志代码以解决问题。在VisualVM中安装了BTrace插件后，在应用程序面板中右击要调试的程序，会出现"Trace Applicatino..." 菜单，点击将进入BTrace面板。这个面板看起来就像一个简单的Java程序开发环境，里面甚至已经有了一小段Java代码。
+
+```java
+public class Demo7 {
+    public int add(int a, int b) {
+        return a + b;
+    }
+
+    public static void main(String[] args) throws IOException {
+        Demo5 test = new Demo5();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        for (int i = 0; i < 10; i++) {
+            System.out.println("卡主，等待输入：");
+            reader.readLine();
+            int a = (in t) Math.round(Math.random() * 1000);
+            int b = (int) Math.round(Math.random() * 1000);
+            System.out.println(test.add(a, b));
+        }
+    }
+}
+```
+
+假设这段程序已经上线运行，而我们现在又有了新的需求，想要知道程序中生成的两个随机数是什么，但程序并没有在执行过程中输出这一点。此时，在VisualVM中打开该程序的监视，在BTrace页签填充TracingScript的内容，
+
+![](./img/45.png)
+
+输入调试代码，
+
+```java
+/* BTrace Script Template */
+import com.sun.btrace.annotations.*;
+import static com.sun.btrace.BTraceUtils.*;
+
+@BTrace
+public class TracingScript {
+//Btrace使用@OnMethod注解定义需要分析的方法入口，
+//在@OnMethod注解中，需要指定class、method以及location等，class表明需要监控的类，method表明需要监控的方法
+    @OnMethod(
+            clazz="org.example.oom.Demo7",
+            method="add",
+//定义Btrace对方法的拦截位置，通过@Location注解指定，默认为Kind.ENTRY。
+//可以为同一个函数的不同的Location，分别定义多个拦截函数。
+//Kind.ENTRY：在进入方法时，调用Btrace脚本
+//Kind.RETURN：方法执行完时，调用Btrace脚本，只有把拦截位置定义为Kind.RETURN，才能获取方法的返回结果
+            location=@Location(Kind.RETURN)
+    )
+
+    public static void func(@Self org.example.oom.Demo7 instance,int a,int b,@Return int result) {
+        println("调用堆栈:");
+        jstack();
+        println(strcat("方法参数A:",str(a)));
+        println(strcat("方法参数B:",str(b)));
+        println(strcat("方法结果:",str(result)));
+        
+    }
+}
+```
+
+BTrace的用途很广泛，打印调用堆栈、参数、返回值只是它最基础的使用形式，在它的网站上有使用BTrace进行性能监视、定位连接泄漏、内存泄漏、解决多线程竞争问题等的使用案例，具体的内容可以看：https://github.com/btraceio/btrace，源码中有doc文档。BTrace能够实现动态修改程序行为，是因为它是基于Java虚拟机的Instrument开发的。Instrument 是Java虚拟机工具接口(JavaVirtual Machine Tool Interface, JVMTI) 的重要组件，提供了一套代理(Agent) 机制，使得第三方工具程序可以以代理的方式访问和修改Java虛拟机内部的数据。
+
