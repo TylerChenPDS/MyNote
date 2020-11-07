@@ -569,8 +569,8 @@ cat /proc/swaps
 
 ```shell
  #Linux dd命令用于读取、转换并输出数据。dd可从标准输入或文件中读取数据，根据指定的格式来转换数据，再输出到文件、设备或标准输出。
- #if=文件名：输入文件名，默认为标准输入。即指定源文件。of=文件名：输出文件名，默认为标准输出。即指定目的文件。bs=bytes：同时设置读入/输出的块大小为bytes个字节。count=blocks：仅拷贝blocks个块，块大小等于ibs指定的字节数。
- dd if=/dev/zero of=/swapfile bs=1024 count=1048576
+ #if=文件名：输入文件名，默认为标准输入。即指定源文件。of=文件名：输出文件名，默认为标准输出。即指定目的文件。bs=bytes：同时设置读入/输出的块大小为bytes个字节。count=blocks：仅拷贝blocks个块，块大小等于ibs指定的字节数。//2097152  2G  4194304 4G
+ dd if=/dev/zero of=/swapfile bs=1024 count=1048576  
 ```
 
 2, 	创建交换文件
@@ -802,6 +802,223 @@ yum localinstall *.rpm
 #将目录/root/abc及该目录所有文件压缩成abc.tar.bz2文件。
 [root@rhel ~]# tar jcvf abc.tar.bz2 /root/abc
 ```
+
+## 2.7 日常管理和维护
+
+### 2.7.1 进程管理
+
+#### 进程和程序的区别
+
+​		程序 只是一个静态的命令集合，不占系统的运行资源； 而进程是一个随时都可能发生变化的、动态的、 使用系统运行资源的程序。一个程序可以启动多个进程。
+
+#### 进程的特征
+
+- 动态性：进程的实质是程序在多道程序系统中的一次执行过程，进程是动态产生、动态消亡的。
+-  并发性：任何进程都可以同其它进程一起并发执行。
+- 独立性：进程是一个能独立运行的基本单位，同时也是**系统分配资源和调度的独立单位**。
+- 异步性：由于进程间的相互制约，使得进程具有执行的间 断性，即进程按各自独立的、不可预知的速度向前推进。
+- 结构特征：进程由**程序、数据和进程控制块**三部分组成。
+- 多个不同的进程可以包含相同的程序：一个程序在不同的 数据集里就构成不同的进程，能得到不同的结果；但是执 行过程中，程序不能发生改变。
+
+### 2.7.2 查看进程 
+
+#### ps
+
+​		使用该命令可以确定有哪些进 程正在运行以及进程运行的状态、进程是 否结束、进程有没有僵死，以及哪些进程 占用了过多的资源等。
+
+```shell
+#显示所有进程。
+[root@rhel ~]# ps –e
+
+#显示所有不带控制台终端的进程，并显示用户名和进程的起始时间。
+[root@rhel ~]# ps -aux
+
+#查看less进程是否在运行。
+[root@rhel ～]# ps -ax|grep less
+
+#显示用户名和进程的起始时间。
+[root@rhel ~]# ps -u
+#显示用户root的进程。
+[root@rhel ~]# ps -u root
+
+#显示tty1终端下的进程。
+[root@rhel ~]# ps -t tty1
+
+#显示进程号为1659的进程。
+[root@rhel ~]# ps -p 1659
+
+
+```
+
+#### top
+
+​		包括它们的内存和CPU使用量。执行top命令可以显示目 前正在系统中执行的进程，并通过它所提 供的互动式界面，用热键加以管理。要退 出top，按[q] 键即可。
+
+#### 杀死进程 kill
+
+​			要关闭某个应用程序可以通过杀死其进程的方式 实现，如果进程一时无法杀死，可以将其强制杀 死。使用kill命令可以杀死进程。在使用kill命令之 前，需要得到要被杀死的进程的PID（进程号）。 **用户可以使用ps命令获得进程的PID，然后用进 程的PID作为kill命令的参数。**
+
+ kill –9 1659
+
+强制杀死进程号为1659的进程。
+
+### 2.7.3 任务计划
+
+​		如果要在固定的时间上触发某个作业，就 需要创建任务计划，按时执行该作业，在 Linux系统中常用cron实现该功能。使用cron实现任务自动化可以通过**修改 /etc/crontab文件以及使用crontab**命令实 现，其结果是一样的。
+
+#### /etc/crontab文件详解
+
+- root用户通过修改/etc/crontab文件可以实现任务 计划，而普通用户却无法修改该文件。crond守 护进程可以在无需人工干预的情况下，根据时间 和日期的组合来调度执行重复任务。
+
+- /etc/crontab文件是cron的默认配置文件，前面3 行是用来配置cron任务运行环境的变量。Shell变 量的值告诉系统要使用哪个Shell环境（在这个例 子里是/bin/bash）。PATH变量定义用来执行命 令的路径。cron任务的输出被邮寄给MAILTO变 量定义的用户名。如果MAILTO变量被定义为空 白字符串，电子邮件就不会被寄出。
+
+- /etc/crontab文件中的每一行都代表一项任 务，它的格式如下：
+
+  minute hour day month dayofweek user-name commands
+
+  - minute  分钟，0～59之间的任何整数
+  - hour   小时，0～23之间的任何整数
+  - day     日期，从 1～31之间的任何整数（如果指定了月份，必须 是该月份的有效日期）
+  - month   月份，1～12之间的任何整数（或使用月份的英文简写 如jan、feb等）
+  - day of week   星期，0～7之间的任何整数，这里的0或7代表星期日 （或使用星期的英文简写如sun、mon等）
+  - user-name   执行命令的用户
+  - command    要执行的命令或者是自己编写的脚本
+
+  
+
+##### 时间格式
+
+| 时间格式 | 描述                                                         |
+| -------- | ------------------------------------------------------------ |
+| *        | 可以用来代表所有有效的值。如月份值中的星号意味着 在满足其它制约条件后**每月都执行该命令** |
+| \-       | 指定一个整数范围。比如1-4意味着整数1、2、3、4                |
+| ,        | 指定隔开的一系列值指定一个列表。比如3,4,6,8标明这 4个指定的整数 |
+| /        | 可以用来指定间隔频率。在范围后加上/ 意味着 在范围内可以跳过integer。如“0-59/2”可以用来在分钟字 段上定义时间间隔为两分钟。间隔频率值还可以和星号一 起使用，**如“*/3”的值可以用在月份字段中表示每3个月 运行一次任务** |
+
+##### /etc/crontab文件配置举例
+
+```shell
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+30 21* * * root /root/backup.sh
+//在每天晚上的21:30执行/root/backup.sh文件
+45 4 1,10,22 * * root /root/backup.sh
+//在每月1、10、22日的4:45执行/root/backup.sh文件
+20 1 * * 6,0 root /bin/find / -name core -exec rm {} \;
+//在每星期六、星期日的1:20执行一个find命令，查找相应的文件
+0,30 18-23 * * * root /root/backup.sh
+//在每天18:00～23:00之间每隔30分钟执行/root/backup.sh
+0 23 * * 6 root /root/backup.sh
+//在每星期六的23:00执行/root/backup.sh
+```
+
+##### /etc/cron.d目录
+
+- 除了通过修改/etc/crontab文件实现任务计 划之外，还可以在/etc/cron.d目录中创建文 件来实现。
+- 该目录中的所有文件和/etc/crontab文件使 用一样的配置语法。
+
+#### crontab命令简介
+
+- root以外的用户可以使用crontab命令配置cron任务。所有 用户定义的crontab都被保存在/var/spool/cron目录中，并使用创建它们的用户身份来执行。
+- 以某位用户身份创建一个crontab项目，登录为该用户， 然后输入crontab -e命令，使用由VISUAL或EDITOR环境变量指定的编辑器来编辑该用户的crontab。该文件使用 的格式和/etc/crontab相同。当对crontab所做的改变被保存后，该crontab文件会根据该用户名被保存在 /var/spool/cron/文件中。
+
+##### 创建crontab 
+
+​		创建新的crontab，然后提交给crond进程。 同时，新创建crontab的一个副本已经被放 在/var/spool/cron目录中，文件名就是用户 名。
+
+```shell
+#以普通账号zhangsan登录系统，创建用户crontab条目。
+[root@rhel ～]# su - zhangsan
+#以普通用户zhangsan登录系统
+[zhangsan@rhel ～]$ crontab -e
+#使用“crontab -e”命令打开vi编辑器,编辑用户zhangsan的crontab条目
+8 * * * * cp /home/zhangsan/aa /home/zhangsan/bb
+#在vi编辑器内输入以上crontab条目
+
+#切换为root用户登录
+[root@rhel ～]# cat /var/spool/cron/zhangsan
+8 * * * * cp /home/zhangsan/aa /home/zhangsan/bb
+#可以看到/var/spool/cron/zhangsan的内容就是刚才用“crontab -e”编辑的内容。记住：普通用户没有权限打开该文件
+
+```
+
+##### 编辑crontab 
+
+- 如果希望添加、删除或编辑 /var/spool/cron/zhangsan文件，可以使用vi编辑 器像编辑其它任何文件那样修改 /var/spool/cron/zhangsan文件并保存退出。如果 修改了某些条目或添加了新的条目，那么在保存 该文件时，crond会对其进行必要的完整性检查。 如果其中的某个地方出现了超出允许范围的值， 它会提示用户。
+- 最好在/var/spool/cron/zhangsan文件的每一个条 目之上加入一条注释，这样就可以知道它的功能、 运行时间，更为重要的是，知道这是哪位用户的 作业。
+
+##### 列出crontab 
+
+```shell
+#以root用户列出zhangsan的crontab。
+[root@rhel ~]# crontab -u zhangsan -l
+
+#以普通用户zhangsan列出自己的crontab。
+[zhangsan@rhel ~]$ crontab -l
+
+#对/var/spool/cron/zhangsan文件做备份。
+[zhangsan@rhel ~]$ crontab -l >/home/zhangsan/zhangsancron
+
+```
+
+##### 删除crontab 
+
+删除crontab时也会删除/var/spool/cron目 录中指定用户的文件。
+
+```shell
+#以用户root删除zhangsan的crontab。
+[root@rhel ~]# crontab –u zhangsan -r
+
+#以普通用户zhangsan删除自己的crontab。
+[zhangsan@rhel ~]$ crontab -r
+```
+
+##### 恢复丢失的crontab文件
+
+- 如果不小心误删除了crontab文件，且在主 目录下还有一个备份，那么可以将其复制 到/var/spool/cron/，其中 是用户名。
+
+- 如果由于权限问题无法完成复制，可以使 用以下命令，其中需要指定在用户主目录 中复制的副本文件名。
+
+- crontab [文件]
+
+```shell
+#以zhangsan用户登录恢复丢失的crontab文件。
+[zhangsan@rhel ~]$ crontab –r
+#删除crontab文件
+[zhangsan@rhel ~]$ crontab -l
+no crontab for zhangsan
+[zhangsan@rhel ~]$ crontab  /home/zhangsan/zhangsancron
+#恢复丢失的crontab文件
+[zhangsan@rhel ~]$ crontab -l
+8 * * * * cp /home/zhangsan/aa /home/zhangsan/bb
+#恢复以后可以看到丢失的crontab文件条目
+```
+
+### 2.7.4 Linux系统启动过程
+
+#### 1．BIOS自检 
+
+#### 2．启动GRUB 2 
+
+#### 3．加载内核 
+
+#### 4．执行systemd进程 
+
+- systemd进程是系统所有进程的起点，内核 在完成核内引导以后，即在本进程空间内 加载systemd程序。
+
+- systemd进程是所有进程的发起者和控制者。 因为在任何基于Linux的系统中，它都是第 一个运行的进程，所以systemd进程的编号 (PID)永远是1。
+- Systemd进程有以下两个作用：
+  - 扮演最终父进程的角色。因为systemd进程永远不会被 终止，所以系统总是可以确信它的存在，并在必要的时 候以它为参照。**如果某个进程在它衍生出来的全部子进 程结束之前被终止，就会出现必须以systemd为参照的 情况。此时那些失去了父进程的子进程就都会以 systemd作为它们的父进程**
+  - 在进入某个特定的服务启动集合，即是 /etc/systemd/system/default.target，它的这个作用是由 运行目标target定义的。
+
+#### 5．初始化系统环境 
+
+#### 6．执行/bin/login程序
+
+#### 
+
+
 
 
 
