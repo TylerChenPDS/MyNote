@@ -194,9 +194,17 @@ cat [选项] [文件]
 
 #### 3 sort
 
-sort [选项] [文件]
+sort [-fbMnrutk] [文件]
 
 ```shell
+-f： 忽略大小写的差异
+-b: 忽略最前面的空格字符部分
+-r: 反向排序
+-t: 分割符号，默认使用Tab键来分割
+-k: 以那个区间进行排序
+#/etc/passwd内容是：分割的我想以第三栏来排序
+cat /etc/passwd | sort -t ":" -k 3
+
 # 将文件textfile1数据排序，并显示在屏幕上。
 [root@rhel ~]# sort textfile1
 
@@ -209,9 +217,13 @@ sort [选项] [文件]
 
 将文件内的重复行数据从输出文件中删除， 只留下每条记录的惟一样本。
 
-uniq [选项] [文件] 
+uniq [-icdu] [文件] 
 
 ```shell
+-i : 忽略大小写字符的不同
+-c : 进行计数
+-u: 查看不重复的内容
+-d： 查看重复的内容
 # 查看文件file3中重复的数据内容。
 [root@rhel ~]# cat file3
 aaa
@@ -220,6 +232,10 @@ bbb
 [root@rhel ~]# uniq -d file3
 aaa //file3文件中重复行数据的内容为aaa
 
+uniq -c file3
+2 aaa
+1 bbb
+
 # 查看文件file3中不重复的数据内容。
 [root@rhel ~]# uniq -u file3
 bbb //file3文件中不重复行数据的内容为bbb
@@ -227,11 +243,18 @@ bbb //file3文件中不重复行数据的内容为bbb
 
 #### 5 grep
 
-查找文件内符合条件的字符串。
+https://www.runoob.com/linux/linux-comm-grep.html
 
-grep [选项] [查找模式] [文件名] 
+分析一行的信息，若当中有我们需要的信息，就将该行拿出来。
+
+grep [-acinv] ‘查找字符’ [文件名] 
 
 ```shell
+-i: 忽略大小写的不同
+-n: 顺便输出行号
+-v: 反向选择，选择没有查找字符的哪一行
+
+
 # 在文件kkk中搜索匹配字符“test file”。
 [root@rhel ~]# grep 'test file' kkk
 
@@ -246,6 +269,11 @@ grep [选项] [查找模式] [文件名]
 
 # 在/root/kkk文件中找出以le结尾的行内容。
 [root@rhel ~]# grep le$ /root/kkk 
+
+#-o 或 --only-matching : 只显示匹配PATTERN 部分。
+#-P 支持正则表达式
+#只输出w 文本中的数字部分
+grep -oP '\d+' w 
 
 ```
 
@@ -262,6 +290,207 @@ find [路径] [选项]
 #列出当前目录及其子目录下所有最近20天内更改过的文件。
 [root@rhel ~]# find . -ctime -20
 ```
+
+#### 7 tr
+
+Linux tr 命令用于转换或删除文件中的字符。tr 指令从标准输入设备读取数据，经过字符串转译后，将结果输出到标准输出设备。
+
+https://www.runoob.com/linux/linux-comm-tr.html
+
+```shell
+tr [OPTION] SET1[SET2] 
+-c, --complement：反选设定字符。也就是符合 SET1 的部份不做处理，不符合的剩余部份才进行转换
+-d, --delete：删除set1指令字符
+-s, --squeeze-repeats：缩减连续重复的字符成指定的单个字符
+-t, --truncate-set1：削减 SET1 指定范围，使之与 SET2 设定长度相等
+--help：显示程序用法信息
+--version：显示程序本身的版本信息
+
+#将文件testfile中的小写字母全部转换成大写字母，此时，可使用如下命令
+cat testfile |tr a-z A-Z 
+cat testfile |tr [:lower:] [:upper:] 
+
+#删除test中的数字
+cat test | tr -d 1-9
+cat test | tr -d [:digit:]
+#将连续的空格变成一个
+tr -s ' ' 
+
+
+
+```
+
+#### 8 awk
+
+https://www.runoob.com/linux/linux-comm-awk.html
+
+AWK 是一种处理文本文件的语言，是一个强大的文本分析工具，相较于sed常常作用于以整个行的处理，awk则比较倾向于一行当终分成数个字段来处理。因此awk相当适合小型文本的处理。
+
+```shell
+awk '条件类型1 {操作1} 条件类型2 {操作2} ...' {filenames}   # 行匹配语句 awk '' 只能用单引号
+awk 内置变量
+NF  	每一行拥有的字段数
+NR      当前awk处理的是第几行数据
+FS		目前的分割字符
+# 打印last -n 第一列数据，并表明处理到第几行，该行有多少列
+last -n 5| awk '{print $1 "\t lineIndex:"  NR "\t colums: " NF}'
+
+#打印 /etc/passwd 第三列小于10的数据，并仅列出该账号的第一、三个地段，以：分割
+cat /etc/passwd | awk '{FS=":"} $3<10 {print "%10s %5d" $1,$3}'
+
+# 每行按空格或TAB分割，输出文本中的1、4项
+awk '{print $1,$4}' log.txt
+
+awk -F  #-F相当于内置变量FS, 指定分割字符
+awk -F, '{print $1,$2}'   log.txt
+
+awk -v  # 设置变量
+awk -va=1 '{print $1,$1+a}' log.txt
+
+#过滤第一列大于2的行
+awk '$1>2' log.txt    #命令
+#过滤第一列等于2的行
+awk '$1==2 {print $1,$3}' log.txt    #命令
+
+
+awk -F',' '{for (i=NF; i>0; i--) {print $i}}' w
+#用，分割然后按行打印出来
+```
+
+```shell
+cat manifest.json | awk -F',' '{for (i=NF; i>0; i--) {print $i}}' | grep RepoTags | cut -d':' -f3 | sed 's/"]//g' | uniq
+
+# awk -F',' '{for (i=NF; i>0; i--) {print $i}}'    
+#   -F ',' 表示用, 作为分隔符，后面的循环表示将分割出来的变量从后往前按行输出，
+#   i = NF 是内建变量：表示一条记录的字段的数目
+# grep RepoTags
+#   过滤出含有RepoTag的行
+# cut -d':' -f3
+#	cut命令用于显示每行从开头算起 num1 到 num2 的文字。
+#   -d ：自定义分隔符，默认为制表符。
+#   -f ：与-d一起使用，指定显示哪个区域。
+#   这个的意思就是显示 每行以':' 分割，的第三个区域。例如： a:b:c 显示的就是c
+# sed 's/"]//g' 
+# 	将文本中的 "]替换成空字符串
+# uniq
+#    查看文本中重复的行，（一样的 只显示一行）
+# 
+# 最终结果 manager-7.0.1910a-final
+
+```
+
+#### 9 cut
+
+https://www.runoob.com/linux/linux-comm-cut.html
+
+ cut命令用于显示每行从开头算起 num1 到 num2 的文字。
+
+- -b ：以字节为单位进行分割。这些字节位置将忽略多字节字符边界，除非也指定了 -n 标志。
+- -c ：以字符为单位进行分割。
+- -d ：自定义分隔符，默认为制表符。
+- -f ：与-d一起使用，指定显示哪个区域。
+
+```shell
+who
+rocrocket :0           2009-01-08 11:07
+rocrocket pts/0        2009-01-08 11:23 (:0.0)
+rocrocket pts/1        2009-01-08 14:15 (:0.0)
+#如果我们想提取每一行的第3个字节，就这样：
+ who|cut -b 3
+c
+c
+# 这个的意思就是显示 每行以':' 分割，的第三个区域。例如： a:b:c:d 显示的就是c
+cut -d':' -f3 //a
+cut -d':' -f1,3 //a:c
+cut -d':' -f2- //b:c:d
+
+cut -d, --output-delimiter='=' -f1- w
+# w原本是 sadasd_sadas
+# 输出 sadasd=sadas
+```
+
+#### 10 sed
+
+https://www.runoob.com/linux/linux-comm-sed.html
+
+sed 可依照脚本的指令来处理、编辑文本文件。Sed 主要用来自动编辑一个或多个文件、简化对文件的反复操作、编写转换程序等。
+
+```shell
+sed [-hnVi] [操作] [文本文件]
+-i: 直接修改读取文件的内容，而不是由屏幕输出
+
+# 操作a,c,d,i,p,s
+
+#动作说明：
+#a ：新增， a 的后面可以接字串，而这些字串会在新的一行出现(目前的下一行)～
+#在testfile文件的第四行后添加一行，并将结果输出到标准输出，在命令行提示符下输入如下命令：
+sed -e 4a\newLine testfile 
+sed '4a newLine'
+
+#i : 插到某行之前
+sed '4i newline'
+可以新增的不止一行，但是每一行之间必须用\分开
+sed '4i newline\2newline'
+
+#c: 替换，将2-5整行替换成chen
+nl /etc/passwd | sed '2,5c chen'
+
+#删除，因为是删除啊，所以 d 后面通常不接任何咚咚；
+#/etc/passwd 的内容列出并且列印行号，同时，请将第 2~5 行删除！
+nl /etc/passwd | sed '2,5d'
+#要删除第 3 到最后一行
+nl /etc/passwd | sed '3,$d
+#只要删除第 2 行
+nl /etc/passwd | sed '2d' 
+
+#s ：部分取代，可以直接进行取代的工作哩！通常这个 s 的动作可以搭配正规表示法！
+# 将 w中的“]替换成空字符串
+sed 's/要被替换的字符/新的字符/g'
+sed 's/"]//g' w
+
+#-n或--quiet或--silent 仅显示script处理后的结果。
+#p ：打印，亦即将某个选择的数据印出。通常 p 会与参数 sed -n 一起运行～
+#仅列出 /etc/passwd 文件内的第 5-7 行
+nl /etc/passwd | sed -n '5,7p'
+
+# 将某个文件末尾的最后一个字符替换成 hhh
+sed -i 's/.$/hhhh/g' a.txt
+# 在文件每行末尾添加 aaa
+sed -i 's/$/aaa/g' a.txt
+```
+
+#### 11 basename 
+
+获取末尾的文件名或路径名
+
+```shell
+basename /root/a/test.sh .sh 
+输出 test.sh
+basename /root/a/test.sh 
+输出  test
+```
+
+#### 12 tee
+
+双向重定向
+
+```shell
+tee [-a] file
+-a : 以类加的方式将数据加到file中
+
+ll | tee a.txt| grep a  //将ll的结果送入文件a.txt 并送给grep进行过滤
+```
+
+#### 13 paste
+
+paste 将两个文件连起来，中间用 【tab】分割
+
+```shell
+paste [-d] file1 file2
+-d: 分割字符，默认是【tab】
+```
+
+
 
 ### 2.3.2 系统信息
 
@@ -773,6 +1002,8 @@ yum localinstall *.rpm
 #将打包文件abc.tar解包出来。
 #-x或--extract或--get 从备份文件中还原文件。
 [root@rhel ~]# tar xvf abc.tar
+# 只要manifest.json 这一份文件
+tar xf /etc/tos/conf/tos.tar.gz manifest.json
 
 #将文件/root/abc/d添加到abc.tar包里面去。
 #tar rvf abc.tar /root/abc/d
@@ -1016,9 +1247,87 @@ no crontab for zhangsan
 
 #### 6．执行/bin/login程序
 
-#### 
 
 
+# 补充（鸟哥）
+
+## 1，bash
+
+### 1 命令
+
+##### history 
+
+查看历史命令，这些命令保存在了 ~/.bash_history这个文件里面。
+
+##### read
+
+```shell
+read [-p] variable
+-p 后面根提示字符
+read -p "my_name:" myname
+```
+
+
+
+### 2 组合键
+
+| 组合键        | 作用                                      |
+| ------------- | ----------------------------------------- |
+| [ctrl] +u/ +k | 从光标向前删除命令串/从光标向后删除命令串 |
+| [ctrl] +a/ +e | 让光标移动到整个命令的最前面/最后面。     |
+|               |                                           |
+
+### 3 正则表达式
+
+#### 1 特殊符号
+
+| 特殊符号      | 含义                                  |
+| ------------- | ------------------------------------- |
+| **[:alnum:]** | 代表0-9，a-z,  A-Z                    |
+| **[:alpha:]** | 代表a-z,A-Z                           |
+| [:blank:]     | 代表空格键，和【tab】                 |
+| [:cntrl:]     | 代表键盘上控制键， CR、LF、TAB，Del等 |
+| [:graph::]    | 除了空格键（含tab）之外的其他键       |
+| **[:lower:]** | 代表小写字母a-z                       |
+| **[:upper:]** | 代表大写字母A-Z                       |
+| **[:space:]** | 代表任何会产生空白的字符，包括\n      |
+| [:digit:]     | 代表0-9                               |
+|               |                                       |
+|               |                                       |
+|               |                                       |
+|               |                                       |
+
+#### 2, grep练习
+
+```shell
+#找到开头不是英文字母的那些行
+grep -n '^[^[:alpha:]]' text
+grep -n '^[^a-zA-Z]' txt
+
+#找到小数点结尾的那些行
+grep -n '\.$' text
+
+#找到空白行
+grep -n '^$' text
+
+#找到不包含空白行的
+grep -n -v '^$' text
+
+#找到good,gasd,等g??d 
+grep -n 'g..d' text
+grep -n 'g.\{2\}'//需要用转义
+
+#找到 至少含有2个o的那些行 *:0个或多个
+grep -n 'ooo*' text
+grep -n 'o\{2,\}'
+
+# 去除文档中的空白行与 #开头的行
+grep -v '^$|^#' text
+grep -v '^$' text | grep -v '^#' 
+
+#查找 good或者gaod
+grep -n 'g(oo|ao)d' text
+```
 
 
 
@@ -1057,3 +1366,41 @@ no crontab for zhangsan
 | :set number         | 在文件中的每一行前面列出行号                                 |
 
 ## 3.2 bc
+
+
+
+
+
+shell练习
+
+```shell
+ps -ef| tr -s ' '|grep "java -jar" |  awk -F'root' '{for (i=NF; i>0; i--) {print $i}}'| grep system-manage-1.0-SNAPSHOT.jar|cut -d ' ' -f2
+```
+
+
+
+1，根据端口号停掉某些进程
+
+```shell
+#!/bin/bash
+#s1=`lsof -i:11111 | sed -n 2p|tr -s ' '|cut -d' ' -f2`
+#s2=`lsof -i:10001 | sed -n 2p|tr -s ' '|cut -d' ' -f2`
+#s3=`lsof -i:9999 | sed -n 2p|tr -s ' '|cut -d' ' -f2`
+#echo "11111端口应用已清理PID: $s1"
+#echo "10001端口应用已清理PID: $s2"
+#echo "9999端口应用已清理PID: $s3"
+
+#2.0
+#set -e 选项可以让你的脚本在出现异常时马上退出，后续命令不再执行。
+#set -o pipefail。这个特别的选项表示在管道连接的命令中，只要有任何一个命令失败（返回值非0），则整个管道操作被视为失败
+set -eo pipefail
+for id in $@
+do
+  pid=$(lsof -i:${id} | sed -n 2p|tr -s ' '|cut -d' ' -f2)
+ `kill -9 ${pid}`
+  echo "${id}端口应用已清理,PID:${pid} "
+done
+
+
+```
+
