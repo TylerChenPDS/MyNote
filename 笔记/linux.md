@@ -202,6 +202,7 @@ sort [-fbMnrutk] [文件]
 -r: 反向排序
 -t: 分割符号，默认使用Tab键来分割
 -k: 以那个区间进行排序
+-n：依照数值的大小排序
 #/etc/passwd内容是：分割的我想以第三栏来排序
 cat /etc/passwd | sort -t ":" -k 3
 
@@ -212,6 +213,30 @@ cat /etc/passwd | sort -t ":" -k 3
 [root@rhel ~]# sort -r textfile1
 
 ```
+
+1. 数据准备
+
+   ```
+   bb:40:5.4
+   bd:20:4.2
+   xz:50:2.3
+   cls:10:3.5
+   ss:30:1.6
+   
+   ```
+
+2. 按照“：”分割后的第三列倒序排序。
+
+   ```
+   [atguigu@hadoop102 datas]$ sort -t : -nrk 3  sort.sh 
+   bb:40:5.4
+   bd:20:4.2
+   cls:10:3.5
+   xz:50:2.3
+   ss:30:1.6
+   ```
+
+
 
 #### 4 uniq
 
@@ -379,6 +404,47 @@ cat manifest.json | awk -F',' '{for (i=NF; i>0; i--) {print $i}}' | grep RepoTag
 
 ```
 
+##### 案例
+
+1. 数据准备
+
+   ```
+   [atguigu@hadoop102 datas]$ sudo cp /etc/passwd ./
+   ```
+
+2. 搜索passwd文件以root关键字开头的所有行，并输出该行的第7列。
+
+   ```
+   awk -F: '/^root/ {print $7}' passwd
+   ```
+
+3. 搜索passwd文件以root关键字开头的所有行，并输出该行的第1列和第7列，中间以“，”号分割。
+
+   ```
+   awk -F: '/^root/{print $1","$7}' passwd
+   ```
+
+4. 只显示/etc/passwd的第一列和第七列，以逗号分割，且在所有行前面添加列名user，shell在最后一行添加"dahaige，/bin/zuishuai"。
+
+   ```
+   awk -F: 'BEGIN {print "user"} END {print "dahaige，/bin/zuishuai"} {print $1 "," $7}' passwd
+   ```
+
+   **注意：BEGIN 在所有数据读取行之前执行；END 在所有数据执行之后执行。**
+
+5. 将passwd文件中的用户id增加数值1并输出
+
+   ```
+   awk -v i=1 -F: '{print $3+i}' passwd
+   awk  -F: '{print $3+1}' passwd
+   ```
+
+   
+
+
+
+
+
 #### 9 cut
 
 https://www.runoob.com/linux/linux-comm-cut.html
@@ -387,8 +453,8 @@ https://www.runoob.com/linux/linux-comm-cut.html
 
 - -b ：以字节为单位进行分割。这些字节位置将忽略多字节字符边界，除非也指定了 -n 标志。
 - -c ：以字符为单位进行分割。
-- -d ：自定义分隔符，默认为制表符。
-- -f ：与-d一起使用，指定显示哪个区域。
+- **-d ：自定义分隔符，默认为制表符。**
+- **-f ：与-d一起使用，指定显示哪个区域。**
 
 ```shell
 who
@@ -418,6 +484,7 @@ sed 可依照脚本的指令来处理、编辑文本文件。Sed 主要用来自
 ```shell
 sed [-hnVi] [操作] [文本文件]
 -i: 直接修改读取文件的内容，而不是由屏幕输出
+-e: 直接在指令列模式上进行sed的动作编辑。
 
 # 操作a,c,d,i,p,s
 
@@ -457,6 +524,12 @@ nl /etc/passwd | sed -n '5,7p'
 sed -i 's/.$/hhhh/g' a.txt
 # 在文件每行末尾添加 aaa
 sed -i 's/$/aaa/g' a.txt
+
+#将sed.txt文件中的第二行删除并将wo替换为ni
+sed -e '2d' -e 's/wo/ni/g' sed.txt 
+
+
+
 ```
 
 #### 11 basename 
@@ -1367,19 +1440,238 @@ grep -n 'g(oo|ao)d' text
 
 ## 3.2 bc
 
+# Shell
+
+## 1 shell 中的变量
+
+#### 1  $n
+
+- $n  （功能描述：n为数字，$0代表该脚本名称，$1-$9代表第一到第九个参数，十以上的参数，十以上的参数需要用大括号包含，如${10}）
+
+#### 2  $#
+
+- $#  （功能描述：获取所有输入参数个数，常用于循环）。
+
+#### 3  $*、$@
+
+- $*  （功能描述：这个变量代表命令行中所有的参数，$*把所有的参数看成一个整体）
+
+- $@ （功能描述：这个变量也代表命令行中所有的参数，不过$@把每个参数区分对待）
+
+区别：
+
+**$*和$@都表示传递给函数或脚本的所有参数，不被双引号“”包含时，都以$1 $2 …$n的形式输出所有参数。**
+
+**当它们被双引号“”包含时，“$*”会将所有的参数作为一个整体，以“$1 $2 …$n”的形式输出所有参数；“$@”会将各个参数分开，以“$1” “$2”…”$n”的形式输出所有参数。**
+
+#### 4 $？
+
+- $？ （功能描述：最后一次执行的命令的返回状态。如果这个变量的值为0，证明上一个命令正确执行；如果这个变量的值为非0（具体是哪个数，由命令自己来决定），则证明上一个命令执行不正确了。）
 
 
 
+## 2 运算符
 
-shell练习
+- “$((运算式))”或“$[运算式]”
+
+- ```
+  expr  + , - , \*, /, %  加，减，乘，除，取余  //*前面有一个\
+  ```
+
+  **注意：expr运算符间要有空格**
+
+实例：
+
+1. 计算3+2的值
+
+   ```
+   [atguigu@hadoop101 datas]$ expr 2 + 3
+   5
+   ```
+
+2. 计算（2+3）* 4的值
+
+   ```
+   [atguigu@hadoop101 datas]$ expr `expr 2 + 3` \* 4
+   20
+   [atguigu@hadoop101 datas]# S=$[(2+3)*4]
+   [atguigu@hadoop101 datas]# echo $S
+   ```
+
+## 3 条件判断
+
+- [ condition ]（注意condition前后要有空格）
+- 注意：条件非空即为true，[ atguigu ] 返回true，[] 返回false。
+
+#### 两个整数之间比较
+
+-lt 小于（less than）         -le 小于等于（less equal）
+
+-eq 等于（equal）           -gt 大于（greater than）
+
+-ge 大于等于（greater equal）  -ne 不等于（Not equal）
+
+#### 按照文件权限进行判断
+
+-r 有读的权限（read）        -w 有写的权限（write）
+
+-x 有执行的权限（execute）
+
+#### 按照文件类型进行判断
+
+-f 文件存在并且是一个常规的文件（file）
+
+-e 文件存在（existence）      -d 文件存在并是一个目录（directory）
+
+
+
+## 4 流程控制（重点）
+
+### if 
+
+> if [ 条件判断式 ];then 
+>
+>  程序 
+>
+> fi 
+>
+> 或者 
+>
+> if [ 条件判断式 ] 
+>
+>  then 
+>
+>   程序 
+>
+> fi
+
+注意事项：
+
+（1）[ 条件判断式 ]，中括号和条件判断式之间必须有空格
+
+（2）if后要有空格
+
+```shell
+#!/bin/bash
+
+if [ $1 -eq "1" ]
+then
+        echo "banzhang zhen shuai"
+elif [ $1 -eq "2" ]
+then
+        echo "cls zhen mei"
+fi
+
+```
+
+### case
+
+> case $变量名 in 
+>
+>  "值1"） 
+>
+>   如果变量的值等于值1，则执行程序1 
+>
+>   ;;
+>
+>  "值2"） 
+>
+>   如果变量的值等于值2，则执行程序2 
+>
+>   ;;
+>
+>  …省略其他分支… 
+>
+>  *） 
+>
+>    如果变量的值都不是以上的值，则执行此程序 
+>
+>   ;;
+>
+> esac
+
+注意事项：
+
+1)    case行尾必须为单词“in”，每一个模式匹配必须以右括号“）”结束。
+
+2)    双分号“**;;**”表示命令序列结束，相当于java中的break。
+
+3)    最后的“*）”表示默认模式，相当于java中的default。
+
+
+
+### for 
+
+> for (( 初始值;循环控制条件;变量变化 )) 
+>
+>  do 
+>
+>   程序 
+>
+>  done
+
+```
+#!/bin/bash
+
+s=0
+for((i=0;i<=100;i++))
+do
+        s=$[$s+$i]
+done
+echo $s
+
+```
+
+> for 变量 in 值1 值2 值3… 
+>
+>  do 
+>
+>   程序 
+>
+>  done
+
+```
+#!/bin/bash
+#打印数字
+
+for i in $*
+do
+	echo "ban zhang love $i "
+done
+
+```
+
+### while
+
+> while [ 条件判断式 ] 
+>
+>  do 
+>
+>   程序
+>
+>  done
+
+```
+#!/bin/bash
+s=0
+i=1
+while [ $i -le 100 ]
+do
+        s=$[$s+$i]
+        i=$[$i+1]
+done
+echo $s
+```
+
+
+
+# shell练习
 
 ```shell
 ps -ef| tr -s ' '|grep "java -jar" |  awk -F'root' '{for (i=NF; i>0; i--) {print $i}}'| grep system-manage-1.0-SNAPSHOT.jar|cut -d ' ' -f2
 ```
 
-
-
-1，根据端口号停掉某些进程
+## 1，根据端口号停掉某些进程
 
 ```shell
 #!/bin/bash
@@ -1393,7 +1685,7 @@ ps -ef| tr -s ' '|grep "java -jar" |  awk -F'root' '{for (i=NF; i>0; i--) {print
 #2.0
 #set -e 选项可以让你的脚本在出现异常时马上退出，后续命令不再执行。
 #set -o pipefail。这个特别的选项表示在管道连接的命令中，只要有任何一个命令失败（返回值非0），则整个管道操作被视为失败
-set -eo pipefail
+#set -eo pipefail
 for id in $@
 do
   pid=$(lsof -i:${id} | sed -n 2p|tr -s ' '|cut -d' ' -f2)
