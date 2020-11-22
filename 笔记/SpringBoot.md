@@ -39,3 +39,7 @@ Spring Boot支持以下嵌入式servlet容器：
 ## 3.1 Java开发人员的安装说明
 
 Spring Boot依赖项使用`org.springframework.boot` `groupId`。通常，您的Maven POM文件从`spring-boot-starter-parent`项目继承，并声明对一个或多个[“启动器”的](https://docs.spring.io/spring-boot/docs/2.4.0/reference/html/using-spring-boot.html#using-boot-starter)依赖关系。Spring Boot还提供了一个可选的[Maven插件](https://docs.spring.io/spring-boot/docs/2.4.0/reference/html/build-tool-plugins.html#build-tool-plugins-maven-plugin)来创建可执行jar。
+
+# 4 Hello World
+
+## 4.1 创建pom

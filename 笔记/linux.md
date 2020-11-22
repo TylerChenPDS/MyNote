@@ -23,6 +23,28 @@
 - 例如，如果分区/dev/sda5被挂载在目录/usr上，这意味着 所有在/usr下的文件和目录在物理上位于/dev/sda5。因此 文件/usr/bin/cal被保存在分区/dev/sda5上，而文件 /etc/passwd却不是。
 - /usr目录下的目录还有可能是其它分区的挂载目录。例如， 某个分区（如/dev/sda7）可以被挂载到/usr/local目录下， 这意味着文件/usr/local/man/whatis将位于分区/dev/sda7 上，而不是分区/dev/sda5上。
 
+## 1.4 /dev/null 
+
+1. /dev/null:表示 的是一个黑洞，通常用于丢弃不需要的数据输出， 或者用于输入流的空文件
+
+   - 将无用的输出流写入到黑洞丢弃。
+
+     ll sadsada 2>/dev/null  //将不会有任何输出
+
+   - 清空文件   
+
+     cat /dev/null > /home/omc/h.txt
+
+   - 在书写定时任务总，规范的写法就是将所有定时任务脚本结尾加上>/dev/null 2>&1，让所有的输出流（包括错误的和正确的）都定向到空设备丢弃。
+
+     00 01 * * * /bin/sh/server/scripts/mysqlbak.sh >/dev/null 2>&1
+
+     - 对于& 1 更准确的说应该是文件描述符 1,而1标识标准输出，stdout
+     - 对于2 ，表示标准错误，stderr。
+     - 2>&1 的意思就是将标准错误重定向到标准输出。这里标准输出已经重定向到了 /dev/null。那么标准错误也会输出到/dev/null
+     - ls 2>1测试一下，不会报没有2文件的错误，但会输出一个空的文件1；
+     - ls xxx >out.txt 2>&1, 实际上可换成 ls xxx 1>out.txt 2>&1；重定向符号>默认是1,错误和输出都传到out.txt了。
+
 # 2 基本芝士
 
 ## 2.1 小知识
@@ -302,6 +324,12 @@ grep -oP '\d+' w
 
 ```
 
+grep -q用于if逻辑判断
+
+突然发现grep -q 用于if 逻辑判断很好用。 
+
+-q 参数，本意是 Quiet; do not write anything to standard output.  Exit immediately with zero status if any match is found, even if an error was detected.  中文意思为，安静模式，不打印任何标准输出。如果有匹配的内容则立即返回状态值0。
+
 #### 6 find
 
 ​		将文件系统内符合条件的文件列出来，可 以指定文件的名称、类别、时间、大小以 及权限等不同信息的组合，只有完全相符 的文件才会被列出来。
@@ -526,10 +554,7 @@ sed -i 's/.$/hhhh/g' a.txt
 sed -i 's/$/aaa/g' a.txt
 
 #将sed.txt文件中的第二行删除并将wo替换为ni
-sed -e '2d' -e 's/wo/ni/g' sed.txt 
-
-
-
+sed -e '2d' -e 's/wo/ni/g' sed.txt
 ```
 
 #### 11 basename 
@@ -562,6 +587,84 @@ paste 将两个文件连起来，中间用 【tab】分割
 paste [-d] file1 file2
 -d: 分割字符，默认是【tab】
 ```
+
+#### 14 eval
+
+1. eval command-line
+
+   其中command－line是在终端上键入的一条普通命令行。然而当在它前面放上eval时，其结果是shell在执行命令行之前扫描它两次。如：
+
+   ```shell
+   pipe="|"
+   eval ls $pipe wc -l
+   ```
+
+   shell第1次扫描命令行时，它替换出pipe的值｜，接着eval使它再次扫描命令行，这时shell把｜作为管道符号了。如果变量中包含任何需要shell直接在命令行中看到的字符（不是替换的结果），就可以使用eval。命令行结束符（； ｜ &），I／o重定向符（< >）和引号就属于对shell具有特殊意义的符号，必须直接出现在命令行中
+
+#### 15 source export 
+
+- export命令
+
+  Linux export命令用于设置或显示环境变量。
+
+  在shell中执行程序时，shell会提供一组环境变量。export可新增，修改或删除环境变量，供后续执行的程序使用。同时，重要的一点是，export的效力仅及于该次登陆操作。注销或者重新开一个窗口，export命令给出的环境变量都不存在了（但是在子bash是可以用的）。
+
+  ```shell
+  export [-fnp][变量名称]=[变量设置值]
+  ```
+
+  - -f 　代表[变量名称]中为函数名称。
+  - -n 　删除指定的变量。变量实际上并未删除，只是不会输出到后续指令的执行环境中。
+  - -p 　列出所有的shell赋予程序的环境变量。
+
+  
+
+- source命令
+
+  ```shell
+  [root@localhost bin]#source filename
+  [root@localhost bin]# . filename
+  ```
+
+  在当前bash环境下读取并执行FileName中的命令。该filename文件可以无"执行权限"。该命令通常用命令“.”来替代。
+
+- source filename 与 sh filename 及./filename执行脚本的区别在那里呢？
+
+  - .当shell脚本具有可执行权限时，用sh filename与./filename执行脚本是没有区别得。./filename是因为当前目录没有在PATH中，所有"."是用来表示当前目录的。
+
+  - sh filename 重新建立一个子shell，在子shell中执行脚本里面的语句，该子shell继承父shell的环境变量，但子shell新建的、改变的变量不会被带回父shell，除非使用export。
+
+  - source filename：这个命令其实只是简单地读取脚本里面的语句依次在当前shell里面执行，没有建立新的子shell。那么脚本里面所有新建、改变变量的语句都会保存在当前shell里面。
+
+    ```shell
+    #举例
+    test.sh
+    #!/bin/bash
+    echo "asdasda"
+    wwww=大家好
+    export export_var=asdsadsa啊实打实das你个憨憨
+    
+    test.sh
+    #!/bin/bash
+    
+    function aaa(){
+            hhh
+    }
+    function hhh(){
+            echo "$0 hhhhh";
+    
+    }
+    hhh
+    .  test1.sh
+    echo $export_var
+    echo $wwww
+    
+    #执行bash test.sh 
+    test.sh hhhhh
+    asdasda
+    asdsadsa啊实打实das你个憨憨
+    大家好
+    ```
 
 
 
@@ -1663,6 +1766,41 @@ done
 echo $s
 ```
 
+### select
+
+- select in循环用来增强交互性，它可以显示出带编号的菜单，用户输入不同的编号就可以选择不同的菜单，并执行不同的功能。
+
+- select in 是shell独有的一种循环，非常适合终端（Terminal）这样的交互场景。其他语言是没有的。
+
+- 用法：
+
+  ```shell
+  select variable in value_list		#variable表示变量，value_list表示取值列表
+  do
+  	statements
+  done
+  ```
+
+  
+
+```shell
+#!/bin/bash
+echo "what is your favorate OS?"
+select name in "Linux"  "Windows" "Mac Os" "HongMeng"
+do
+   case "$name" in
+      Linux ) echo "you chose ${name}"; break;;
+      Windows ) echo "you chose ${name}"; break;;
+    esac
+done
+```
+
+效果：
+
+![](./img/18.png)
+
+
+
 
 
 # shell练习
@@ -1692,7 +1830,5 @@ do
  `kill -9 ${pid}`
   echo "${id}端口应用已清理,PID:${pid} "
 done
-
-
 ```
 
