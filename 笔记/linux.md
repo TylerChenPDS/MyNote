@@ -666,6 +666,15 @@ paste [-d] file1 file2
     大家好
     ```
 
+#### 16 dd
+
+Linux dd命令用于读取、转换并输出数据。dd可从标准输入或文件中读取数据，根据指定的格式来转换数据，再输出到文件、设备或标准输出。
+
+- if=文件名：输入文件名，默认为标准输入。即指定源文件。
+- of=文件名：输出文件名，默认为标准输出。即指定目的文件。
+
+
+
 
 
 ### 2.3.2 系统信息
@@ -756,6 +765,27 @@ cal [选项] [[[日] 月] 年]
 ```
 
 ![](./img/6.png)
+
+### 2.3.4 修改权限
+
+```shell
+#使用文字设定法对/root/ab文件设置权限，所有者为读取、写入和执行权限，同组用户为读取和写入权限，而其他用户没有任何权限。
+chmod u=rwx,g+rw,o-rwx ab
+
+#使用数字设定法设置/root/ab文件的权限，所有者只拥有读取和写入权限。
+chmod 600 ab
+
+#将/root/ab文件的所有者更改为用户zhangsan。
+chown zhangsan ab
+
+#将/root/ab文件的组改为张三
+chown :zhangsan ab
+
+#将/root/ab文件的组和所有者改为张三
+chown zhangsan:zhangsan ab
+```
+
+
 
 ## 2.4 用户和组群账户管理
 
@@ -1422,6 +1452,128 @@ no crontab for zhangsan
 #### 5．初始化系统环境 
 
 #### 6．执行/bin/login程序
+
+
+
+# 3 Linux网络基本配置
+
+## 3.1 常用网络配置文件
+
+#### /etc/sysconfig/network-scripts/ifcfgeno16777736文件
+
+在Linux统中，系统网络设备的配置文件保 存在/etc/sysconfig/network-scripts目录下， 其中文件ifcfg-eno16777736包含一块网卡 的配置信息，文件ifcfg-lo包含回路IP地址 信息。
+
+#### /etc/resolv.conf文件
+
+/etc/resolv.conf文件是由域名解析器 （resolver，一个根据主机名解析IP地址 的库）使用的配置文件。
+
+#### /etc/hosts文件
+
+当计算机启动时，在可以查询DNS以前， 计算机需要查询一些主机名到IP地址的匹 配。这些匹配信息存放在/etc/hosts文件中。 在没有域名服务器的情况下，系统上的所 有网络程序都通过查询该文件来解析对应 于某个主机名的IP地址。
+
+#### /etc/services文件
+
+/etc/services文件定义了Linux系统中所有 服务的名称、协议类型、服务的端口等信 息。
+
+## 3.2 常用网络命令
+
+在Linux系统中提供了大量的网络命令用于 网络配置、网络测试以及网络诊断，如 traceroute、ifconfig、ping、netstat、 arp以及tcpdump等。
+
+#### traceroute
+
+使用traceroute命令可以显示数据包到目标 主机之间的路径。traceroute命令使用户可 以追踪网络数据包的路由途径，预设IPv4数 据包大小是60字节，用户可以另外设置。
+
+命令语法： traceroute [选项] [主机名|IP地址] [数据包大小]
+
+#### ifconfig 
+
+如果找不到命令可以：yum install net-tools
+
+使用ifconfig命令可以显示和配置网络接口， 比如设置IP地址、MAC地址、激活或关闭 网络接口。
+
+命令语法： ifconfig [接口] [选项| IP地址]
+
+```shell
+#配置网卡eno16777736的IP地址， 同时激活该设备。
+[root@rhel ~]# ifconfig eno16777736 192.168.0.100 netmask 255.255.255.0 up
+
+#配置网卡eno16777736别名设备eno16777736:1的IP地址。
+[root@rhel ~]# ifconfig eno16777736:1 192.168.0.3
+
+#激活网卡eno16777736:1设备。
+[root@rhel ~]# ifconfig eno16777736:1 up
+
+#查看网卡eno16777736网络接口的配置。
+[root@rhel ~]# ifconfig eno16777736
+
+#禁用网卡eno16777736:1设备。
+[root@rhel ~]# ifconfig eno16777736:1 down
+```
+
+#### netstat
+
+使用netstat命令用来显示网络状态的信息， 得知整个Linux系统的网络情况，比如网络 连接、路由表、接口统计、伪装连接和组播成员。
+
+命令语法： netstat [选项] [延迟]
+
+```shell
+#显示内核路由表信息。
+[root@rhel ~]# netstat -r
+
+#显示端口号为22的连接情况。
+[root@rhel ~]# netstat –antu |grep 22
+
+#显示UDP传输协议的连接状态。
+[root@rhel ～]# netstat -u
+```
+
+#### tcpdump
+
+是Linux系统中强大的网络数据采集分析工具之一， 可以将网络中传送的数据包的头完全截获下来提 供分析。它支持针对网络层、协议、主机、网络 或端口的过滤，并提供and、or、not等逻辑语句 来筛选信息。作为互联网上经典的的系统管理员 必备工具，tcpdump以其强大的功能，灵活的截 取策略，成为每个高级的系统管理员分析网络， 排查问题等所必备的工具之一。
+
+命令语法： tcpdump [选项] [表达式]
+
+```shell
+#使用指定的网络接口eno16777736读取数据链路层的数据包头。
+#yum install -y tcpdump
+[root@rhel ～]# tcpdump -i eno16777736
+
+```
+
+
+
+### 3.3 管理网络服务
+
+RHEL 7系统使用systemd，它提供更优秀 的框架以表示系统服务间的依赖关系，并 实现系统初始化时服务的并行启动，同时 达到降低Shell的系统开销的效果，最终代 替现在常用的System V。
+
+- 在RHEL7之前，服务管理工作是由System V通过 /etc/rc.d/init.d目录下的Shell脚本来执行的，通过这 些脚本允许管理员控制服务的状态。在RHEL 7中， 这些脚本被服务单元文件替换。在systemd中，服 务、设备、挂载等资源统一被称为单元，所以 systemd中有许多单元类型，服务单元文件的扩展 名是.service，同Shell脚本的功能相似。比如有查 看、启动、停止、重启、启用或者禁止服务的参数。
+- 一个单元的配置文件可以描述系统服务 （.service）、挂载点（.mount）、sockets （.sockets）、系统设备（.device）、交换分区 （.swap）、文件路径（.path）、启动目标 （.target）、由systemd管理的计时器（.timer）等。
+
+systemctl命令语法
+
+使用 systemctl 控制单元时，通常需要使用 单元文件的全名，包括扩展名（比如 sshd.service）。如果没有指定扩展名， systemctl 默认把扩展名当作.service。
+
+命令语法： systemctl [选项] [单元命令|单元文件命令]
+
+```shell
+#启动named服务。
+[root@rhel ~]# systemctl start named.service
+#查看named服务当前状态。
+[root@rhel ~]# systemctl status named.service
+#停止named服务。
+[root@rhel ~]# systemctl stop named.service 
+#重新启动named服务。
+[root@rhel ~]# systemctl restart named.service
+#重新加载named服务配置文件。
+[root@rhel isolinux]# systemctl reload named.service 
+#设置named服务开机自动启动。
+[root@rhel ~]# systemctl enable named.service
+#查询named服务是否开机自动启动。
+[root@rhel isolinux]# systemctl is-enabled named.service enabled
+#停止named服务开机自动启动。
+[root@rhel ~]# systemctl disable named.service
+[root@rhel ~]# systemctl is-enabled named.service disabled 
+```
 
 
 

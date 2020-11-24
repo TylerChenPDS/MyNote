@@ -1264,4 +1264,177 @@ chainID(2)=SHA256(chain(1) diffID(2)
 
 **3）合并挂载逻辑原理**
 
-OverlayFS将单个Linux主机上的**两个目录合并成一个目录**。这些目录被称为层，统一过程被称为**联合挂载**。
+OverlayFS将单个Linux主机上的**两个目录合并成一个目录**。这些目录被称为层，统一过程被称为**联合挂载**。OverlayFS底层目录称为lowerdir， 高层目录称为upperdir。合并统一视图称为merged。当需要修改一个文件时，将文件从只读的Lower复制到可写的Upper进行修改，结果也保存在Upper层。
+
+**在Docker中，底下的只读层就是image，可写层就是Container。**
+
+当启动一个容器，在/var/lib/docker/overlay2目录下生成一层容器层，核心目录包括diff，work，merged
+
+**diff记录每一文件层的数据，merged合并的目录，work记录合并的工作记录。**
+
+### **实战overlayFS的存储逻辑**
+
+```shell
+mkdir -p lower upper merger worker
+echo '1.txt lower' > ./lower/1.txt
+echo '3.txt lower' > ./lower/3.txt
+echo '1.txt upper' > ./upper/1.txt
+echo '2.txt upper' > ./upper/2.txt
+#加载overlay支持，modprobe命令用于自动处理可载入模块:
+modprobe overlay 
+mount -n -t overlay overlayfs:/overlay -o lowerdir=lower/,upperdir=upper/,workdir=worker/ merger
+-n：一般而言，mount 在挂上后会在 /etc/mtab 中写入一些信息。没的东西写用这个选项取消这个动作。
+-t：指定文件系统的型态，通常不必指定。这里要指定overlay
+-o：指定操作参数
+
+```
+
+创建后的目录结构
+
+![](./img/53.png)
+
+merger 里面的1.txt使用的是upper层的文件，也就是说高层会有更高的优先级。
+
+在merger里面创建 merger.txt  :    echo   “test” > ./merger/merger.txt
+
+![](./img/54.png)
+
+会发现，新创建的文件是放在upper层的。
+
+## 7.5  安全配置
+
+**Docker容器的安全性,很大程度上依赖于Linux系统自身。**Docker通过**CGroups**实现宿主机中不同容器的资源限制与审计，包括对CPU、内存、I/O等物理资源进行均衡化配置，防止单个容器耗尽所有资源造成其他容器或宿主机的拒绝服务，保证所有容器的正常运行。容器资源的控制主要是通过**cgroup**来进行的，给用户暴露出来的操作接口是**文件系统**，以文件和目录的方式组织在操作系统的 **/sys/fs/cgroup** 路径下。
+
+### **1）cpu限额**
+
+我们一般不直接修改cpu目录中的参数，在cpu的目录下新建一个目录，进入目录后可以看到自动给我们生 成了与cpu父级进程中相同的文件，我们可以通过修改这个目录中的文件使设定生效。
+
+（1）dd if=/dev/zero of=/dev/null &			##吃掉cpu的所有资源，测试吞吐量 注意：即使是双核，一个被占满的情况下另一个也不会帮忙处理，但是在三核的情况下就会发生资源的争抢
+
+![](./img/55.png)
+
+会发现，dd命令几乎占用了所有的cpu资源
+
+（2）在 **/sys/fs/cgroup/cpu**目录下创建test文件夹，里面会生成一系列文件，
+
+```shell
+echo 20000 > cpu.cfs_quota_us  ##限制cpu的资源上限 即最多占用cpu20%的资源
+echo 48425 > tasks					##把进程的pid写入文件
+```
+
+写完之后的效果
+
+![](./img/56.png)
+
+**用在容器上：**
+
+--cpu-shares
+
+cpu的限额需要再容器启动时直接添加参数设定，我们可以通过--help来查看相关参数
+
+docker run -it --name vm1 **--cpu-period=100000 --cpu-quota 20000** ubuntu:18.04
+
+\##表示在period设定的时间内，以微秒为单位，设定cpu的占用上限为20% 
+
+dd if=/dev/zero of=/dev/null &	
+
+##在进入容器后执行此命令占用容器的所有资源 ##ctrl+p+q将容器打入后台，top查看cpu的占用情况
+
+### **2）内存占用控制**
+
+**首先安装一个cgroup软件，libcgroup-tools-0.41-11.el7.x86_64，可以直接通过yum安装**
+
+yum  install -y libcgroup-tools-0.41-11.el7.x86_64
+
+```shell
+cd /sys/fs/cgroup/memory/			##进入cgroup内存控制
+mkdir test						##和cpu一样建立一个子进程来控制容器服务
+echo 314572800 > memory.limit_in_bytes    ##限制300M
+cd /dev/shm   ## tempfs中的一种，这个文件系统不在磁盘，在内存上 
+# 这样执行不可以 配置的限额不会起作用。dd if=/dev/zero of=file bs=1M count=300   ## 拷贝300M的数据到内存上
+cgexec -g memory:test dd if=/dev/zero of=file bs=1M count=400		##创建文件时使我们test里的内存限制生效
+free -m   ## 查看空闲内存，按道理来说，我们已经限制了内存使用上限300M
+#可用空间没有减少，说明配置生效了。
+```
+
+![](./img/57.png)
+
+**限制容器内存的占用：**
+
+```shell
+docker run -it --memory 200M --memory-swap=200M --name vm1 ubuntu:18.04
+##创建容器，限制内存为200M，进入后crtl+p+q 
+##打入后台运行后查看docker里的内存文件
+```
+
+### **3）block IO限制**
+
+Block IO 指的是磁盘的读写，docker 可通过设置权重、限制 bps 和 iops 的方式控制容器读写磁盘的带宽。
+
+**block IO 权重**
+
+默认情况下，所有容器能平等地读写磁盘，可以通过设置 **--blkio-weight** 参数来改变容器 block IO 的优先级。
+
+--blkio-weight ，设置的是相对权重值，默认为 500。
+
+在下面的例子中，container_A 读写磁盘的带宽是 container_B 的两倍。
+
+docker run -it --name container_A --blkio-weight 600 ubuntu:18.04
+
+docker run -it --name container_B --blkio-weight 300 ubuntu:18.04
+
+**限制 bps 和 iops**
+
+bps 是 byte per second，每秒读写的数据量。
+
+iops 是 io per second，每秒 IO 的次数。
+
+**可通过以下参数控制容器的 bps 和 iops：**
+
+--device-read-bps，限制读某个设备的 bps。
+
+--device-write-bps，限制写某个设备的 bps。
+
+--device-read-iops，限制读某个设备的 iops。
+
+--device-write-iops，限制写某个设备的 iops。
+
+**--device-write-bps限制写设备的bps，限制读写速度** 目前的block IO限制只对direct IO有效。(不使用文件缓存) 在创建容器时加上这个参数，oflag=direct 不经过缓存，直接写磁盘 **docker run -it --name vm2** **--device-write-bps /dev/sda:10MB** **ubuntu:18.04**
+
+![](./img/58.png)
+
+### **4）限制容器的磁盘使用空间**
+
+为每个容器创建单独用户，限制每个用户的磁盘使用量；
+
+### **5）设置特权级运行的容器:--privileged=true**
+
+有的时候我们需要容器具备更多的权限,比如操作内核模块,控制swap交换分区,挂载USB磁盘,修改MAC地址等。
+
+**用一个false的vm1容器和一个true的vm2容器来做对比:**
+
+**docker run -it --name vm1 ubuntu:18.04** **docker run -it --name vm2 --privileged=true ubuntu:18.04** **docker inspect vm1 | grep Pri**		**##查看privileged的状态**
+
+ip命令的安装：apt update && apt install -y iproute2
+
+**ip link set down eth0  # 关闭网卡**
+
+**--privileged=true 的权限非常大,接近于宿主机的权限,为了防止用户的滥用,需要增加限制,只提供给容器必须的权限。**
+
+此时Docker 提供了权限白名单的机制,使用**--cap-add**添加必要的权限。
+
+**docker run -it --cap-add=NET_ADMIN --name vm1 ubuntu:18.04**
+
+capabilities手册地址： http://man7.org/linux/man-pages/man7/capabilities.7.html
+
+# 8 docker 网络功能
+
+## 8.1 **Docker网络启动过程**
+
+​		**默认配置的情况下**，Docker服务启动时会首先在主机上自动创建一个docker0虚拟网桥，实际上是一个Linux网桥。网桥可以理解为一个软件交换机，负责挂载其上的接口之间进行包转发。
+
+​		同时，Docker随机分配一个本地未占用的私有网段中的一个地址给docker0接口。比如典型的172.17.0.0/16 网段此后启动的容器内的网络接口也会自动分配一个该网段的址。
+
+​		当创建一个Docker容器的时候，同时会创建了一对veth pair互联接口。当向任一个接口发送包时，另外一个接口自动收到相同的包。互联接口的一端位于容器内，即eth0，另一端在本地并被挂载到docker0网桥，名称以veth开头(例如vethAQI2QT)。**通过这种方式，主机可以与容器通信，容器之间也可以相互通信。**如此一来，Docker 就创建了在主机和所有容器之间一个虚拟共享网络，如图：
+
+![](./img/59.png)
