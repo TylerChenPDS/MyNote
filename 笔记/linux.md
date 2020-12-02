@@ -1695,6 +1695,115 @@ grep -n 'g(oo|ao)d' text
 
 ## 3.2 bc
 
+### 3.3 curl
+
+http://www.ruanyifeng.com/blog/2019/09/curl-reference.html
+
+​		curl 是常用的命令行工具，用来请求 Web 服务器。它的名字就是客户端（client）的 URL 工具的意思。它的功能非常强大，命令行参数多达几十种。如果熟练的话，完全可以取代 Postman 这一类的图形界面工具。
+
+```shell
+curl https://www.example.com
+#上面命令向www.example.com发出 GET 请求，服务器返回的内容会在命令行输出。
+```
+
+#### **-A**
+
+`-A`参数指定客户端的用户代理标头，即`User-Agent`。curl 的默认用户代理字符串是`curl/[version]`。
+
+#### **-d**
+
+`-d`参数用于发送 POST 请求的数据体。
+
+```shell
+$ curl -d'login=emma＆password=123'-X POST https://google.com/login
+# 或者
+$ curl -d 'login=emma' -d 'password=123' -X POST  https://google.com/login
+```
+
+使用`-d`参数以后，HTTP 请求会自动加上标头`Content-Type : application/x-www-form-urlencoded`。并且会自动将请求转为 POST 方法，因此可以省略`-X POST`。
+
+#### **-F**
+
+`-F`参数用来向服务器上传二进制文件。上面命令会给 HTTP 请求加上标头`Content-Type: multipart/form-data`，然后将文件`photo.png`作为`file`字段上传。
+
+```shell
+ curl -F 'file=@photo.png' https://google.com/profile
+ #-F参数可以指定 MIME 类型。
+ curl -F 'file=@photo.png;type=image/png' https://google.com/profile
+ #上面命令指定 MIME 类型为image/png，否则 curl 会把 MIME 类型设为application/octet-stream。
+ #-F`参数也可以指定文件名。
+ curl -F 'file=@photo.png;filename=me.png' https://google.com/profile
+```
+
+#### -H
+
+`-H`参数添加 HTTP 请求的标头。
+
+```shell
+curl -d '{"login": "emma", "pass": "123"}' -H 'Content-Type: application/json' https://google.com/login
+#上面命令添加 HTTP 请求的标头是Content-Type: application/json，然后用-d参数发送 JSON 数据。
+```
+
+#### **-X**
+
+`-X`参数指定 HTTP 请求的方法。
+
+> ```bash
+> $ curl -X POST https://www.example.com
+> ```
+
+上面命令对`https://www.example.com`发出 POST 请求。
+
+#### **-v**
+
+`-v`参数输出通信的整个过程，用于调试。
+
+> ```bash
+> $ curl -v https://www.example.com
+> ```
+
+#### -b
+
+`-b`参数用来向服务器发送 Cookie。
+
+> ```bash
+> $ curl -b 'foo=bar' https://google.com
+> ```
+
+上面命令会生成一个标头`Cookie: foo=bar`，向服务器发送一个名为`foo`、值为`bar`的 Cookie。
+
+> ```bash
+> $ curl -b 'foo1=bar;foo2=bar2' https://google.com
+> ```
+
+上面命令发送两个 Cookie。
+
+> ```bash
+> $ curl -b cookies.txt https://www.google.com
+> ```
+
+上面命令读取本地文件`cookies.txt`，里面是服务器设置的 Cookie（参见`-c`参数），将其发送到服务器。
+
+#### **-c**
+
+`-c`参数将服务器设置的 Cookie 写入一个文件。
+
+> ```bash
+> $ curl -c cookies.txt https://www.google.com
+> ```
+
+上面命令将服务器的 HTTP 回应所设置 Cookie 写入文本文件`cookies.txt`。
+
+#### **-o**
+
+`-o`参数将服务器的回应保存成文件，等同于`wget`命令。
+
+> ```bash
+> $ curl -o example.html https://www.example.com
+> ```
+
+上面命令将`www.example.com`保存成`example.html`。
+
 # Shell
 
 ## 1 shell 中的变量
