@@ -173,7 +173,7 @@ docker load < hhh.tar
 
 ## 2.9 上传镜像到阿里云
 
-![](./img/33.png)在容器镜像服务中，创建镜像，然后点击管理，里面有详细步骤。
+![](https://gitee.com/CTLQAQ/picgo/raw/master/33.png)在容器镜像服务中，创建镜像，然后点击管理，里面有详细步骤。
 
 ## 2.10 **创建本地私有仓库和上传镜像**
 
@@ -518,7 +518,7 @@ docker run -d -p 80:8080 --name web --link db:dbbm  tomcat:8.0.52
 
 **cat /etc/hosts** //查看是否建立成功
 
-![](./img/34.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/34.png)
 
 
 
@@ -573,7 +573,7 @@ docker run -d -p 80:8080 --name web --link db:dbbm  tomcat:8.0.52
 
 ## 6.2 配置指令
 
-![](./img/35.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/35.png)
 
 ### 6.2.1 **ARG和FROM**
 
@@ -707,7 +707,7 @@ docker run --entrypoint=/bin/ls centos:7 -l /tmp
 
 USER 指令是改变环境状态并影响以后的层。USER 改变之后层的执行 RUN, CMD 以及 ENTRYPOINT 这类命令的身份。USER 只是帮助你切换到指定用户而已，这个用户必须是事先建立好的，否则无法切换
 
-![](./img/36.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/36.png)
 
 实战中，建立 redis 用户后，我们推荐使用 gosu 来切换另一个用户
 
@@ -808,7 +808,7 @@ docker run -d --name web -p 80:80 myweb:v1
 
 ## 6.3 操作指令	
 
-![](./img/37.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/38.png)
 
 ### 6.3.1 RUN
 
@@ -922,7 +922,7 @@ CMD ["/bin/bash"]
 
 但是你硬要多放，为了提高构建镜像的效率，你可以在目录下新建一个 .dockerignore 文件来指定要忽略的文件和目录。
 
-![](./img/38.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/37.png)
 
 ## 6.5 **多阶段构建**
 
@@ -1141,7 +1141,7 @@ docker run -itd -p 3306:3306 --restart=always -e MYSQL_ROOT_PASSWORD=chentailian
 
 Docker目前采用了标准的C/S架构，包括客户端、服务端两大核心组件，同时通过镜像仓库来存储镜像。客户端和服务端既可以运行在一个机器上，也可通过socket或者RESTful API来进行通信，如图所示：
 
-![](./img/47.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/47.png)
 
 **服务端**
 
@@ -1219,7 +1219,7 @@ UTS ( UNIX Time-sharing System)命名空间允许**每个容器拥有独立的�
 
 可以通过docker  history查看一个镜像由哪些层组成。例如查看ubuntu:18.04镜像由5层组成，每层执行了不同的命令，如下所示:
 
-![](./img/48.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/48.png)
 
 对于Docker镜像来说，这些层的内容都是不可修改的、只读的。而当Docker利用镜像启动一个容器时，**将在镜像文件系统的最顶端再挂载一个新的可读写的层给容器。**容器中的内容更新将会发生在可读写层。当所操作对象位于较深的某层时，需要先复制到最上层的可读写层。当数据对象较大时，往往意味着较差的IO性能。因此，对于IO敏感型应用，一般推荐将容器修改的数据通过volume（因为volume是存在宿主机上的，不会保存到镜像文件的某层）方式挂载，而不是直接修改镜像内数据。
 
@@ -1233,15 +1233,15 @@ UTS ( UNIX Time-sharing System)命名空间允许**每个容器拥有独立的�
 
 比如上面启动的nginx容器，我们可以先找到这个容器对应的镜像：
 
-![](./img/49.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/49.png)
 
 **我们打印**/var/lib/docker/image/overlay2/imagedb/content/sha256这个目录：
 
-![](./img/50.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/50.png)
 
 用cat查看， 看到很长的json，将其格式化：https://www.sojson.com/ (json格式化工具)
 
-![](./img/51.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/51.png)
 
 可以看到rootfs的**diff_ids**是一个包含了多个元素的数组，其实这些个元素正是组成nginx镜像的多个layerID，从上往下看，就是底层到顶层，**也就是说第一个layerID是image的最底层。**
 
@@ -1266,7 +1266,7 @@ chainID(2)=SHA256(chain(1) diffID(2)
 
 **chainID对应的目录里边的cache-id关联这真实的rootfs的位置：**
 
-![](./img/52.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/52.png)
 
 **这个id就是对应/var/lib/docker/overlay2/xxxx子目录，**
 
@@ -1301,13 +1301,13 @@ mount -n -t overlay overlayfs:/overlay -o lowerdir=lower/,upperdir=upper/,workdi
 
 创建后的目录结构
 
-![](./img/53.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/53.png)
 
 merger 里面的1.txt使用的是upper层的文件，也就是说高层会有更高的优先级。
 
 在merger里面创建 merger.txt  :    echo   “test” > ./merger/merger.txt
 
-![](./img/54.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/54.png)
 
 会发现，新创建的文件是放在upper层的。
 
@@ -1321,7 +1321,7 @@ merger 里面的1.txt使用的是upper层的文件，也就是说高层会有更
 
 （1）dd if=/dev/zero of=/dev/null &			##吃掉cpu的所有资源，测试吞吐量 注意：即使是双核，一个被占满的情况下另一个也不会帮忙处理，但是在三核的情况下就会发生资源的争抢
 
-![](./img/55.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/55.png)
 
 会发现，dd命令几乎占用了所有的cpu资源
 
@@ -1334,7 +1334,7 @@ echo 48425 > tasks					##把进程的pid写入文件
 
 写完之后的效果
 
-![](./img/56.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/56.png)
 
 **用在容器上：**
 
@@ -1367,7 +1367,7 @@ free -m   ## 查看空闲内存，按道理来说，我们已经限制了内存�
 #可用空间没有减少，说明配置生效了。
 ```
 
-![](./img/57.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/58.png)
 
 **限制容器内存的占用：**
 
@@ -1411,7 +1411,7 @@ iops 是 io per second，每秒 IO 的次数。
 
 **--device-write-bps限制写设备的bps，限制读写速度** 目前的block IO限制只对direct IO有效。(不使用文件缓存) 在创建容器时加上这个参数，oflag=direct 不经过缓存，直接写磁盘 **docker run -it --name vm2** **--device-write-bps /dev/sda:10MB** **ubuntu:18.04**
 
-![](./img/58.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/59.png)
 
 ### **4）限制容器的磁盘使用空间**
 
@@ -1447,7 +1447,7 @@ capabilities手册地址： http://man7.org/linux/man-pages/man7/capabilities.7.
 
 ​		当创建一个Docker容器的时候，同时会创建了一对veth pair互联接口。当向任一个接口发送包时，另外一个接口自动收到相同的包。互联接口的一端位于容器内，即eth0，另一端在本地并被挂载到docker0网桥，名称以veth开头(例如vethAQI2QT)。**通过这种方式，主机可以与容器通信，容器之间也可以相互通信。**如此一来，Docker 就创建了在主机和所有容器之间一个虚拟共享网络，如图：
 
-![](./img/59.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/57.png)
 
 ## 8.2.网络相关参数
 
@@ -1505,7 +1505,7 @@ capabilities手册地址： http://man7.org/linux/man-pages/man7/capabilities.7.
 
 **--net=bridge:**默认配置。为容器创建独立的网络命名空间，分配网卡、IP 地址等网络配置，并通过veth接口对将容器挂载到一个虚拟网桥(默认为docker0)上;
 
-![](./img/60.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/60.png)
 
 从上面的网络模型可以看出，容器从原理上是可以与宿主机乃至外界的其他机器通信的。同一宿主机，容器之间都是连接掉docker0这个网桥上，它可以作为虚拟交换机使容器可以相互通信。然而，由于宿主机的IP地址与容器veth pair的 IP地址均不在同一个网段，故仅仅依靠veth pair和namespace的技术，**还不足以使宿主机以外的网络主动发现容器的存在。**为了使外界可以访问容器中的进程，docker采用了端口绑定的方式，也就是通过iptables的NAT，将宿主机上的端口流量转发到容器内的端口上。如：
 
@@ -1555,7 +1555,7 @@ ip netns exec $pid ip route add default via 172.17.0.1
 
 ​		新创建的容器共享指定的已存在容器的网络命名空间，两个容器内的网络配置共享，但其他资源(如进程空间、文件系统等)还是相互隔离的;
 
-![](./img/61.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/61.png)
 
 ​		在这种模式下的容器可以通过localhost来访问同一网络命名空间下的其他容器，传输效率较高。而且这种模式还节约了一定数量的网络资源，但它并没有改变容器与外界通信的方式。在一些特殊的场景中非常有用，例如，kubernetes的pod，kubernetes为pod创建一个基础设施容器，同一pod下的其他容器都共享这个基础设施容器的网络命名空间，相互之间以localhost访问，构成一个统一的整体。
 
@@ -1565,7 +1565,7 @@ ip netns exec $pid ip route add default via 172.17.0.1
 
 ​	容器内看到的网络配置(网卡信息、路由表、Iptables 规则等)均与主机上的保持一致。 注意其他资源还是与主机隔离的。
 
-![](./img/67.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/67.png)
 
 采用host模式的容器，不再需要通过linuxbridge等方式转发或数据包的拆封，性能上有很大优势。
 
@@ -1706,7 +1706,7 @@ $ ip netns exec 上面查询出来的pid号2  ip route add 10.1.1.1/24 dev B
 
 Docker网络架构是建立在一个接口集合之上，该接口集合被称为容器网络模型(Container Networking Mode,CNM)。设计CNM的目的是提供程序的可移植性。 网络模型结构图如下：
 
-![](./img/68.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/68.png)
 
 **CNM包含下面三部分：**
 
@@ -2808,7 +2808,7 @@ Swarm 是 Docker 引擎内置（原生）的集群管理和编排工具。
 
 **来自 Docker 官网的这张图片形象的展示了集群中管理节点与工作节点的关系：**
 
-![](./img/69.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/69.png)
 
 **2）服务和任务**
 
@@ -2823,7 +2823,7 @@ Swarm 是 Docker 引擎内置（原生）的集群管理和编排工具。
 
 两种模式通过 docker service create 的 --mode 参数指定。来自 Docker 官网的这张图片形象的展示了容器、任务、服务的关系。
 
-![](./img/70.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/70.png)
 
 ## 10.2  创建swarm集群
 
