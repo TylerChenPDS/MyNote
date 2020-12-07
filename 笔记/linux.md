@@ -764,7 +764,7 @@ cal [选项] [[[日] 月] 年]
 [root@rhel ~]# cal -jy
 ```
 
-![](./img/6.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/6.png)
 
 ### 2.3.4 修改权限
 
@@ -892,7 +892,7 @@ usermod 只是和add命令类似
 
 1， 由于当时装系统的时候，已经将磁盘的空间都用完了，所以不能给sda分配逻辑分区了，所以在虚拟机上在装一个磁盘sdb
 
-![](./img/8.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/8.png)
 
 2, 命令
 
@@ -903,7 +903,7 @@ m n l 回车 +3G
 w
 ```
 
-![](./img/7.png)
+![](https://gitee.com/CTLQAQ/picgo/raw/master/7.png)
 
 ### 2.5.3 创建文件系统
 
@@ -2106,5 +2106,22 @@ do
  `kill -9 ${pid}`
   echo "${id}端口应用已清理,PID:${pid} "
 done
+```
+
+```
+[global]    
+                workgroup = MYGROUP
+                server string = Samba Server Version %v 
+                log file = /var/log/samba/log.%m    
+                max log size = 50   
+                security = user    
+                passdb backend = tdbsam    
+                load printers = yes    
+                cups options = raw     
+[share1]    
+                comment = share info...
+                path = /share     
+                public = no             
+                writable = yes          
 ```
 

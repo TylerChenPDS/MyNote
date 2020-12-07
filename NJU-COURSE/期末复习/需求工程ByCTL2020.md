@@ -105,7 +105,7 @@
 
   可维护性：增加新特性。
 
-- 对外接口：对于解系统，问题域中其软件系统也属于问题域的一部分，且为一个比较特殊的部分，因此用户有权对解系统和其他系统之间的软硬件接口提出要求。
+- 对外接口：对于解系统，问题域中其它软件系统也属于问题域的一部分，且为一个比较特殊的部分，因此用户有权对解系统和其他系统之间的软硬件接口提出要求。
 
   ![image-20201204231225109](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201204231225109.png)
 
@@ -216,7 +216,7 @@
 
 ![image-20201205104449462](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201205104449462.png)
 
-![image-20201205104458864](C:%5CUsers%5C19699%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20201205104458864.png)
+![image-20201205201241935](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201205201241935.png)
 
 
 
@@ -501,7 +501,7 @@ DFD元素：
 
 
 
-![image-20201205162154118](C:%5CUsers%5C19699%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20201205162154118.png)
+![image-20201206164911663](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201206164911663.png)
 
 ## 概念类图
 
