@@ -34,6 +34,14 @@
 
 - 抽象工厂可以创建产品家族或将一群相关产品集合起来，但是有新产品把必须修改接口，其中的具体工厂会使用工厂方法创建产品。
 
+## 代理模式和装饰者模式的区别
+
+他们的目的不同。装饰着为对象增加行为，而代理则是控制对象的访问。如何让对象只能使用代理？使用工厂模式，返回的是代理对象
+
+## 代理模式和适配器模式的区别？
+
+代理和适配器都是挡在其他对象前面，并负责将请求转发给他们。但是：适配器会改变对象适配的接口（适配器对象和需要适配的对象继承不同的接口），而代理对象则和需要代理的对象实现同一个接口。
+
 # 2 原则
 
 ## OO 原则
@@ -167,5 +175,390 @@ Factory Method
 
 单例模式可确保一个类只有一个实例，并提供对其的全局访问点。
 
+#### 优缺点
+
+优点：
+
+隐藏了其他对象实例化单例对象的入口，保证整个系统始终只有一个对象提供服务；
+
+缺点：
+
+没有抽象层，使得单例的扩展性不强；在单例对象中提供了过多的职责，破坏了“单一职责”原则”
+
+#### 多线程下的单件模式
+
+##### synchronized 会减低性能
+
+![image-20201209095555809](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209095555809.png)
+
+##### 饿汉模式
+
+![image-20201209095625953](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209095625953.png)
+
+##### 双重检查加锁
+
+![image-20201209095722434](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209095722434.png)
+
+## 命令模式
+
+#### 定义
+
+命令模式将请求封装为对象，从而使您可以使用不同的请求，队列或日志请求来参数化其他对象，并支持可撤销的操作。
+
+![image-20201209100336854](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209100336854.png)
+
+#### 例子
+
+##### client
+
+![image-20201209100447728](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209100447728.png)
+
+##### Command 
+
+![image-20201209100626765](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209100626765.png)
+
+![image-20201209100633262](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209100633262.png)
+
+![image-20201209100646685](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209100646685.png)
+
+##### 特殊的命令实现--宏命令
+
+![image-20201209101053734](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209101053734.png)
+
+##### Remote Control 也就是invoker
+
+![image-20201209100848613](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209100848613.png)
+
+请注意上面的NoCommand，使用newCommand可以是我们免于判断某个插槽是否为null。
+
+## 适配器模式
+
+Adapter
+
+#### 定义
+
+将一个类的接口转换成客户期望的另一个接口，让原本接口不兼容的类可以合作无间。
+
+#### 类图
+
+![image-20201209101241336](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209101241336.png)
 
 
+
+## 外观模式
+
+Facade
+
+#### 定义
+
+提供一个统一的接口，用来访问子系统中的一群接口。定义一个高层接口**让子系统更容易使用。**
+
+#### 类图
+
+![image-20201209101706667](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209101706667.png)
+
+#### 注意
+
+- 外观没有封装子系统，只是提供简化的接口。所以客户如果觉得有必要，**依然可以使用子系统的类**。
+- 外观模式将客户从组件的子系统中解耦
+
+#### 满足的原则
+
+最少知识原则，只和你的密友谈话。
+
+##### 如何不要赢得太多的朋友和影响太多的对象？
+
+![image-20201209102125078](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209102125078.png)
+
+![image-20201209102215273](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209102215273.png)
+
+## 迭代器模式
+
+Iterator
+
+#### 定义
+
+​	迭代器模式提供一种方法顺序访问一个聚合对象中的各个元素，又不暴露其内部表示（就是不知道这个聚合对象到底是用数组还是链表实现的）。把游走的任务放在迭代器上，而不是聚合类上，这样简化了聚合对象的接口和实现，也让责任各得其所。符合**单一职责原则**
+
+#### 类图
+
+![image-20201209102437531](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209102437531.png)
+
+#### 内部迭代器
+
+使用内部迭代器，迭代器自行在元素之间游走，客户无法控制遍历的过程，所以比较容易使用，但是造成了弹性的损失。
+
+## 组合模式
+
+Composite
+
+#### 定义
+
+组合模式允许你将对象组合成树形结构来表现“整体/部分”的层次结构。组合能让客户以一致的方式处理个别对象以及对象组合。
+
+Composite 其实是一个聚合对象，这样当需要遍历其里面的子项目（包括其子项目的时候，就可以使用迭代器模式）。
+
+#### 类图
+
+![image-20201209103054115](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103054115.png)
+
+#### 注意
+
+组合组合模式牺牲**单一职责原**则换取了**设计透明性**（即通过让组件的接口同时包含一些管理子节点和叶节点的操作，客户端就可以将组合和叶节点一视同仁）。
+
+
+
+#### 遍历对象
+
+##### 使用内部迭代器
+
+![image-20201209103155436](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103155436.png)
+
+
+
+##### 使用外部迭代器
+
+![image-20201209103224270](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103224270.png)
+
+![image-20201209103559317](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103559317.png)
+
+![image-20201209103622047](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103622047.png)
+
+![image-20201209103633873](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103633873.png)
+
+## 模板方法模式
+
+#### 定义
+
+在一个方法中定义一个算法的骨架，而将一些步骤延迟到子类中。使得子类可以在不改变算法结构的情况下，重新定义算法中的某些步骤。
+
+#### 类图
+
+![image-20201209103856391](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209103856391.png)
+
+#### 钩子
+
+​		钩子是一种被声明在抽象类中的方法，但是只有空的或者默认的实现。钩子的存在可以让子类有能力对算法的不同点挂钩。
+
+![image-20201209104017049](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209104017049.png)
+
+##### 栗子
+
+![image-20201209104050909](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209104050909.png)
+
+##### 什么时候使用钩子？
+
+​		当子类必须提供算法中某个方法或步骤的实现时，就使用抽象方法。**如果算法的这个步骤是可选的，就用钩子**。如果是钩子的话子类可以选择实现，也可以选择不实现。
+
+##### 使用钩子的目的？
+
+让子类有能力为其抽象类作一些决定。
+
+#### 使用到的原则
+
+**好莱坞原则：别调用我们，我们会调用你。**在这个原则之下，允许低层组件将自己挂钩到系统之上，但是高层组件会决定什么时候和怎样使用这些底层组件。（工厂方法、观察者都采用了好莱坞原则）
+
+![image-20201209104317507](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209104317507.png)
+
+#### 注意
+
+- 为了防止子类改变模板中的算法，可以将模板方法声明为final
+- 策略模式和模板方法模式都封装算法，一个用的组合，一个用的继承。
+
+- 好莱坞原则和依赖倒转原则的区别？
+  - 依赖倒转原则教我们尽量避免使用具体类，而多用抽象。而好莱坞原则是在创建框架或组件上的一种技巧，好让底层组件能被挂进计算中，而又不会让高层组件依赖底层组件。
+
+#### 使用到模板方法的栗子
+
+- Arrays.sort(Object[] args); //需要子类继承Comparable，实现里面的compareTo
+
+- Jframe留给子类的钩子方法，paint
+
+  ![image-20201209104703705](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209104703705.png)
+
+## 策略模式
+
+#### 定义
+
+定义了算法族，分别封装起来，让它们之间可以相互替换，此模式让算法的变化独立于使用算法的客户。
+
+#### 类图
+
+![image-20201209104842797](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209104842797.png)
+
+#### 设计原则
+
+- 找出应用中可能需要变化之处，把它们独立出来，不要和那些不需要变化的代码混在一起。（封装变化）
+- 针对接口编程，而不是针对实现编程。
+- 多用组合，少用继承
+
+## 状态模式
+
+#### 定义
+
+允许对象在内部状态改变时改变它的行为，对象看起来好像修改了它的类
+
+#### 类图
+
+![image-20201209105207269](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209105207269.png)
+
+#### 设计原则
+
+- 封装变化。将每个状态的的行为局部化到它自己的内部。
+- 将容易产生问题的if语句删除，以方便日后的维护。
+- 符合开闭原则。让每一个状态“对修改关闭”，让糖果机“对扩展开放”，因为可以加入新的状态类。
+
+#### 注意
+
+- 当状态转换是固定的时候，就（将转变这个动作）适合放到context中，当转换是动态的时候，就会放在状态类中，**但是缺点是：状态类之间产生了依赖**。
+- 客户不会直接和状态进行交互
+-  Context对象如果有许多实例，那么这些实例可以**共享状态对象**，但**前提是这些状态对象不能持有它们自己的内部状态**（就是不能持有context某个特性实例的引用，因为此时状态需要对所有的context实例服务，如果状态需要用到context，那么可以将状态方法定义为： handle(Context context)），此时这些状态都被指定为**静态实例**。
+
+## 装饰者模式
+
+#### 定义
+
+动态地将责任附加到对象上，若要扩展功能，装饰者提供了比继承更有弹性的替代方案。符合开闭原则
+
+#### 类图
+
+![image-20201209105725544](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209105725544.png)
+
+## 代理模式
+
+Proxy/Stub
+
+#### 定义
+
+代理模式为另一个对象提供一个替身或占位符以控制对这个对象的访问。使用代理模式创建代表，让代表对象控制某对象的访问，被代理的对象可以是**远程对象、创建开销大的对象，或者需要安全控制的对象**
+
+#### 类图
+
+![image-20201209110058495](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209110058495.png)
+
+#### 几种代理方式
+
+##### 远程代理
+
+远程代理可以作为另一个JVM上对象的本地代表，调用代理的方法，会被代理利用通过网络转发到远程执行并且结果会通过网络返回给代理，再由代理将结果转给客户
+
+![image-20201209110149511](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209110149511.png)
+
+##### 虚拟代理
+
+虚拟代理作为创建**开销大**的对象的代表。虚拟代理经常直到我们真正需要一个对象的时候才创建它。当对象在创建前和创建中，由虚拟对象来扮演对象的替身。对象创建后，代理就会直接委托给对象。
+
+![image-20201209110234810](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209110234810.png)
+
+##### 保护代理
+
+
+
+#### 注意
+
+- 在真实世界代理模式有许多变体，但是这些变体都有共同点：都会将客户对主题施加的方法拦截下来**。（控制对象的访问）**
+
+# 4 考试题
+
+**Please name at least three OO principles and explain how they are applied in the Strategy pattern**
+
+- **封装变化**：策略模式将代码中经常变化的部分封装成了一个一个算法类。
+- **多用组合少用继承**：策略模式使用组合而不是继承来扩展算法，就是说如果增加算法，这需要增加算法类，而不是通过继承
+- **针对接口编程，不针对实现编程（依赖倒转原则）：**策略模式使用策略的超类型，而不是具体的策略类
+- **开闭原则**。策略模式对增加新的算法开放。
+- **单一职责原则**：策略模式中的算法，只有一种功能就是算法。
+
+
+
+**How are design pattern different from class libraies?**
+
+库和框架提供了我们某些特定的实现，让我们可以轻易的引用，但是这并不算是设计模式，有些时候库和框架本身会用到设计模式；设计模式比库的等级更高，设计模式告诉我们如何组织类和对象以解决某种问题。
+
+
+
+**Write a class “LowerCaseInputStream” Which is a Java I/O decorator that convert all uppercase characters to lowercase in the input stream. In other words, if we read in “I Know the Decorator Pattern threfore I RULE!” then your decorator converts this to “i know the decorator pattern threfore I rule!”**
+
+```java
+public class LowerCaseInputStream extends FilterInputStream {
+   protected LowerCaseInputStream(InputStream in) {
+      super(in);
+   }
+   @Override
+   public int read() throws IOException {
+      int c = super.read();
+      return c == -1 ? c : Character.toLowerCase((char)c);
+   }
+   @Override
+   public int read(byte[] b, int offset, int len) throws IOException {
+      int result = super.read(b, offset, len);
+      for (int i = 0; i < b.length; i++) {
+         b[i] = (byte) Character.toLowerCase(b[i]);
+      }
+      return result;
+   }
+   public static void main(String[] args) throws IOException {
+      LowerCaseInputStream a = new LowerCaseInputStream(System.in);
+      int c;
+      while ((c = a.read()) >= 0){
+         System.out.print((char) c);
+      }
+      a.close();
+   }
+}
+```
+
+
+
+**What is a MacroCommand in the Command Pattern? Please write codes for a general MacroCommand class.**
+
+![image-20201209111129583](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209111129583.png)
+
+
+
+**请写出至少三个 OO 设计原则，并说明在状态模式中是如何体现的**
+
+符合单一指责原则、开闭原则、迪米特法则（最少知道法则） 
+
+一个类一个责任原则（SRP）
+
+类应该对扩展开放，对修改关闭。（开闭原则）
+
+最少知识原则，只和你的密友谈话（迪米特法则）
+
+状态模式首先分析出有几个状态，然后提供一个状态接口，所有的状态都要实现这个接口，将每个状态的行为局部化到自己的类中，让每个状态“对修改关闭”，让context“对扩展开放”，将状态封装成独立的类，并将动作委托到代表当前状态的对象行为会随着内部状态而改变。
+
+
+
+**什么是设计模式？ 什么是复合模式？**
+
+模式 是再某情境下，针对某问题的某种解决方案。
+
+情景：不断出现的情况。
+
+问题：某情境下达到的目标/约束。
+
+解决方案：一个通用的设计，用来解决约束，达到目标。
+
+**复合模式结合两个或以上的模式，组成一个解决方案，解决一再发生的一般性问题。**
+
+
+
+**MVC 如何体现设计模式？**
+
+- **策略。**
+
+  视图和控制器实现了经典的策略模式：视图是一个对象，可以被调整使用不同的策略，而控制器提供了策略，视图只关心系统中的可视部分，对于任何界面行为，都委托给控制器处理。控制器—算法，
+
+- **组合**
+
+  显示包含窗口、面板、按钮等。视图时GUI组件的组合顶层组件包含其他组件，直到叶子节点。
+
+-  **观察者**
+
+  模型是被观察者。只要模型的状态改变，注册到模型上的视图或者控制器都会接收到通知。
+
+
+
+**写一个双向适配器的代码，并画出类图。以 Cat 会捉老鼠，Dog 会 bark为例，实现 Cat bark，Dog catch。**
+
+写一个适配器，适配器继承了Cat 和 Dog 两个接口，并且里面维护了2个引用。
