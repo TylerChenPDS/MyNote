@@ -123,6 +123,12 @@ Observer，Publish-Subscribe
 
 
 
+#### 描述
+
+其优点在于能够根据客户端给定的信息，由产品工厂具体决定产生何种对象，**对于客户端而言，其保证了“开闭原则”，但是当产品增加时，便需要修改工厂类，则工厂类并不符合“开闭原则”。** 该模式缺点也很明显，当产品需要扩展时，必须修改工厂，扩展性不强，并且在工厂类中有会依赖所有的具体产品，破坏了“单一职责原则”。  
+
+适用场景：产品确定且变化不大时可以使用，如 JDK 中对日期格式化类的实现便是通过简单工厂。  
+
 ## 工厂方法模式
 
 Factory Method
@@ -142,6 +148,20 @@ Factory Method
 - 增加新的产品类只需要增加一个具体的工厂，而不用修改源代码，符合**开闭原则**
 - 每一个工厂对象，只负责生产一个类的对象，符合**单一职责原则**。
 - 客户端不需要依赖具体的产品类，符合**依赖抽象，不是依赖具体类**（依赖倒转原则）
+
+#### 描述
+
+工厂方法模式，是对简单工厂模式的扩展，其在简单工厂基础上对工厂类进行抽象，使得工厂类可以被扩展，实现了工厂类的“开闭原则”。在工厂方法模式中，创建具体产品的过程交由具体工厂实现，一种具体工厂只负责生产一种具体产品，也符合“单一职责原则”。  
+
+优点：
+将产品的创建过程延迟到子类，使得产品的创建和扩展更加灵活，增强了系统的灵活性；  
+
+具体产品类与客户端的依赖减少，使得客户端不再依赖具体产品，而依赖抽象产品接口，减少系统依赖，符合“迪米特法则”，由于在客户端中只需要依赖抽象，则符合了“里氏替换原则”，由于抽象工厂只依赖抽象产品，符合了“依赖倒置原则”，高层模块只依赖抽象，细节依赖抽象。  
+
+缺点：
+当系统产品庞大时，会产生很多产品类和工厂类，增加系统复杂程度；
+增加了一层抽象层，增加了系统抽象程度和实现难度。
+**当产品和工厂减少时，模式将退化成简单工厂模式。**  
 
 ## 抽象工厂模式
 
@@ -167,7 +187,9 @@ Factory Method
 
 - 当需要新增产品的产品族结构时，将需要修改所有工厂类，破坏了“开闭原则”
 
+#### 描述
 
+抽象模式在“开闭原则”上有倾斜，在扩展产品上其符合“开闭原则”，但是扩展产品族结构时将不符合“开闭原则”。  
 
 ## 单件模式
 
@@ -198,6 +220,40 @@ Factory Method
 ##### 双重检查加锁
 
 ![image-20201209095722434](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209095722434.png)
+
+#### 多例模式
+
+```java
+public class MultiplePattern {
+    //必须要有容器
+    private static List<Chess> chessList = new ArrayList<>();
+    private static final Chess white = new Chess("white");
+    private static final Chess black = new Chess("black");
+
+    private static final int maxCount = 2;
+
+    static {
+        chessList.add(white);
+        chessList.add(black);
+    }
+    private MultiplePattern() {
+    }
+
+    //随机拿取棋子
+    public static Chess getInstance() {
+        Random random = new Random();
+        int crt = random.nextInt(maxCount);
+        return chessList.get(crt);
+    }
+
+    //指定拿取棋子
+    public static Chess getInstance(int index) {
+        return chessList.get(index);
+    }
+}
+```
+
+
 
 ## 命令模式
 
@@ -242,6 +298,38 @@ Adapter
 #### 类图
 
 ![image-20201209101241336](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209101241336.png)
+
+
+
+#### 描述
+
+Target：目标类，为当前客户端期望的抽象； 
+
+Adaptee：适配者类，被适配的抽象； 
+
+Adapter：适配器类，用于将适配者类转换为目标类的抽象。
+
+优点： 
+
+将适配者类（Adaptee）与目标类（Target）解耦
+
+增强类的复用性，**适配者的细节对客户端或目标类透明**；
+
+具有良好的灵活性和扩展性，当需要适配到新的目标类时，只需要新增适配器类即可，符合“开闭原则”。
+
+缺点： 
+
+类适配器由于需要使用继承，当面对目标类的抽象是类时，将因不支持多继承而产生局限，并且适配者当其子类较多时，需要一 一创建适配器类以
+
+
+
+**对象适配器与类适配器**
+
+对象适配器是指在适配器类中引用适配者类，而类适配器是指适配器类 继承自适配者类。
+
+类适配器可以实现在适配器类中，置换适配者类的已有方法，从而具有 更强的灵活性。
+
+对象适配器可以在同一个适配器类中更换不同的适配者，并支持对适配 者类及其子类的适配
 
 
 
@@ -450,6 +538,28 @@ Composite 其实是一个聚合对象，这样当需要遍历其里面的子项�
 
 ![image-20201209105725544](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209105725544.png)
 
+#### 描述
+
+优点： 
+
+更加灵活，使用组合代替继承； 
+
+动态扩展类的功能，继承是静态的； 
+
+组件类与装饰类可独立变化，相互组合，可组合出功能更加强大的类。
+
+缺点： 
+
+产生了粒度小的装饰类，容易产生类爆炸； 
+
+由于它更加灵活，并且是动态扩展的功能，使得调试更加困难，可能涉及递归的执行。
+
+
+
+对 JDK 的 装 饰 模 式 的 了 解 ： InputStream 、 FileInputStream 、 BufferedInputStream 、 LineNumberInputStream ， 其 中 FileInputStream 、 和 BufferedInputStream 是对 **InputStream** 的装饰，而 LinedNumberInputStream 是 对 BufferedInputStream 的又一层装饰。
+
+
+
 ## 代理模式
 
 Proxy/Stub
@@ -483,6 +593,62 @@ Proxy/Stub
 #### 注意
 
 - 在真实世界代理模式有许多变体，但是这些变体都有共同点：都会将客户对主题施加的方法拦截下来**。（控制对象的访问）**
+
+## 复合模式
+
+观察者加组合模式
+
+![image-20201209233029233](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209233029233.png)
+
+
+
+
+
+## 模式分类
+
+### **创建型模式**
+
+这些设计模式提供了一种在创建对象的同时隐藏创建逻辑的方式，而不是使用 new 运算符直接实例化对象。这使得程序在判断针对某个给定实例需要创建哪些对象时更加灵活。
+
+- 工厂模式（Factory Pattern）
+- 抽象工厂模式（Abstract Factory Pattern）
+- 单例模式（Singleton Pattern）
+- 建造者模式（Builder Pattern）
+- 原型模式（Prototype Pattern）
+
+## **结构型模式**
+
+这些设计模式关注类和对象的组合。继承的概念被用来组合接口和定义组合对象获得新功能的方式。
+
+- 适配器模式（Adapter Pattern）
+- 桥接模式（Bridge Pattern）
+- 过滤器模式（Filter、Criteria Pattern）
+- 组合模式（Composite Pattern）
+- 装饰器模式（Decorator Pattern）
+- 外观模式（Facade Pattern）
+- 享元模式（Flyweight Pattern）
+- 代理模式（Proxy Pattern）
+
+## **行为型模式**
+
+**这些设计模式特别关注对象之间的通信。**
+
+- 责任链模式（Chain of Responsibility Pattern）
+- 命令模式（Command Pattern）
+- 解释器模式（Interpreter Pattern）
+- 迭代器模式（Iterator Pattern）
+- 中介者模式（Mediator Pattern）
+- 备忘录模式（Memento Pattern）
+- 观察者模式（Observer Pattern）
+- 状态模式（State Pattern）
+- 空对象模式（Null Object Pattern）
+- 策略模式（Strategy Pattern）
+- 模板模式（Template Pattern）
+- 访问者模式（Visitor Pattern）
+
+
+
+
 
 # 4 考试题
 
@@ -588,3 +754,4 @@ public class LowerCaseInputStream extends FilterInputStream {
 **写一个双向适配器的代码，并画出类图。以 Cat 会捉老鼠，Dog 会 bark为例，实现 Cat bark，Dog catch。**
 
 写一个适配器，适配器继承了Cat 和 Dog 两个接口，并且里面维护了2个引用。
+
