@@ -414,6 +414,32 @@ Composite 其实是一个聚合对象，这样当需要遍历其里面的子项�
 - 客户不会直接和状态进行交互
 -  Context对象如果有许多实例，那么这些实例可以**共享状态对象**，但**前提是这些状态对象不能持有它们自己的内部状态**（就是不能持有context某个特性实例的引用，因为此时状态需要对所有的context实例服务，如果状态需要用到context，那么可以将状态方法定义为： handle(Context context)），此时这些状态都被指定为**静态实例**。
 
+#### 例子
+
+##### 原来的糖果机
+
+![image-20201209115235585](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209115235585.png)
+
+![image-20201209115253536](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209115253536.png)
+
+
+
+##### 现在的糖果机
+
+![image-20201209115339568](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209115339568.png)
+
+
+
+
+
+![image-20201209115420543](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209115420543.png)
+
+![image-20201209115627984](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201209115627984.png)
+
+
+
+
+
 ## 装饰者模式
 
 #### 定义
