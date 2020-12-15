@@ -695,3 +695,919 @@ public class Factor {
 }
 ```
 
+
+
+## 大整数运算
+
+### 存储
+
+```java
+// 如123456 则d[0]=6 d[1]=5
+int[] d = new int[1000];
+int len;
+```
+
+### 比较大小
+
+1. 如果两个bigint长度不相同，则长的大。
+2. 相同则从高位往到低位进行比较，出现某位不相等则可以判断大小。
+3. 遍历完还没有比较出来大小，则相等
+
+### 四则运算
+
+注意：这里的四则运算都是对于正整数而言的，如果是负数，可以处理完了再用四则运算，然后在处理一下
+
+和小学列式子计算式一样的，需要有一个进位。
+
+这种写法式对于两个对象都是正数而言的，如果一个数是负数，则可以使用高精度减法。如果都是负数，则去掉➖相加后再加上负号。
+
+```java
+//高精度加法/
+//和小学算加法一样
+public static MyBigInt add(MyBigInt a, MyBigInt b){
+    MyBigInt res = new MyBigInt();
+    int carry = 0;//carry 是进位
+    for(int i = 0; i < a.len || i < b.len; i ++){
+        int temp = a.d[i] + b.d[i] + carry;
+        res.d[res.len ++] = temp % 10;
+        carry = temp / 10;
+    }
+    //如果最后进位不为0，则直接赋值给结果最高的那一位
+    if(carry != 0){
+        res.d[res.len ++] = carry;
+    }
+    return  res;
+}
+```
+
+乘法 高精度147 乘以 35
+
+![image-20201214104348138](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201214104348138.png)
+
+
+
+除法
+
+![image-20201214105220547](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201214105220547.png)
+
+**归纳：**上一步的余数除以10加上该步的位，得到该步临时的被除数，将其与除数比较：如果不够除，则改位的商位0；如果够除，则上即为对应的上，余数为对应的余数。最后要注意，减去高位可能有多余的0
+
+### 完整代码
+
+```java
+package perday;
+
+import org.junit.Test;
+import java.util.Arrays;
+
+/**
+ * @author TylerChen
+ * @date 2020/12/14 - 10:02
+ */
+public class MyBigInt implements Comparable<MyBigInt> {
+	int[] d = new int[1000];
+	int len;
+
+	public MyBigInt() {
+
+	}
+
+	public MyBigInt(String str) {
+		this.len = str.length();
+		for (int i = 0; i < str.length(); i++) {
+			this.d[i] = str.charAt(str.length() - i - 1) - '0';
+		}
+	}
+
+	//通过string获取大整数
+	// 如123456 则d[0]=6 d[1]=5
+	MyBigInt getByStr(String str) {
+		MyBigInt big = new MyBigInt();
+		big.len = str.length();
+		for (int i = 0; i < str.length(); i++) {
+			big.d[i] = str.charAt(str.length() - i - 1);
+		}
+		return big;
+	}
+
+	@Override
+	public int compareTo(MyBigInt o) {
+		if (this.len > o.len) {
+			return 1;
+		} else if (this.len < o.len) {
+			return -1;
+		} else {
+			for (int i = this.len - 1; i >= 0; i--) {
+				if (this.d[i] > o.d[i]) {
+					return 1;
+				} else if (this.d[i] < o.d[i]) {
+					return -1;
+				}
+			}
+		}
+		return 0;
+	}
+
+	//高精度加法/
+	//和小学算加法一样
+	public static MyBigInt add(MyBigInt a, MyBigInt b) {
+		MyBigInt res = new MyBigInt();
+		int carry = 0;//carry 是进位
+		for (int i = 0; i < a.len || i < b.len; i++) {
+			int temp = a.d[i] + b.d[i] + carry;
+			res.d[res.len++] = temp % 10;
+			carry = temp / 10;
+		}
+		//如果最后进位不为0，则直接赋值给结果最高的那一位
+		if (carry != 0) {
+			res.d[res.len++] = carry;
+		}
+		return res;
+	}
+
+	//对于减法，a一定要比b大，
+	public static MyBigInt sub(MyBigInt a, MyBigInt b) {
+		MyBigInt res = new MyBigInt();
+		for (int i = 0; i < a.len || i < b.len; i++) {
+			if (a.d[i] < b.d[i]) {//不够减需要向高位借位
+				a.d[i + 1]--;
+				a.d[i] += 10;//借1当10
+			}
+			res.d[res.len++] = a.d[i] - b.d[i];
+		}
+		//去掉高位的0;
+		while (res.len - 1 >= 1 && res.d[res.len - 1] == 0) {
+			res.len--;
+		}
+		return res;
+	}
+    
+    //高精度与低精度的乘法
+	public static MyBigInt muti(MyBigInt a, int b) {
+		MyBigInt res = new MyBigInt();
+		int carry = 0;
+		for (int i = 0; i < a.len; i++) {
+			int temp = a.d[i] * b + carry;
+			//个位作为改位的结果
+			res.d[res.len++] = temp % 10;
+			//高位作为进位
+			carry = temp /= 10;
+		}
+		//和加法不一样，乘法的进位可能不止一位，
+		while (carry != 0) {
+			res.d[res.len++] = carry % 10;
+			carry /= 10;
+		}
+		return res;
+	}
+
+	public static MyBigInt divide(MyBigInt a, int b) {
+		int r = 0;
+		MyBigInt res = new MyBigInt();
+		res.len = a.len;
+		for (int i = a.len - 1; i >= 0; i--) {
+			r = r * 10 + a.d[i];
+			if(r < b){ //不够除
+				res.d[i] = 0;
+			}else {
+				res.d[i] = r / b;
+				r = r % b;
+			}
+		}
+
+		while (res.len - 1 >= 1 && res.d[res.len - 1] == 0){
+			res.len --;
+		}
+		return res;
+	}
+
+	
+
+	@Override
+	public String toString() {
+		StringBuilder stringBuilder = new StringBuilder();
+		for (int i = len - 1; i >= 0; i--) {
+			stringBuilder.append(d[i]);
+		}
+		return stringBuilder.toString();
+	}
+	public static void main(String[] args) {
+		MyBigInt a1 = new MyBigInt("123");
+		MyBigInt a2 = new MyBigInt("458");
+		MyBigInt a3 = new MyBigInt("121");
+		MyBigInt a4 = new MyBigInt("102");
+		MyBigInt[] aa = {a1, a2, a3, a4};
+		Arrays.sort(aa);
+		System.out.println(Arrays.toString(aa));//[102, 121, 123, 458]
+		System.out.println(add(a1, a4));//225
+		System.out.println(sub(a1, a4));//21
+		System.out.println(muti(a1, 2));//246
+		System.out.println(divide(a1, 6));//20
+
+	}
+}
+```
+
+
+
+## 搜索专题
+
+### DFS 深度优先搜索
+
+问题：给定n个整数，从中选选择k个数，使得这k个数之和恰好等于一个给定的数x；如果有多种方案，选择他们中元素平方和最大的一个。例如：从{2，3，3，4}中选择2个数，使得他们的和为6，显然有2中方案{2，4}与{3，3}，其中平方和最大的方案为{2，4}；
+
+```java
+package perday;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MyTest {
+	//从n个数中选择k个数使得和为x，最大平方和为maxSumSqu
+	int n = 4, k = 2, x = 6, maxSumSqu = -1;
+	int[] a = {2, 3, 3, 4};
+	ArrayList<Integer> temp = new ArrayList<>(), ans = new ArrayList<>();
+	/**
+	 * @param index  当前处理的整数编号
+	 * @param nowK   已经选择数的个数
+	 * @param sum    选择整数和
+	 * @param sumSeq 平方和
+	 */
+	void DFS(int index, int nowK, int sum, int sumSeq) {
+		if(nowK == k && sum == x){
+			if(sumSeq > maxSumSqu){
+				maxSumSqu = sumSeq;
+				ans = new ArrayList<>(temp); //更新最优方案
+			}
+			return;
+		}
+
+		if(index == n || nowK > k || sum > x){
+			return;
+		}
+		//选择index号的数
+		temp.add(a[index]);
+		DFS(index + 1, nowK + 1, sum + a[index], sumSeq + a[index] * a[index]);
+		//不选index号的数
+		temp.remove(temp.size() - 1);
+		DFS(index + 1, nowK, sum , sumSeq);
+	}
+
+	@Test
+	public void test(){
+	    DFS(0, 0, 0, 0);
+		System.out.println(ans);
+	}
+}
+```
+
+修改题目为：假设N个整数中的每一个数都可以被选择多次。
+
+这个问题只需要对原来的代码进行少量的修改即可。由于每个整数都可以被选择多次，因此当选择了index号数时，不应该直接进入index+1号数的处理。显然，应当能够继续选择index号的数，因此只需要把“选择index号数”这条分支的代码修改为`DFS(index + 1, nowK + 1, sum + a[index], sumSeq + a[index] * a[index]);`即可
+
+### BFS 广度优先搜索
+
+广度优先遍历一般使用队列来实现，基本写法如下模板：
+
+```java
+void BFS(T s){
+    Queue<T> q;
+    q.push(s);
+    设置为已入队;
+    while(!q.isEmpty()){
+        取出队首元素;
+        访问;
+        队首元素出队;
+        top的下一层节点未曾入队列的节点全部入队列，并设置为已入队;
+    }
+}
+```
+
+例题：给出一个m*n的矩阵，矩阵中的元素为0或1.称位置（x,y）与其上下左右四个位置相邻。如果矩阵中有若干个1是相邻的（不必两两相邻），那么称这些1构成了一个“块”。求给定矩阵中块的个数。
+
+```
+{0,1,1,1,0,0,1},
+{0,0,1,0,0,0,0},
+{0,0,0,0,1,0,0},
+{0,0,0,1,1,1,0},
+{1,1,1,0,1,0,0},
+{1,1,1,1,0,0,0}
+
+//对于这个矩阵，块数为4
+```
+
+```java
+package perday;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+public class MyTest {
+	static class Node {
+		int x, y;
+
+		Node(int xx, int yy) {
+			x = xx;
+			y = yy;
+		}
+	}
+
+	int[][] matrix = {
+			{0, 1, 1, 1, 0, 0, 1},
+			{0, 0, 1, 0, 0, 0, 0},
+			{0, 0, 0, 0, 1, 0, 0},
+			{0, 0, 0, 1, 1, 1, 0},
+			{1, 1, 1, 0, 1, 0, 0},
+			{1, 1, 1, 1, 0, 0, 0}
+	};
+	boolean[][] inq = new boolean[6][7];
+	int m = 6, n = 7;// m * n的矩阵
+	int[] X = {0, 0, 1, -1};
+	int[] Y = {1, -1, 0, 0};
+
+	//判断某个坐标是否需要判断
+	//1，越界  2，当前位置已经进入过队列 3,当前位置是0 不是 1
+	boolean judge(int x, int y) {
+		if (x >= m || y >= n || x < 0 || y < 0) {
+			return false;
+		}
+		if (matrix[x][y] == 0 || inq[x][y]) {
+			return false;
+		}
+		return true;
+	}
+
+	void BFS(int x, int y) {
+		Queue<Node> q = new LinkedList<>();
+		Node a = new Node(x, y);
+		q.offer(a);
+		inq[x][y] = true;
+		while (!q.isEmpty()) {
+			Node p = q.poll();
+			for (int i = 0; i < X.length; i++) {
+				int newX = p.x + X[i];
+				int newY = p.y + Y[i];
+				if (judge(newX, newY)) {
+					q.offer(new Node(newX, newY));
+					inq[newX][newY] = true;
+				}
+			}
+		}
+	}
+
+	@Test
+	public void test() {
+		int ans = 0;
+		for (int i = 0; i < m; i++) {
+			for (int j = 0; j < n; j++) {
+				if (matrix[i][j] == 1 && inq[i][j] == false) {
+					ans++;
+					BFS(i, j);
+				}
+			}
+		}
+		System.out.println(ans);//
+	}
+}
+```
+
+
+
+
+
+## 树
+
+### 二叉树
+
+#### 根据先跟和中跟创建二叉树
+
+**结论：中序序列可以与先序序列、后序序列、层次序列中的任意一个来构建唯一的二叉树。而后者两两搭配或是三个一起都无法构建唯一的二叉树。** 原因是先序、后序、层次均是提供根节点，作用是相同的，都必须由中序序列来区分出左右子树。
+
+#### 先中后根遍历、层次遍历
+
+```java
+package perday;
+
+import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+public class BinaryTree {
+	static class Node {
+		int data;
+		int layer;//该节点所在的层次
+		Node left, right;
+	}
+	//根据先根和后跟创建一棵二叉树
+	int[] pre, inOr;
+	Map<Integer, Integer> inOrToIndex = new HashMap<>();
+	Node create(int[] pre, int[] inOr) {
+		this.pre = pre;
+		this.inOr = inOr;
+		for (int i = 0; i < inOr.length; i++) {
+			inOrToIndex.put(inOr[i], i);
+		}
+		return create(0, pre.length - 1, 0, inOr.length - 1);
+	}
+	Node create(int preL, int preR, int inL, int inR) {
+		if (preL > preR) {//如果先序长度小于等于0，直接返回
+			return null;
+		}
+		Node root = new Node();
+		root.data = pre[preL];//
+		//获得先跟第一个节点在后跟中的位置
+		int k = inOrToIndex.get(pre[preL]);
+		//所以当前root左子树的节点个数为
+		int numLeft = k - inL;
+		//左子树的先序区间为 [preL, preL + numLeft] 中序区间为
+		root.left = create(preL + 1, preL + numLeft, inL, k - 1);
+		//右子树的先序区间为[preL+numLeft + 1,preR] 中序区间为[k + 1,inR]
+		root.right = create(preL + numLeft + 1, preR, k + 1, inR);
+		return root;
+	}
+
+	void preOrder(Node root){
+		if(root == null){
+			return;
+		}
+		System.out.print(root.data + " ");
+		preOrder(root.left);
+		preOrder(root.right);
+	}
+	void inOrder(Node root){
+		if(root == null){
+			return;
+		}
+		inOrder(root.left);
+		System.out.print(root.data + " ");
+		inOrder(root.right);
+	}
+	void postOrder(Node root){
+		if(root == null){
+			return;
+		}
+		postOrder(root.left);
+		postOrder(root.right);
+		System.out.print(root.data + " ");
+	}
+	void layerOrder(Node root){
+		Queue<Node> q = new LinkedList<>();
+		q.offer(root);
+		root.layer = 1;
+		while (!q.isEmpty()){
+			Node p = q.poll();
+			System.out.print(p.data + "(" + p.layer + ")" + " ");
+			if(p.left != null){
+				p.left.layer = p.layer + 1;
+				q.offer(p.left);
+			}
+			if(p.right != null){
+				p.right.layer = p.layer + 1;
+				q.offer(p.right);
+			}
+		}
+	}
+
+
+	@Test
+	public void test(){
+		int[] a = {1,2,4,5,3,6,7};
+		int[] b = {4,2,5,1,6,3,7};
+		Node root = create(a, b);
+		preOrder(root);
+		System.out.println();
+		inOrder(root);
+		System.out.println();
+		layerOrder(root);
+	}
+}
+```
+
+### 普通树的定义
+
+```java
+class Node{
+    int layer;//层号
+    int data;
+    List<Node> children;
+}
+```
+
+
+
+### 二叉查找树BST
+
+BST 又称排序二叉树，二叉搜索树。
+
+定义：1，要么二叉查找树是一颗空树。
+
+​		    2，要么二叉树由左右子树组成，其中左子树和右子树都是二叉查找树，且左子树上所有节点的数据域均小于或等于根节点的数据域，右子树上的所有节点的数据域均大于根节点的数据域。
+
+
+
+
+
+### 平衡二叉树
+
+
+
+## 并查集
+
+并查集是一种维护集合的数据结构，并查集支持下面两个操作：
+
+1，合并：合并2个集合。2，查找：判断两个元素是否在一个集合。
+
+并查集使用一个数组来实现：`int father[n];`其中，father[i]表示元素i的父亲节点，如果father[i] = [i]则说明元素i是该集合的根节点。
+
+```java
+package perday;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+public class MyTest {
+	int n = 10;
+	int[] father = new int[10];
+
+	/**
+	 * 初始化，一开始每个元素都是一个独立的集合，因此需要所有的father[i]=i
+	 */
+	void init(){
+		for (int i = 0; i < n; i++) {
+			father[i] = i;
+		}
+	}
+
+	/**
+	 * 返回元素x所在集合的根节点(使用路径压缩)
+	 * @param x
+	 * @return
+	 */
+	int findFather(int x){
+		int a = x;
+		while (x != father[x]){
+			x = father[x];
+		}
+		// 此时x = father[x] x即为传来参数a的根节点
+		while (a != father[a]){
+			int z = a;
+			a = father[a];//a指向下一个节点
+			father[z] = x;//原来a的父亲节点指向x，也就是跟根节点
+		}
+		return x;
+	}
+
+	/**
+	 * 把a，和b所在的集合合并起来
+	 * @param a
+	 * @param b
+	 */
+	void union(int a, int b){
+		int faA = findFather(a);
+		int faB = findFather(b);
+		if(faA != faB){
+			father[faA] = faB;
+		}
+	}
+}
+
+```
+
+### 朋友圈 LeetCode547
+
+https://leetcode-cn.com/problems/friend-circles/
+
+班上有 N 名学生。其中有些人是朋友，有些则不是。他们的友谊具有是传递性。如果已知 A 是 B 的朋友，B 是 C 的朋友，那么我们可以认为 A 也是 C 的朋友。所谓的朋友圈，是指所有朋友的集合。
+
+给定一个 N * N 的矩阵 M，表示班级中学生之间的朋友关系。如果M[i][j] = 1，表示已知第 i 个和 j 个学生互为朋友关系，否则为不知道。你必须输出所有学生中的已知的朋友圈总数。
+
+```
+示例 1：
+输入：
+[[1,1,0],
+ [1,1,0],
+ [0,0,1]]
+输出：2 
+解释：已知学生 0 和学生 1 互为朋友，他们在一个朋友圈。
+第2个学生自己在一个朋友圈。所以返回 2 。
+```
+
+```java
+class Solution {
+	//使用并查集
+	int[] father = new int[201];
+	void init(int n){
+		for (int i = 0; i < n; i++) {
+			father[i] = i;
+		}
+	}
+	int findFather(int x){
+		int a = x;
+		while (x != father[x]){
+			x = father[x];
+		}
+		//路径压缩
+		while (a != father[a]){
+			int z = a;
+			a = father[a];
+			father[z] = x;
+		}
+		return x;
+	}
+	void union(int a, int b){
+		int faA = findFather(a);
+		int fab = findFather(b);
+		if (faA != fab){
+			father[faA] = fab;
+		}
+	}
+
+	public int findCircleNum(int[][] M) {
+		int n = M.length;
+		init(n);
+		for (int i = 0; i < n; i ++){ //只用遍历一半就行了
+			for (int j = i + 1; j < n; j ++){
+				if(M[i][j] == 1){ //说明i和j是朋友
+					union(i, j);
+				}
+			}
+		}
+		int ans = 0;
+		for (int i = 0; i < n; i++) {
+			if(i == father[i]){
+				ans ++;
+			}
+		}
+		return ans;
+	}
+}
+```
+
+
+
+## 堆
+
+**堆是一棵完全二叉树**，树种的每个结点的值都不小于其左右孩子结点的值，那么称这样的堆为大顶堆。大顶堆堆一般用于优先队列的实现。
+
+堆使用数组来表示，heap[1]代表堆顶元素。
+
+### 创建堆
+
+1，建立堆，
+建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆，时间复杂度O(n)
+
+```java
+//1，建立大顶堆，
+//建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆
+void createHeap(int[] a) {
+    n = a.length;
+    for (int i = 1; i <= a.length; i++) {
+        heap[i] = a[i - 1];
+    }
+    for (int i = n / 2; i >= 1; i --){
+        downAdjust(i, n);
+    }
+}
+//向下调整,范围[low,high]
+//low为预调整节点的数组下标，high一般为堆的左后一个元素的数组下标
+void downAdjust(int low, int high) {
+		int i = low, j = i * 2;
+		while (j <= high) {
+			//使j指向较大的孩子节点
+			if (j + 1 <= high && heap[j + 1] > heap[j]) {
+				j = j + 1;
+			}
+			//如果孩子的权值比要i大，则可以调整，否则调结束
+			if (heap[j] > heap[i]) {
+				int temp = heap[j];
+				heap[j] = heap[i];
+				heap[i] = temp;
+				i = j;
+				j = 2 * i;
+			} else {
+				break;
+			}
+		}
+	}
+```
+
+### 删除堆顶元素
+
+如果删除堆中的最大元素，并让其保持堆的结构，只需要让最后一个元素覆盖堆顶元素，然后只需要调整堆顶元素即可（因为此时除了堆顶元素，其他节点都已经是最大堆）。时间复杂度O(logn)
+
+```java
+//删除堆顶元素
+int deleteTop() {
+    int top = heap[1];
+    heap[1] = heap[n--];
+    downAdjust(1, n);
+    return top;
+}
+```
+
+### 添加一个元素
+
+如果要添加一个元素，可以把元素放到数组的最后面，然后不断的向上调整这个元素即可。
+
+```java
+//插入一个节点
+void insert(int x){
+    heap[++n] = x;
+    upAdjust(1, n);
+}
+//对heap数组在[low,high]范围进行向上调整
+//其中low一般设置为1，high表示欲调整的数组下标
+void upAdjust(int low, int high){
+    int i = high, j = i / 2;//j 是i 的父亲节点
+    while (j >= low){
+        //如果孩子的权值较大，则需要调整
+        if(heap[i] > heap[j]){
+            int temp = heap[j];
+            heap[j] = heap[i];
+            heap[i] = temp;
+            i = j;
+            j = i / 2;
+        }else {
+            break;
+        }
+    }
+}
+```
+
+### 堆排序
+
+- 建立最大堆可以进行升序排序
+- 最小堆可以降序排序
+
+对于一个最大堆来说，取出堆顶元素，然后将堆的最后一个元素替换至堆顶。在进行一次针对堆顶元素的向下调整。
+
+```java
+void heapSort(int[] a) {
+		createHeap(a);
+		for (int i = n; i >= 1; i--) {
+			int temp = heap[i];
+			heap[i] = heap[1];
+			heap[1] = temp;
+			downAdjust(1, i - 1);
+		}
+	}
+```
+
+### 完整代码
+
+```java
+package perday;
+
+import org.junit.Test;
+
+/**
+ * @author TylerChen
+ * @date 2020/12/15 - 9:54
+ */
+public class Heap {
+	int maxn = 100;
+	int[] heap = new int[maxn];
+	int n;//堆种元素的个数
+
+	//1，建立大顶堆，
+	//建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆
+	void createHeap(int[] a) {
+		n = a.length;
+		for (int i = 1; i <= a.length; i++) {
+			heap[i] = a[i - 1];
+		}
+		for (int i = n / 2; i >= 1; i--) {
+			downAdjust(i, n);
+		}
+	}
+
+	//删除堆顶元素
+	int deleteTop() {
+		int top = heap[1];
+		heap[1] = heap[n--];
+		downAdjust(1, n);
+		return top;
+	}
+
+	//插入一个节点
+	void insert(int x) {
+		heap[++n] = x;
+		upAdjust(1, n);
+	}
+
+	void heapSort(int[] a) {
+		createHeap(a);
+		for (int i = n; i >= 1; i--) {
+			int temp = heap[i];
+			heap[i] = heap[1];
+			heap[1] = temp;
+			downAdjust(1, i - 1);
+		}
+	}
+
+	void print(){
+		for (int i = 1; i <= n ; i++) {
+			System.out.print(heap[i] + " ");
+		}
+	}
+
+	@Test
+	public void test(){
+	    int[] a = {9,3,5,2,6,1,8,4,7};
+	    createHeap(a);
+	    print();//9 7 8 4 6 1 5 3 2
+		System.out.println();
+
+		deleteTop();
+		print();// 8 7 5 4 6 1 2 3
+		System.out.println();
+
+		insert(7);
+		print();// 8 7 5 7 6 1 2 3 4
+		System.out.println();
+		
+		heapSort(a);
+		print();//1 2 3 4 5 6 7 8 9
+	}
+
+	//向下调整,范围[low,high]
+	//low为预调整节点的数组下标，high一般为堆的左后一个元素的数组下标
+	void downAdjust(int low, int high) {
+		int i = low, j = i * 2;
+		while (j <= high) {
+			//使j指向较大的孩子节点
+			if (j + 1 <= high && heap[j + 1] > heap[j]) {
+				j = j + 1;
+			}
+			//如果孩子的权值比要i大，则可以调整，否则调结束
+			if (heap[j] > heap[i]) {
+				int temp = heap[j];
+				heap[j] = heap[i];
+				heap[i] = temp;
+				i = j;
+				j = 2 * i;
+			} else {
+				break;
+			}
+		}
+	}
+
+	//对heap数组在[low,high]范围进行向上调整
+	//其中low一般设置为1，high表示欲调整的数组下标
+	void upAdjust(int low, int high) {
+		int i = high, j = i / 2;//j 是i 的父亲节点
+		while (j >= low) {
+			//如果孩子的权值较大，则需要调整
+			if (heap[i] > heap[j]) {
+				int temp = heap[j];
+				heap[j] = heap[i];
+				heap[i] = temp;
+				i = j;
+				j = i / 2;
+			} else {
+				break;
+			}
+		}
+	}
+}
+```
+
+
+
+
+
+
+
+
+
+```shell
+docker run -d \
+     -v /root/nextcloud/html:/var/www/html \
+      -v /root/nextcloud/apps:/var/www/html/custom_apps \
+      -v /root/nextcloud/config:/var/www/html/config \
+      -v /root/nextcloud/nextcloud/data:/var/www/html/data \
+      -v /root/nextcloud/themes:/var/www/html/themes \
+      -p 80:80 \
+      --restart always \
+      --name nextcloud \
+      nextcloud:17-apache
+      
+      
+      docker run -d -v ~/docker/nextcloud:/var/www/html -p 11180:80 --name nextcloud --restart always nextcloud
+      
+      
+      docker run -d -p 11280:80 --name onlyoffice --restart always onlyoffice/documentserver
+```
+
