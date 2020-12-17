@@ -43,6 +43,20 @@ Spring 特点
             <artifactId>spring-core</artifactId>
             <version>5.2.8.RELEASE</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-aop -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>5.2.8.RELEASE</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-aspects -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
+            <version>5.2.8.RELEASE</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
@@ -53,6 +67,66 @@ Spring 特点
             <artifactId>commons-logging</artifactId>
             <version>1.2</version>
         </dependency>
+
+
+        <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.9</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.47</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-jdbc -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>5.2.8.RELEASE</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-orm -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+            <version>5.2.8.RELEASE</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-tx -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <version>5.2.8.RELEASE</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.2.0</version>
+            <scope>test</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>5.3</version>
+            <scope>compile</scope>
+        </dependency>
+    	<dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.10</version>
+        </dependency>
+
+
+
     </dependencies>
 ```
 
@@ -62,11 +136,16 @@ Spring 特点
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
         http://www.springframework.org/schema/context
-        http://www.springframework.org/schema/context/spring-context-4.2.xsd">
-</beans>
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
 ```
 
 
@@ -489,4 +568,410 @@ public class SpringConfig {
 	}
 }
 ```
+
+## AOP
+
+### 什么是 AOP
+
+- 面向切面编程（方面），利用 AOP 可以对业务逻辑的各个部分进行隔离，从而使得 业务逻辑各部分之间的耦合度降低，提高程序的可重用性，同时提高了开发的效率。
+- 通俗描述：不通过修改源代码方式，在主干功能里面添加新功能
+
+术语
+
+- 连接点：类里面哪些方法可以被增强，这些方法称为连接点。
+- 切入点：实际被增强的方法。
+- 通知（增强）：实际增强的逻辑部分。
+- 切面：（动作）把通知应用到切入点的过程。
+
+
+
+### 例子：
+
+```xml
+<context:component-scan base-package="test"></context:component-scan>
+<aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+```
+
+
+
+
+
+```java
+@Component
+public class User {
+	public void add(){
+		System.out.println("add......");
+	}
+}
+
+
+@Component
+@Aspect
+public class UserProxy {
+	//前置通知
+	//@Before 注解表示作为前置通知
+	@Before(value = "execution(* test.aop.User.add(..))")
+	public void before() {
+		System.out.println("before.........");
+	}
+
+	//后置通知（返回通知）
+	@AfterReturning(value = "execution(* test.aop.User.add(..))")
+	public void afterReturning() {
+		System.out.println("afterReturning.........");
+	}
+
+
+	@After(value = "execution(* test.aop.User.add(..))")
+	public void after() {
+		System.out.println("after.........");
+	}
+
+	//异常通知
+	@AfterThrowing(value = "execution(*	test.aop.User.add(..))")
+	public void afterThrowing() {
+		System.out.println("afterThrowing.........");
+	}
+
+	//环绕通知
+	@Around(value = "execution(* test.aop.User.add(..))")
+	public void around(ProceedingJoinPoint proceedingJoinPoint) throws
+			Throwable {
+		System.out.println("环绕之前.........");
+		proceedingJoinPoint.proceed();
+		System.out.println("环绕之后.........");
+	}
+}
+
+
+public class MyTest {
+	@Test
+	public void test(){
+		ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
+		User user = context.getBean("user", User.class);
+		user.add();
+	}
+}
+```
+
+结果：
+
+![image-20201217123516285](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201217123516285.png)
+
+相同的切入点可以被提取
+
+```java
+@Pointcut(value = "execution(* com.atguigu.spring5.aopanno.User.add(..))")
+public void pointdemo() {
+}
+
+@Before(value = "pointdemo()")
+public void before() {
+ 	System.out.println("before.........");
+}
+```
+
+完全基于注解
+
+```java
+@Configuration
+@ComponentScan(basePackages = {"com.atguigu"})
+@EnableAspectJAutoProxy(proxyTargetClass = true)
+public class ConfigAop {
+}
+```
+
+
+
+基于配置文件的配置
+
+```xml
+<!--    <context:component-scan base-package="test"></context:component-scan>-->
+<bean id="user" class="test.aop.User"></bean>
+<bean id="userProxy" class="test.aop.UserProxy"></bean>
+<!--    <aop:aspectj-autoproxy></aop:aspectj-autoproxy>-->
+<aop:config>
+    <aop:pointcut id="p" expression="execution(* test.aop.User.add(..))"/>
+    <aop:aspect ref="userProxy">
+        <aop:before method="before" pointcut-ref="p"></aop:before>
+    </aop:aspect>
+</aop:config>
+```
+
+
+
+## JdbcTemplate
+
+Spring 框架对 JDBC 进行封装，使用 JdbcTemplate 方便实现对数据库操作
+
+JdbcTemplate 实现查询返回对象
+
+![image-20201217144717885](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201217144717885.png)
+
+有三个参数 
+
+ 第一个参数：sql 语句 
+
+ 第二个参数：RowMapper 是接口，针对返回不同类型数据，使用这个接口里面实现类完成 数据封装 
+
+ 第三个参数：sql 语句值
+
+## 事务一块说了
+
+### 开启事务
+
+```xml
+<tx:annotation-driven transaction-manager="transactionManager"></tx:annotation-driven>
+<bean id="transactionManager"
+      class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <!--注入数据源-->
+    <property name="dataSource" ref="dataSource"></property>
+</bean>
+```
+
+### 声明式事务@Transactional
+
+在 service 类上面（或者 service 类里面方法上面）添加事务注解
+
+（1）@Transactional，这个注解添加到类上面，也可以添加方法上面 
+
+（2）如果把这个注解添加类上面，这个类里面所有的方法都添加事务 
+
+（3）如果把这个注解添加方法上面，为这个方法添加事务
+
+#### 参数配置
+
+![image-20201217151213549](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201217151213549.png)
+
+
+
+#### propagation：事务传播行为
+
+![image-20201217151823707](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201217151823707.png)
+
+#### ioslation：事务隔离级别
+
+![image-20201217151849904](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201217151849904.png)
+
+#### 其他
+
+![image-20201217151934410](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201217151934410.png)
+
+### XML配置
+
+```xml
+<tx:advice id="txadvice">
+    <!--配置事务参数-->
+    <tx:attributes>
+        <!--指定哪种规则的方法上面添加事务-->
+        <tx:method name="testTrans" propagation="REQUIRED"/>
+    </tx:attributes>
+</tx:advice>
+<!--3 配置切入点和切面-->
+<aop:config>
+    <!--配置切入点-->
+    <aop:pointcut id="pt" expression="execution(* test.MyTest.*(..))"/>
+    <!--配置切面-->
+    <aop:advisor advice-ref="txadvice" pointcut-ref="pt"/>
+</aop:config>
+```
+
+
+
+## 事务 加 JdbcTemplate的例子
+
+### XML文件配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+    <!--开启组件扫描
+     1 如果扫描多个包，多个包使用逗号隔开
+     2 扫描包上层目录
+    -->
+    <context:component-scan base-package="test"></context:component-scan>
+    
+    <context:property-placeholder location="classpath:jdbc.properties"></context:property-placeholder>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          destroy-method="close">
+        <property name="url" value="${mysql.url}" />
+        <property name="username" value="root" />
+        <property name="password" value="chentailiang.123" />
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+    </bean>
+
+    <!-- JdbcTemplate 对象 -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入 dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--注入数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <tx:annotation-driven transaction-manager="transactionManager"></tx:annotation-driven>
+
+
+    <tx:advice id="txadvice">
+        <!--配置事务参数-->
+        <tx:attributes>
+            <!--指定哪种规则的方法上面添加事务-->
+            <tx:method name="testTrans" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+    <!--3 配置切入点和切面-->
+    <aop:config>
+        <!--配置切入点-->
+        <aop:pointcut id="pt" expression="execution(* test.MyTest.*(..))"/>
+        <!--配置切面-->
+        <aop:advisor advice-ref="txadvice" pointcut-ref="pt"/>
+    </aop:config>
+</beans>
+```
+
+### bean对象
+
+```java
+@Data
+public class User {
+	Integer id;
+	String username;
+	String account;
+}
+```
+
+### 测试类
+
+```java
+@Component("test")
+public class MyTest {
+
+	@Autowired
+	JdbcTemplate jdbcTemplate;
+
+	public void add(){
+		String sql = "INSERT INTO `user`(username) VALUE(?)";
+		Object[] args = {"哈哈哈"};
+		int update = jdbcTemplate.update(sql, args);
+	}
+
+	public void query1(){
+		String sql1 = "select count(*) from `user`";
+		Integer count  = jdbcTemplate.queryForObject(sql1, Integer.class);
+		System.out.println(count);
+		String sql2 = "select * from `user` where id = 1";
+		User user = jdbcTemplate.queryForObject(sql2, new
+				BeanPropertyRowMapper<>(User.class) );
+		System.out.println(user);
+		String sql3 = "select * from `user`";
+		List<User> users = jdbcTemplate.query(sql3, new
+				BeanPropertyRowMapper<User>(User.class));
+		System.out.println(users);
+	}
+
+	//批量操作
+	public void batch(){
+		String sql = "INSERT INTO `user`(username) VALUE(?)";
+		int[] ints = jdbcTemplate.batchUpdate(sql,
+				Arrays.asList(new Object[]{"小1"}, new Object[]{"小2"}));
+	}
+
+	//转账
+	public void trans(int id, int money){
+		String sql = "update `user` set account = account + ? where id = ?";
+		jdbcTemplate.update(sql, new Object[]{money,id});
+	}
+    
+	@Transactional
+	public void testTrans() throws RuntimeException{
+		//账户7向账户8转账100
+		trans(7, -100);
+		int i = 5 / 0;
+		trans(8, 100);
+	}
+
+
+	@Test
+	public void test(){
+		ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
+		MyTest test = context.getBean("test", MyTest.class);
+//		add();
+//		test.batch();
+//		test.query1();
+		try {
+			test.testTrans();
+		}catch (Exception e){}
+
+	}
+
+}
+```
+
+### 完全基于注解重写配置
+
+```java
+@Configuration //作为配置类，替代 xml 配置文件
+@ComponentScan(basePackages = {"test"})
+@EnableTransactionManagement
+public class SpringConfig {
+	//创建数据库链接池
+	@Bean
+	public DruidDataSource getDruidDataSource() {
+		DruidDataSource dataSource = new DruidDataSource();
+		dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+		dataSource.setUrl("jdbc:mysql://172.19.241.12:3306/user?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai");
+		dataSource.setUsername("root");
+		dataSource.setPassword("chentailiang.123");
+		return dataSource;
+	}
+
+	//创建 JdbcTemplate 对象
+	@Bean
+	public JdbcTemplate getJdbcTemplate(DataSource dataSource) {
+		//到 ioc 容器中根据类型找到 dataSource
+		JdbcTemplate jdbcTemplate = new JdbcTemplate();
+		//注入 dataSource
+		jdbcTemplate.setDataSource(dataSource);
+		return jdbcTemplate;
+	}
+
+	//创建事务管理器
+	@Bean
+	public DataSourceTransactionManager
+	getDataSourceTransactionManager(DataSource dataSource) {
+		DataSourceTransactionManager transactionManager = new
+				DataSourceTransactionManager();
+		transactionManager.setDataSource(dataSource);
+		return transactionManager;
+	}
+
+
+	@Test
+	public void test(){
+		ApplicationContext context =  new AnnotationConfigApplicationContext(SpringConfig.class);
+		MyTest test = context.getBean("test", MyTest.class);
+		try {
+			test.testTrans();
+		}catch (Exception e){}
+
+	}
+
+}
+```
+
+## Spring 5新功能（新不了，下一个）
 
