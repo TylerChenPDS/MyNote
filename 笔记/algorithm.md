@@ -1897,7 +1897,227 @@ void getALLShortest(int s, int v){ //v为当前访问的点
 
 
 
-y
+### 例题
+
+[题目详情 (pintia.cn)](https://pintia.cn/problem-sets/994805342720868352/problems/994805523835109376)
+
+#### **1003** **Emergency** (25分)
+
+As an emergency rescue team leader of a city, you are given a special map of your country. The map shows several scattered cities connected by some roads. Amount of rescue teams in each city and the length of each road between any pair of cities are marked on the map. When there is an emergency call to you from some other city, your job is to lead your men to the place as quickly as possible, and at the mean time, call up as many hands on the way as possible.
+
+#### Input Specification:
+
+Each input file contains one test case. For each test case, the first line contains 4 positive integers: *N* (≤500) - the number of cities (and the cities are numbered from 0 to *N*−1), *M* - the number of roads, *C*1 and *C*2 - the cities that you are currently in and that you must save, respectively. The next line contains *N* integers, where the *i*-th integer is the number of rescue teams in the *i*-th city. Then *M* lines follow, each describes a road with three integers *c*1, *c*2 and *L*, which are the pair of cities connected by a road and the length of that road, respectively. It is guaranteed that there exists at least one path from *C*1 to *C*2.
+
+#### Output Specification:
+
+For each test case, print in one line two numbers: the number of different shortest paths between *C*1 and *C*2, and the maximum amount of rescue teams you can possibly gather. All the numbers in a line must be separated by exactly one space, and there is no extra space allowed at the end of a line.
+
+#### Sample Input:
+
+```
+5 6 0 2
+1 2 1 5 3
+0 1 1
+0 2 2
+0 3 1
+1 2 1
+2 4 1
+3 4 1
+```
+
+#### Sample Output:
+
+```
+2 4
+```
+
+#### 解答1 一次Dijkstra
+
+```c++
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <vector>
+using namespace std;
+const int maxv = 510; //最大点的个数
+const int INF = 0x3fffffff;
+struct Node {
+    int v; //node的目标点
+    int d;// 到达目标点的距离
+};
+vector<Node> G[maxv]; //图
+int weight[maxv];  //点权,每个地方可以用的人手
+int d[maxv];//最短路径，
+int nums[maxv];//到达某个点的路径个数
+int c[maxv];//到达某个点可用人手的最多数量
+bool visited[maxv] = {false};
+
+int N, M, C1, C2;//城市的个数，路的个数，C1，起点，C2，终点
+
+
+void dijkstra() {
+    //使用dijkstra算法求最短路径
+    fill(d, d + maxv, INF);
+    c[C1] = weight[C1]; //
+    d[C1] = 0;
+    nums[C1] = 1;//到达起点的路径个数设为1
+    for (int i = 0; i < N; ++i) {
+        int u = -1, min = INF;
+        //寻找从起点开始到达点的最小值
+        for (int j = 0; j < N; ++j) {
+            if (visited[j] == false && d[j] < min) {
+                u = j;
+                min = d[u];
+            }
+        }
+        if (u == -1) { //找不到对应点了
+            return;
+        }
+        visited[u] = true;//将这个点放到已访问集合中
+
+        for (int v = 0; v < G[u].size(); v++) {
+            Node node = G[u][v];
+            if (visited[node.v] == false) {
+                if (node.d + d[u] < d[node.v]) {
+                    c[node.v] = c[u] + weight[node.v];
+                    d[node.v] = node.d + d[u];
+                    nums[node.v] = nums[u];
+                }else if(d[u] + node.d == d[node.v]){
+                    if(c[u] + weight[node.v] > c[node.v]){
+                        c[node.v] =  c[u] + weight[node.v];
+                    }
+                    nums[node.v] += nums[u];
+                }
+            }
+        }
+
+
+    }
+}
+
+
+int main() {
+    scanf("%d%d%d%d", &N, &M, &C1, &C2);
+    for (int i = 0; i < N; ++i) {
+        scanf("%d", weight + i);
+    }
+    int a, b, w;
+    for (int i = 0; i < M; ++i) {
+        scanf("%d%d%d", &a, &b, &w);
+        Node n;
+        n.v = b;
+        n.d = w;
+        G[a].push_back(n);
+    }
+    dijkstra();
+    printf("%d %d",nums[C2], c[C2]);
+    return 0;
+}
+
+
+```
+
+#### 解答2  Dijkstra + DFS
+
+```C++
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+const int maxn = 510;//最大的结点个数
+const int INF = 0x3fffffff;
+
+int N, M, C1, C2;//城市的个数，路径的个数，当前所在的城市（起点），需要救援的城市（终点）
+
+struct Node {
+    int target; //目的城市
+    int dis; //到达目的城市的距离
+};
+vector<Node> G[maxn]; //邻接表
+vector<int> pre[maxn]; //存放前驱结点
+int weight[maxn]; //存放每个城市的人手个数，（点权）
+int d[maxn];//到达某个顶点的最短路径
+bool vis[maxn] = {false};//判断某个顶点是否被访问过了
+
+void dijkstra(){
+    fill(d, d + maxn, INF);
+    d[C1] = 0;
+    for (int i = 0; i < N; ++i) {
+        int u = -1, min = INF;
+        for (int j = 0; j < N; ++j) {
+            if(vis[j] == false &&  d[j] < min){
+                min = d[j];
+                u = j;
+            }
+        }
+        if(u == -1){
+            return;
+        }
+        vis[u] = true;
+        for(int k = 0;k < G[u].size(); k ++){
+            Node next = G[u][k];
+            if(vis[next.target] == false){
+                if(next.dis + d[u] < d[next.target]){
+                    d[next.target] = next.dis + d[u];
+                    pre[next.target].clear();
+                    pre[next.target].push_back(u);
+                }else if(next.dis + d[u] == d[next.target]){
+                    pre[next.target].push_back(u);
+                }
+            }
+        }
+    }
+}
+
+int maxNums = -1;//最短路径下的最多人手初始设置为-1
+int nums = 0;//最短路径的个数
+vector<int> temp;//保存这临时最短路径
+void DFS(int s, int v){
+    if(s == v){
+        nums ++;
+        temp.push_back(s);
+        int value = 0;
+        for (int i = 0; i < temp.size(); ++i) {
+            value += weight[temp[i]];
+        }
+        maxNums = max(maxNums, value);
+        temp.pop_back();
+        return;
+    }
+    temp.push_back(v);
+    for (int i = 0; i < pre[v].size(); ++i) {
+        DFS(s, pre[v][i]);
+    }
+    temp.pop_back();
+}
+
+int main() {
+    scanf("%d%d%d%d", &N, &M, &C1, &C2);
+    for (int i = 0; i < N; ++i) {
+        scanf("%d", i + weight);
+    }
+    int a, b, c;
+    for (int i = 0; i < M; ++i) {
+        scanf("%d%d%d", &a, &b, &c);
+        Node node;
+        node.target = b;
+        node.dis = c;
+        G[a].push_back(node);
+    }
+    dijkstra();
+    DFS(C1, C2);
+    printf("%d %d", nums, maxNums);
+}
+```
+
+
+
+
+
+
 
 
 
