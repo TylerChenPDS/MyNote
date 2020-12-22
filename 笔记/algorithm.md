@@ -1905,15 +1905,15 @@ void getALLShortest(int s, int v){ //v为当前访问的点
 
 As an emergency rescue team leader of a city, you are given a special map of your country. The map shows several scattered cities connected by some roads. Amount of rescue teams in each city and the length of each road between any pair of cities are marked on the map. When there is an emergency call to you from some other city, your job is to lead your men to the place as quickly as possible, and at the mean time, call up as many hands on the way as possible.
 
-#### Input Specification:
+##### Input Specification:
 
 Each input file contains one test case. For each test case, the first line contains 4 positive integers: *N* (≤500) - the number of cities (and the cities are numbered from 0 to *N*−1), *M* - the number of roads, *C*1 and *C*2 - the cities that you are currently in and that you must save, respectively. The next line contains *N* integers, where the *i*-th integer is the number of rescue teams in the *i*-th city. Then *M* lines follow, each describes a road with three integers *c*1, *c*2 and *L*, which are the pair of cities connected by a road and the length of that road, respectively. It is guaranteed that there exists at least one path from *C*1 to *C*2.
 
-#### Output Specification:
+##### Output Specification:
 
 For each test case, print in one line two numbers: the number of different shortest paths between *C*1 and *C*2, and the maximum amount of rescue teams you can possibly gather. All the numbers in a line must be separated by exactly one space, and there is no extra space allowed at the end of a line.
 
-#### Sample Input:
+##### Sample Input:
 
 ```
 5 6 0 2
@@ -1926,13 +1926,13 @@ For each test case, print in one line two numbers: the number of different short
 3 4 1
 ```
 
-#### Sample Output:
+##### Sample Output:
 
 ```
 2 4
 ```
 
-#### 解答1 一次Dijkstra
+##### 解答1 一次Dijkstra
 
 ```c++
 #include <cstdio>
@@ -2018,7 +2018,7 @@ int main() {
 
 ```
 
-#### 解答2  Dijkstra + DFS
+##### 解答2  Dijkstra + DFS
 
 ```C++
 #include <cstdio>
@@ -2113,13 +2113,374 @@ int main() {
 }
 ```
 
+#### 1030 Travel Plan(30分)
+
+https://pintia.cn/problem-sets/994805342720868352/problems/994805464397627392
+
+旅行者得地图上面有2个城市之间的距离和花费，给定起点和终点，求他们之间最小路径，可能不止一条，求其中花费最小一条。
+
+输入规格：
+
+第一行4个数：N,M,S,D。分别为城市个数 <= 500, M 公路条数<= 500 ,(城市的编号是0-N-1)，起点，终点。
+
+后面是M行：
+
+```
+City1 City2 Distance Cost
+```
+
+sample input
+
+```
+4 5 0 3
+0 1 1 20
+1 3 2 30
+0 3 4 10
+0 2 2 20
+2 3 1 20
+```
+
+输出规格：
+
+输出从起点到终点的最优路径，最优路径的长度，和花费
+
+sample output
+
+```out
+0 2 3 3 40
+```
+
+##### 解答：Dijkstra + DFS
+
+```c++
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+const int maxv = 510; //最大点的个数
+const int INF = 0x3fffffff;
+
+int d[maxv];//最短路径
+bool vis[maxv];
+int N, M, S, D;//城市的个数，高速公路的个数，起点，目的地址
+int G[maxv][maxv];
+int cost[maxv][maxv];
+vector<int> pre[maxv];//前驱结点
 
 
+void dijkstra() {
+    fill(d, d + maxv, INF);
+    d[S] = 0;
+    for (int i = 0; i < N; ++i) {
+        int u = -1, min = INF;
+        for (int j = 0; j < N; ++j) {
+            if (vis[j] == false && d[j] < min) {
+                u = j;
+                min = d[j];
+            }
+        }
+        if (u == -1) {
+            return;
+        }
+        vis[u] = true;
+        for (int j = 0; j < N; ++j) {
+            //如果u->j可达 && j没有被访问过
+            if (G[u][j] != INF && vis[j] == false) {
+                if (d[u] + G[u][j] < d[j]) {
+                    d[j] = d[u] + G[u][j];
+                    pre[j].clear();
+                    pre[j].push_back(u);
+                } else if (d[u] + G[u][j] == d[j]) {
+                    pre[j].push_back(u);
+                }
+            }
+        }
+    }
+}
+
+vector<int> path, temp;//最优路径，临时路径
+int minCost = INF;
+
+void DFS(int s, int v) {
+    if (s == v) {
+        temp.push_back(s);
+        int value = 0;
+        for (int i = temp.size() - 1; i > 0; --i) {
+            value += cost[temp[i]][temp[i - 1]];
+        }
+        if (value < minCost) {
+            minCost = value;
+            path = temp;
+        }
+        temp.pop_back();
+        return;
+    }
+    temp.push_back(v);
+    for (int i = 0; i < pre[v].size(); ++i) {
+        DFS(s, pre[v][i]);
+    }
+    temp.pop_back();
+}
 
 
+int main() {
+    fill(G[0], G[0] + maxv * maxv, INF);
+    scanf("%d%d%d%d", &N, &M, &S, &D);
+    int a, b, c, d1;
+    for (int i = 0; i < M; ++i) {
+        scanf("%d%d%d%d", &a, &b, &c, &d1);
+        G[a][b] = c;
+        G[b][a] = c;
+        cost[a][b] = d1;
+        cost[b][a] = d1;
+    }
+    dijkstra();
+    DFS(S, D);
+    for (int i = path.size() - 1; i >= 0; --i) {
+        printf("%d ", path[i]);
+    }
+    printf("%d %d", d[D], minCost);
+    return 0;
+}
+```
 
+## Bellman-Ford算法和SPFA算法
 
+### Bellman-Ford 算法
 
+#### 概述
+
+**Dijkstra算法可以很好的解决无负权图的最短路径问题**，但是如果出现了负权边，Dijkstra算法就会失效。
+
+Bellman-Ford算法也可以解决单源最短路径的问题，但是可以处理有负权边的情况。
+
+根据环中边的边权之和的正负，可以将环分为零环、正环和负环。
+
+![image-20201220135923016](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201220135923016.png)
+
+显然：**零环和正环不会影响最短路径的求解，因为0环的存在不能使得最短路径变得更短**。如果负环无法从源点出发到达，则最短路径的求解不会收到影响。
+
+BF算法返回一个bool值，如果存在从源点可达的负环，那么函数将返回false；**否则将返回true，此时数组d中存放的就是从源点到达各顶点的最短距离**。
+
+#### 算法思想
+
+对图中的边进行V-1轮操作，每轮都遍历图中的所有边：对每条边u->v，如果u为中介点可以使d[v]更小，即d[u] + length[u->v] < d[v]，则用d[u] + length[u->v]  更新d[v]。时间复杂度O(VE)；
+
+伪代码：
+
+```java
+for(int i = 0; i < n - 1; i ++){
+	for(each edge u->v){
+		if(d[u] + length[u->v] < d[v]){
+			d[v] = d[u] + length[u->v]
+		}
+	}
+}
+```
+
+此时如果途中没有从源点可达的负环，那么数组d中的所有值都应该使最优。因此需要对所有边在进行一轮操作，判断是否有某条边u->v仍然满足d[u] + length[u->v] < d[v]。如果有，则说明图中有从源点可达的负环，返回false。否则说明数组d中的所有值都已经达到最优。
+
+```java
+for(each edge u->v){
+    if(d[u] + length[u->v] < d[v]){
+        return false;
+    }
+}
+return true;
+```
+
+#### 证明算法的正确性
+
+首先，如果最短路径存在，则最短路径上顶点的个数不会超过V个，否则肯定有环。于是把源点作为根节点可以得到一棵最短路径树。
+
+![image-20201220142305286](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201220142305286.png)
+
+初始情况下d[s] = 0 第一层被确定了；然后遍历一次所有边，可以确定第二层的最短路径，d[B]=2,d[C] =3，其他层不确定是最小的；接着遍历则可以确定第三层的，直到确定所有层的最短路径。
+
+#### 实现：使用邻接表
+
+使用邻接矩阵会使时间复杂度上升到O(V^3)；**这里有一个小技巧：如果在某一轮操作后没发现没有边被松弛，说明数组d中的所有值都已经达到了最优，提前退出即可。**
+
+```C++
+const int maxv = 510; //最大点的个数
+const int INF = 0x3fffffff;
+
+struct Node {
+    int v,dis;
+};
+vector<Node> G[maxv];
+int n;
+int d[maxv];
+bool Bellman_Ford(int s){
+    fill(d, maxv + d, INF);
+    d[s] = 0;
+    for (int i = 0; i < n - 1; ++i) {
+        bool flag = true;
+        for (int u = 0; u < n; ++u) {
+            for (int j = 0; j < G[u].size(); ++j) {
+                int v = G[u][v].v;
+                int dis = G[u][v].dis;
+                if(d[u] + dis < d[v]){
+                    d[v] = d[u] + dis;
+                    flag = false;
+                }
+            }
+        }
+        if(flag){
+            return true;
+        }
+    }
+
+    //一下为判断负环的代码
+    for (int u = 0; u < n; ++u) {
+        for (int j = 0; j < G[u].size(); ++j) {
+            int v = G[u][v].v;
+            int dis = G[u][v].dis;
+            if(d[u] + dis < d[v]){
+                return false;
+            }
+        }
+    }
+    return true;
+}
+```
+
+注意：统计最短路径条数的做法和Dijkstra不一样：因为BF算法期间会多次访问曾经访问过的顶点，如果单纯按照Dijkstra算法中介绍的num数组的写法，将会反复计算访问过的顶点。必须设置一个`set<int> pre[maxv]`数组，当遇到一条长度相同的路径时，必须重新计算已有最短路径的条数。（也可以还是按照DFS那种方法获得个数的）
+
+```C++
+const int maxv = 510; //最大点的个数
+const int INF = 0x3fffffff;
+
+struct Node {
+    int v,dis;
+};
+vector<Node> G[maxv];
+int n;
+int d[maxv];
+int nums[maxv];
+set<int> pre[maxv];
+bool Bellman_Ford(int s){
+    fill(d, maxv + d, INF);
+    d[s] = 0;
+    nums[maxv] = 1;
+    for (int i = 0; i < n - 1; ++i) {
+        bool flag = true;
+        for (int u = 0; u < n; ++u) {
+            for (int j = 0; j < G[u].size(); ++j) {
+                int v = G[u][v].v;
+                int dis = G[u][v].dis;
+                if(d[u] + dis < d[v]){
+                    d[v] = d[u] + dis;
+                    flag = false;
+                    nums[v] = nums[u]
+                    pre[v].clear():
+                    pre[v].insert(u);                    
+                }else if(d[u] + dis == d[v]){
+                    pre[v].insert(u);
+                    nums[v]=0;
+                    for(auto it = pre[v].begin(); it != pre[v].end(); it ++){
+                        nums[v] += nums[*it];
+                    }
+                }
+            }
+        }
+        if(flag){
+            return true;
+        }
+    }
+
+    //一下为判断负环的代码
+    for (int u = 0; u < n; ++u) {
+        for (int j = 0; j < G[u].size(); ++j) {
+            int v = G[u][v].v;
+            int dis = G[u][v].dis;
+            if(d[u] + dis < d[v]){
+                return false;
+            }
+        }
+    }
+    return true;
+}
+```
+
+### SPFA(Shortest Path Faster Algorithm)
+
+Bellman-Ford算法很简洁，但是O(VE)的时间复杂度很高，注意到：**只有当某个顶点u的d[u]值改变的时候，从它出发的边的邻接点v的d[v] 值才有可能被改变。** 
+
+优化：建立一个队列（初始把源点加进去），每次将队首元素u取出，然后对u出发的所有边进行松弛操作，如果d[u] + len[u->v] < d[v]，用d[u] + len[u->v] 覆盖d[v]，于是d[v] 可以获得更优的值，如果v不在队列中，就把v加入到队列中。直到队列为空（说明图中没有从源点可达的负环），或者是某个顶点入队的次数超过v-1（说明存在负环）。
+
+伪代码：
+
+```C++
+queue<int> q;
+q.push(s);
+while(队列非空){
+	取出队首元素u;
+	for(所有的u->v){
+		if(d[u] + len[u->v] < d[v]){
+			d[v] = d[u] + len[u->v]
+            if(v不在队列){
+                v入队;
+                if(v入队的次数大于n-1){
+                    说明有负环;
+                    return;
+                }
+            }
+         }
+	}
+}
+```
+
+优化后的算法叫做SPFA，期望时间复杂度为：O(KE)。如果有源点可达的负环，时间复杂度就会退成O(VE)。
+
+代码：
+
+```C++
+const int maxv = 510; //最大点的个数
+const int INF = 0x3fffffff;
+
+struct Node {
+    int v,dis;
+};
+vector<Node> G[maxv];
+int n;
+int d[maxv];
+bool inq[maxv] = {false};//判断顶点是否在队列中
+int num[maxv];
+bool SPFA(int s){
+    memset(num, 0, sizeof(num));
+    fill(d,d + maxv, INF);
+    queue<int> q;
+    q.push(s);
+    inq[s] = true;
+    num[s] ++;
+    d[s] = 0;
+    while (!q.empty()){
+        int u = q.front();
+        q.pop();
+        inq[u] = false; //u 出队列，所以u不在队列中了
+        for (int i = 0; i < G[u].size(); ++i) {
+            int v = G[u][i].v;
+            int dis = G[u][i].dis;
+            if(d[u] + dis < d[v]){
+                if(!inq[v]){
+                    q.push(v);
+                    inq[v] = true;
+                    num[v] ++;
+                    if(v >= n){
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;//无可达环
+}
+```
+
+注意：使用SPFA 也可以判断是否存在负环，如果负环从源点不可达，则需要添加一个辅助点C，并添加一条从源点到达C的有向边以及V-1条从C到达除源点以外各顶点的有向边才能判断负环是否存在。
 
 
 
