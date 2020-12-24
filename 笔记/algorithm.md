@@ -1,6 +1,4 @@
-[TOC]
-
-摘自：算法笔记
+[摘自算法笔记]
 
 ## 全排列问题
 
@@ -2760,4 +2758,6 @@ docker run -d \
       
       docker run -d -p 11280:80 --name onlyoffice --restart always onlyoffice/documentserver
 ```
+
+
 
