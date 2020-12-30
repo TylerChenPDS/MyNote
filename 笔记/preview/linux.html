@@ -65,8 +65,8 @@
 				</div>
         <div id='readme' style='width:70%;margin-left:20%;'>
           	<article class='markdown-body'>
-            	<h1 id="1-">1， 基本概念</h1>
-<h2 id="1-1-">1.1 交换分区</h2>
+            	<h1 id="-">基本概念</h1>
+<h2 id="-">交换分区</h2>
 <ul>
 <li>虚拟内存是为了满足物理内存的不足而提出的一种策略，它是利用磁盘空间虚拟出的一块逻辑内存，用作虚拟内存的磁盘空 间被称为交换分区（swap分区）。</li>
 <li><strong>内核会将暂时不用的内存块信息写到交换分区，</strong>这样一来， 物理内存得到了释放，这块内存就可以用于其它用途，当 需要用到原始的内容时，这些信息会被重新从交换分区读 入物理内存。</li>
@@ -74,7 +74,7 @@
 <li>Linux系统会不时地进行页面交换操作，以保持尽可能多的空闲物理内存，<strong>即使并没有什么操作需要使用内存， Linux也会交换出暂时不用的内存页面，这可以避免等待交换所需的时间。</strong></li>
 <li>Linux进行页面交换是有条件的，不是所有页面在不用时 都交换到虚拟内存，Linux内核根据“<strong>最近最常使用</strong>”算 法，仅仅将一些不经常使用的页面文件交换到虚拟内存。</li>
 </ul>
-<h2 id="1-2-">1.2 分区命名方案</h2>
+<h2 id="-">分区命名方案</h2>
 <p>​        Linux系统使用字母和数字的组合来指代硬盘分区，使用 一种更加灵活的分区命名方案，该命名方案是基于文件的， 文件名的格式为<strong>/dev/xxyN</strong>（比如/dev/sda1分区）。</p>
 <ul>
 <li>/dev：这是Linux系统中所有设备文件所在的目录名。因 为分区位于硬盘上，而硬盘是设备，所以这些文件代表了 在/dev上所有可能的分区；</li>
@@ -82,13 +82,13 @@
 <li>y：这个字母表示分区所在的设备。例如，/dev/hda（第1 个 IDE 硬盘）或/dev/sdb（第2个SCSI硬盘）；</li>
 <li>N：最后的数字N代表分区。<strong>前4个分区（主分区或扩展分 区）用数字1～4表示</strong>，<strong>逻辑驱动器从5开始</strong>。例如， /dev/hda3是第1个IDE 硬盘上的第3个主分区或扩展分区； /dev/sdb6是第2个SCSI硬盘上的第2个逻辑驱动器。</li>
 </ul>
-<h2 id="1-3-">1.3 磁盘分区和挂载目录</h2>
+<h2 id="-">磁盘分区和挂载目录</h2>
 <ul>
 <li>Linux系统中的每一个分区都是构成支持一组文件和目录 所必需的存储区的一部分。它是通过挂载来实现的，<strong>挂载 是将分区关联到某一目录的过程</strong>，挂载分区使起始于这个 指定目录（称为挂载目录）的存储区能够被使用。</li>
 <li>例如，如果分区/dev/sda5被挂载在目录/usr上，这意味着 所有在/usr下的文件和目录在物理上位于/dev/sda5。因此 文件/usr/bin/cal被保存在分区/dev/sda5上，而文件 /etc/passwd却不是。</li>
 <li>/usr目录下的目录还有可能是其它分区的挂载目录。例如， 某个分区（如/dev/sda7）可以被挂载到/usr/local目录下， 这意味着文件/usr/local/man/whatis将位于分区/dev/sda7 上，而不是分区/dev/sda5上。</li>
 </ul>
-<h2 id="1-4-dev-null">1.4 /dev/null</h2>
+<h2 id="-dev-null">/dev/null</h2>
 <ol>
 <li><p>/dev/null:表示 的是一个黑洞，通常用于丢弃不需要的数据输出， 或者用于输入流的空文件</p>
 <ul>
@@ -111,19 +111,19 @@
 </ul>
 </li>
 </ol>
-<h1 id="2-">2 基本芝士</h1>
-<h2 id="2-1-">2.1 小知识</h2>
-<h3 id="2-1-1-">2.1.1 命令排列</h3>
-<h4 id="1-1-2">1 命令1; 命令2</h4>
+<h1 id="-">基本芝士</h1>
+<h2 id="-">小知识</h2>
+<h3 id="-">命令排列</h3>
+<h4 id="-1-2">命令1; 命令2</h4>
 <p>使用“；”命令时先执行命令1，不管命令 1是否出错，接下来就执行命令2。</p>
 <pre><code class="lang-shell">ls;ls ../
 </code></pre>
-<h4 id="2-1-2">2  命令1&amp;&amp;命令2</h4>
+<h4 id="-1-2">命令1&amp;&amp;命令2</h4>
 <p>使用“&amp;&amp;”命令时只有当命令1正确运行完 毕后，才能执行命令2 。</p>
 <pre><code class="lang-shell">ls sadas &amp;&amp; ls
 # asdas 不存在，后面的ls不会执行
 </code></pre>
-<h3 id="2-1-2-1-2-">2.1.2 命令替换--命令1 $(命令2)</h3>
+<h3 id="-1-2-">命令替换--命令1 $(命令2)</h3>
 <p>Shell命令的参数可以由另外一 个命令的结果来替代，这种称之为命令替换。</p>
 <pre><code class="lang-shell">命令1 $(命令2) 
 命令1 `命令2`
@@ -131,17 +131,17 @@
 ls $(pwd)
 ls `pwd`
 </code></pre>
-<h3 id="2-1-3-alias">2.1.3 命令别名 alias</h3>
+<h3 id="-alias">命令别名 alias</h3>
 <pre><code class="lang-shell">#给以命令起别名
 alias mylist=&quot;ls $(pwd)&quot;
 #取消别名
 unalias mylist
 </code></pre>
-<h3 id="2-1-4-">2.1.4 管道</h3>
+<h3 id="-">管道</h3>
 <p>将 某个命令的输出信息当作某个命令的输入，由管 道符号“｜”来标识。</p>
 <pre><code class="lang-shell">cat /etc/profile | grep java
 </code></pre>
-<h3 id="2-1-5-">2.1.5 错误重定向</h3>
+<h3 id="-">错误重定向</h3>
 <p><strong>[命令] 2&gt; [文件]</strong></p>
 <pre><code class="lang-shell">[root@rhel ~]# cat /root/kk 2&gt; /root/b
 [root@rhel ~]# cat /root/b
@@ -160,21 +160,21 @@ config-3.3.4-5.fc17.i686.PAE
 ls: 无法访问/nn: 没有那个文件或目录
 #因为没有/nn目录，所以最终使用了错误重定向
 </code></pre>
-<h2 id="2-2-">2.2 目录和文件管理</h2>
-<h3 id="2-2-1-">2.2.1 文件类型</h3>
-<h4 id="1-">1．普通文件</h4>
+<h2 id="-">目录和文件管理</h2>
+<h3 id="-">文件类型</h3>
+<h4 id="-">普通文件</h4>
 <p>​        用“ls -lh”命令查看某个文件的属性， 可以看到有类似<strong>“-rw-------”</strong>的属性符 号，其属性第一个符号是“-”，这样的文 件在Linux系统中就是普通文件。</p>
-<h4 id="2-">2．目录文件</h4>
+<h4 id="-">目录文件</h4>
 <p>​        当在某个目录下执行“ls -lh”命令，看 到有类似“<strong>drwxr-xr-x</strong>”的属性符号，其 属性第一个符号是“d”，这样的文件在 Linux系统中就是目录文件。</p>
-<h4 id="3-">3．设备文件</h4>
+<h4 id="-">设备文件</h4>
 <p>Linux系统中的/dev目录中有大量的设备文 件，主要是块设备文件和字符设备文件</p>
 <ul>
 <li>块设备文件。块设备的主要特点是可以随机读写，而最 常见的块设备就是磁盘，如/dev/hda1、 /dev/sda1等。用“ls -l”命令查看某个 文件的属性，可以看到有类似<strong>“brw-rw--- -”</strong>的属性符号，其属性第一个符号是 “b”，这样的文件在Linux系统中就是块 设备文件。</li>
 <li>字符设备文件。最常见的字符设备文件是<strong>打印机和终端</strong>，可以接收字符流。/dev/null是一个非常有 用的字符设备文件，送入这个设备的所有 内容都被忽略。用“ls -l”命令查看某个 文件的属性，可以看到有类似<strong>“crw--w--- -”</strong>的属性符号，其属性第一个符号是 “ c”，这样的文件在Linux系统中就是字 符设备文件。</li>
 </ul>
-<h4 id="4-">4．管道文件</h4>
+<h4 id="-">管道文件</h4>
 <p>​        管道文件有时候也被叫做FIFO文件（FIFO 是先进先出的意思），管道文件就是从一 头流入，从另一头流出。用“ls -l”命令 查看某个文件的属性，可以看到有类似 “<strong>prw-------</strong>”的属性符号，其属性第一 个符号是“p”，这样的文件在Linux系统 中就是管道文件</p>
-<h4 id="5-">5．链接文件</h4>
+<h4 id="-">链接文件</h4>
 <p>链接文件有两种类型：软链接文件和硬链接文件。</p>
 <ul>
 <li><p><strong>软链接文件</strong>。<strong>软链接文件又叫符号链接文件，这个文件包含了另一个文件的路径名。</strong>在对软链接文件进行读写的时候，系统会 自动地把该操作转换为对源文件的操作，但删除软链接文 件时，系统仅仅删除软链接文件，而不删除源文件本身。</p>
@@ -188,12 +188,12 @@ ls: 无法访问/nn: 没有那个文件或目录
 <li>硬链接记录的是目标的inode，软链接记录 的是目标的路径。软链接就像是快捷方式， 而硬链接就像是备份。</li>
 <li>软链接可以做跨分 区的链接，而<strong>硬链接由于inode的缘故，只 能在本分区中做链接。</strong>所以软链接的使用 频率要高得多。</li>
 </ul>
-<h3 id="2-2-2-">2.2.2 文件操作命令</h3>
-<h4 id="1-pwd">1 pwd</h4>
+<h3 id="-">文件操作命令</h3>
+<h4 id="pwd">pwd</h4>
 <p>显示用户当前工作目录路径。</p>
-<h4 id="2-wc">2 wc</h4>
+<h4 id="wc">wc</h4>
 <p>统计指定文件的<strong>行数、单词数、字节数和 字符数</strong>，并将统计结果显示输出到屏幕。 如果没有给出文件名，则从标准输入读取。</p>
-<h4 id="3-ln">3 ln</h4>
+<h4 id="ln">ln</h4>
 <p>ln [选项] [源文件名] [链接文件名]</p>
 <pre><code class="lang-shell"># 创建软链接
 [root@rhel ~]#echo hello &gt; a
@@ -202,9 +202,9 @@ ls: 无法访问/nn: 没有那个文件或目录
 [root@rhel ~]#echo hello &gt; a
 [root@rhel ~]#ln a b
 </code></pre>
-<h2 id="2-3-">2.3 常用操作命令</h2>
-<h3 id="2-3-1-">2.3.1 文本内容</h3>
-<h4 id="1-cat-">1 cat：显示文本</h4>
+<h2 id="-">常用操作命令</h2>
+<h3 id="-">文本内容</h3>
+<h4 id="cat-">cat：显示文本</h4>
 <p>cat [选项] [文件]</p>
 <pre><code class="lang-shell">#  把textfile1文件的内容加上行号后输入到textfile2文件中。
 [root@rhel ~]# cat -n textfile1 &gt; textfile2
@@ -215,13 +215,13 @@ ls: 无法访问/nn: 没有那个文件或目录
 &gt;Linux
 &gt;EOF //在此输入字符EOF，会自动回到shell提示符界面
 </code></pre>
-<h4 id="2-tail-head">2 tail 和 head</h4>
+<h4 id="tail-head">tail 和 head</h4>
 <pre><code class="lang-shell">#  查看/etc/passwd文件末尾3行数据内容。
 [root@rhel ~]# tail -3 /etc/passwd
 # 查看/etc/passwd文件的前3行数据内容。
 [root@rhel ~]# head -3 /etc/passwd
 </code></pre>
-<h4 id="3-sort">3 sort</h4>
+<h4 id="sort">sort</h4>
 <p>sort [-fbMnrutk] [文件]</p>
 <pre><code class="lang-shell">-f： 忽略大小写的差异
 -b: 忽略最前面的空格字符部分
@@ -257,7 +257,7 @@ xz:50:2.3
 ss:30:1.6
 </code></pre></li>
 </ol>
-<h4 id="4-uniq">4 uniq</h4>
+<h4 id="uniq">uniq</h4>
 <p>将文件内的重复行数据从输出文件中删除， 只留下每条记录的惟一样本。</p>
 <p>uniq [-icdu] [文件] </p>
 <pre><code class="lang-shell">-i : 忽略大小写字符的不同
@@ -280,7 +280,7 @@ uniq -c file3
 [root@rhel ~]# uniq -u file3
 bbb //file3文件中不重复行数据的内容为bbb
 </code></pre>
-<h4 id="5-grep">5 grep</h4>
+<h4 id="grep">grep</h4>
 <p><a href="https://www.runoob.com/linux/linux-comm-grep.html">https://www.runoob.com/linux/linux-comm-grep.html</a></p>
 <p>分析一行的信息，若当中有我们需要的信息，就将该行拿出来。</p>
 <p>grep [-acinv] ‘查找字符’ [文件名] </p>
@@ -313,7 +313,7 @@ grep -oP &#39;\d+&#39; w
 <p>grep -q用于if逻辑判断</p>
 <p>突然发现grep -q 用于if 逻辑判断很好用。 </p>
 <p>-q 参数，本意是 Quiet; do not write anything to standard output.  Exit immediately with zero status if any match is found, even if an error was detected.  中文意思为，安静模式，不打印任何标准输出。如果有匹配的内容则立即返回状态值0。</p>
-<h4 id="6-find">6 find</h4>
+<h4 id="find">find</h4>
 <p>​        将文件系统内符合条件的文件列出来，可 以指定文件的名称、类别、时间、大小以 及权限等不同信息的组合，只有完全相符 的文件才会被列出来。</p>
 <p>find [路径] [选项] </p>
 <pre><code class="lang-shell"># 查找/boot目录下的启动菜单配置文件grub.cfg。
@@ -322,7 +322,7 @@ grep -oP &#39;\d+&#39; w
 #列出当前目录及其子目录下所有最近20天内更改过的文件。
 [root@rhel ~]# find . -ctime -20
 </code></pre>
-<h4 id="7-tr">7 tr</h4>
+<h4 id="tr">tr</h4>
 <p>Linux tr 命令用于转换或删除文件中的字符。tr 指令从标准输入设备读取数据，经过字符串转译后，将结果输出到标准输出设备。</p>
 <p><a href="https://www.runoob.com/linux/linux-comm-tr.html">https://www.runoob.com/linux/linux-comm-tr.html</a></p>
 <pre><code class="lang-shell">tr [OPTION] SET1[SET2] 
@@ -346,7 +346,7 @@ tr -s &#39; &#39;
 
 
 </code></pre>
-<h4 id="8-awk">8 awk</h4>
+<h4 id="awk">awk</h4>
 <p><a href="https://www.runoob.com/linux/linux-comm-awk.html">https://www.runoob.com/linux/linux-comm-awk.html</a></p>
 <p>AWK 是一种处理文本文件的语言，是一个强大的文本分析工具，相较于sed常常作用于以整个行的处理，awk则比较倾向于一行当终分成数个字段来处理。因此awk相当适合小型文本的处理。</p>
 <pre><code class="lang-shell">awk &#39;条件类型1 {操作1} 条件类型2 {操作2} ...&#39; {filenames}   # 行匹配语句 awk &#39;&#39; 只能用单引号
@@ -418,7 +418,7 @@ awk -F&#39;,&#39; &#39;{for (i=NF; i&gt;0; i--) {print $i}}&#39; w
 awk  -F: &#39;{print $3+1}&#39; passwd
 </code></pre></li>
 </ol>
-<h4 id="9-cut">9 cut</h4>
+<h4 id="cut">cut</h4>
 <p><a href="https://www.runoob.com/linux/linux-comm-cut.html">https://www.runoob.com/linux/linux-comm-cut.html</a></p>
 <p> cut命令用于显示每行从开头算起 num1 到 num2 的文字。</p>
 <ul>
@@ -444,7 +444,7 @@ cut -d, --output-delimiter=&#39;=&#39; -f1- w
 # w原本是 sadasd_sadas
 # 输出 sadasd=sadas
 </code></pre>
-<h4 id="10-sed">10 sed</h4>
+<h4 id="sed">sed</h4>
 <p><a href="https://www.runoob.com/linux/linux-comm-sed.html">https://www.runoob.com/linux/linux-comm-sed.html</a></p>
 <p>sed 可依照脚本的指令来处理、编辑文本文件。Sed 主要用来自动编辑一个或多个文件、简化对文件的反复操作、编写转换程序等。</p>
 <pre><code class="lang-shell">sed [-hnVi] [操作] [文本文件]
@@ -493,26 +493,26 @@ sed -i &#39;s/$/aaa/g&#39; a.txt
 #将sed.txt文件中的第二行删除并将wo替换为ni
 sed -e &#39;2d&#39; -e &#39;s/wo/ni/g&#39; sed.txt
 </code></pre>
-<h4 id="11-basename">11 basename</h4>
+<h4 id="basename">basename</h4>
 <p>获取末尾的文件名或路径名</p>
 <pre><code class="lang-shell">basename /root/a/test.sh .sh 
 输出 test.sh
 basename /root/a/test.sh 
 输出  test
 </code></pre>
-<h4 id="12-tee">12 tee</h4>
+<h4 id="tee">tee</h4>
 <p>双向重定向</p>
 <pre><code class="lang-shell">tee [-a] file
 -a : 以类加的方式将数据加到file中
 
 ll | tee a.txt| grep a  //将ll的结果送入文件a.txt 并送给grep进行过滤
 </code></pre>
-<h4 id="13-paste">13 paste</h4>
+<h4 id="paste">paste</h4>
 <p>paste 将两个文件连起来，中间用 【tab】分割</p>
 <pre><code class="lang-shell">paste [-d] file1 file2
 -d: 分割字符，默认是【tab】
 </code></pre>
-<h4 id="14-eval">14 eval</h4>
+<h4 id="eval">eval</h4>
 <ol>
 <li><p>eval command-line</p>
 <p>其中command－line是在终端上键入的一条普通命令行。然而当在它前面放上eval时，其结果是shell在执行命令行之前扫描它两次。如：</p>
@@ -522,7 +522,7 @@ eval ls $pipe wc -l
 <p>shell第1次扫描命令行时，它替换出pipe的值｜，接着eval使它再次扫描命令行，这时shell把｜作为管道符号了。如果变量中包含任何需要shell直接在命令行中看到的字符（不是替换的结果），就可以使用eval。命令行结束符（； ｜ &amp;），I／o重定向符（&lt; &gt;）和引号就属于对shell具有特殊意义的符号，必须直接出现在命令行中</p>
 </li>
 </ol>
-<h4 id="15-source-export">15 source export</h4>
+<h4 id="source-export">source export</h4>
 <ul>
 <li><p>export命令</p>
 <p>Linux export命令用于设置或显示环境变量。</p>
@@ -582,14 +582,14 @@ asdsadsa啊实打实das你个憨憨
 </ul>
 </li>
 </ul>
-<h4 id="16-dd">16 dd</h4>
+<h4 id="dd">dd</h4>
 <p>Linux dd命令用于读取、转换并输出数据。dd可从标准输入或文件中读取数据，根据指定的格式来转换数据，再输出到文件、设备或标准输出。</p>
 <ul>
 <li>if=文件名：输入文件名，默认为标准输入。即指定源文件。</li>
 <li>of=文件名：输出文件名，默认为标准输出。即指定目的文件。</li>
 </ul>
-<h3 id="2-3-2-">2.3.2 系统信息</h3>
-<h4 id="1-uname">1 uname</h4>
+<h3 id="-">系统信息</h3>
+<h4 id="uname">uname</h4>
 <p>显示计算机以及操作系统的相关信息，比 如计算机硬件架构、内核发行号、操作系 统名称、计算机主机名等。</p>
 <p>uname [选项]</p>
 <pre><code class="lang-shell">#显示操作系统的内核发行号。
@@ -604,7 +604,7 @@ Linux rhel 3.10.0-327.el7.x86_64
 #1 SMP Thu Oct 29 17:29:29 EDT 2015 x86_64 x86_64
 x86_64 GNU/Linux
 </code></pre>
-<h4 id="2-hostname">2 hostname</h4>
+<h4 id="hostname">hostname</h4>
 <p>显示或修改计算机的主机名。</p>
 <pre><code class="lang-shell"># 显示当前计算机主机名。
 [root@rhel ~]# hostname
@@ -615,7 +615,7 @@ x86_64 GNU/Linux
 #真正的修改需要
 vim /etc/hostname 
 </code></pre>
-<h4 id="3-free">3 free</h4>
+<h4 id="free">free</h4>
 <p>显示系统的物理内存和swap的使用情况。</p>
 <pre><code class="lang-shell"># 以MB为单位查看系统的物理内存和交换分区使用情况。
 [root@rhel ~]# free -m
@@ -623,17 +623,17 @@ vim /etc/hostname
 #显示系统的物理内存加上交换分区总的容量。
 [root@rhel ~]# free -t
 </code></pre>
-<h4 id="4-du">4 du</h4>
+<h4 id="du">du</h4>
 <p>​        显示目录或文件的磁盘占用量。逐级进入 指定目录的每一个子目录并显示该目录占 用文件系统数据块的情况。<strong>如果没有给出 文件或目录名称，那么就对当前目录进行 统计。</strong></p>
 <pre><code class="lang-shell">#以人能看懂的单位显示/root目录磁盘占用量。
 [root@rhel ~]# du –sh /root
 </code></pre>
-<h4 id="5-wall">5 wall</h4>
+<h4 id="wall">wall</h4>
 <pre><code class="lang-shell">#向所有用户发出“下班以后请关闭计算机。”的信息。
 [root@rhel ~]# wall &#39;下班以后请关闭计算机&#39;
 </code></pre>
-<h3 id="2-3-3-">2.3.3 时间和日期</h3>
-<h4 id="1-cal">1 cal</h4>
+<h3 id="-">时间和日期</h3>
+<h4 id="cal">cal</h4>
 <p>cal [选项] [[[日] 月] 年]</p>
 <pre><code class="lang-shell"># 显示本月的月历。
 [root@rhel ~]# cal
@@ -648,7 +648,7 @@ vim /etc/hostname
 [root@rhel ~]# cal -jy
 </code></pre>
 <p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/6.png" alt=""></p>
-<h3 id="2-3-4-">2.3.4 修改权限</h3>
+<h3 id="-">修改权限</h3>
 <pre><code class="lang-shell">#使用文字设定法对/root/ab文件设置权限，所有者为读取、写入和执行权限，同组用户为读取和写入权限，而其他用户没有任何权限。
 chmod u=rwx,g+rw,o-rwx ab
 
@@ -664,8 +664,8 @@ chown :zhangsan ab
 #将/root/ab文件的组和所有者改为张三
 chown zhangsan:zhangsan ab
 </code></pre>
-<h2 id="2-4-">2.4 用户和组群账户管理</h2>
-<h3 id="2-4-1-">2.4.1 用户账户</h3>
+<h2 id="-">用户和组群账户管理</h2>
+<h3 id="-">用户账户</h3>
 <p>​        用户账户在Linux系统中是分角色的，由于 角色不同，每个用户的权限和所能完成的 任务也不同。而在实际的管理中，用户的角色是通过UID（用户ID号）来标识的，每个用户的UID都是不同的。</p>
 <p>​        在Linux系统中有三大类用户，分别是root 用户、系统用户和普通用户。</p>
 <ul>
@@ -677,8 +677,8 @@ chown zhangsan:zhangsan ab
 <p>​    <strong>/etc/shadow</strong>文件是/etc/passwd的影子文件，这 个文件并不是由/etc/passwd文件产生，这两个文 件应该是对应互补的。/etc/shadow文件内容包括 用户及被加密的密码以及其它/etc/passwd不能包 括的信息，比如用户账户的有效期限等。</p>
 <p>任何用户都可以读取/etc/passwd文件内容，在 /etc/passwd文件中，每一行表示的是一个用户账 户的信息，一行有7个段位，每个段位用“:”分隔。 <strong>zhangsan:x :1000:1000:张三:/home/zhangsan:/bin/bash</strong></p>
 <p>(用户名：密码：UID：GID：用户名全程：主目录：登录用的shell)</p>
-<h3 id="2-4-2-">2.4.2 用户相关的命令</h3>
-<h4 id="1-useradd-usermod">1 useradd/usermod</h4>
+<h3 id="-">用户相关的命令</h3>
+<h4 id="useradd-usermod">useradd/usermod</h4>
 <pre><code class="lang-shell">#创建用户账户zhangsan并设置密码。
 [root@rhel ~]# useradd zhangsan
 [root@rhel ~]# passwd zhangsan
@@ -697,12 +697,12 @@ chown zhangsan:zhangsan ab
 
 </code></pre>
 <p>usermod 只是和add命令类似</p>
-<h4 id="2-userdel">2 userdel</h4>
+<h4 id="userdel">userdel</h4>
 <p>使用userdel命令可以在Linux系统中删除用 户账户，甚至连用户的主目录也一起删除。</p>
 <pre><code class="lang-shell"># 删除用户moon，并且在删除该用户的同时一起删除主目录。
  userdel -r moon
 </code></pre>
-<h3 id="2-4-3-">2.4.3 组群账户</h3>
+<h3 id="-">组群账户</h3>
 <p>具有某种共同特征的用户集合就是组群。通过组 群可以集中设置访问权限和分配管理任务。在Linux系统中，有两种组群分类方法。 一种方法将组群分为私有组群和标准组群。</p>
 <ul>
 <li>私有组群：当创建一个新的用户账户时，如果 没有指定该用户属于哪一个组群，那么Linux就会 创建一个和该用户同名的组群，这个组群就是私 有组群，在这个私有组群中只包含这个用户。</li>
@@ -714,26 +714,26 @@ chown zhangsan:zhangsan ab
 <li>次要组群：次要群组也称附加群组，一个用户 账户可以属于多个次要群组。</li>
 </ul>
 <p>/etc/group文件的内容包括组群名、组群密码、GID及该 组群所包含的用户，每个组群一条记录，一行有4个段位， 每个段位用“:”分隔。 <strong>zhangsan:x :1000:</strong> （组名：组群密码：GID：族群成员 ）密码为x表示密码被映射到/etc/g</p>
-<h3 id="2-4-4-">2.4.4 对应命令</h3>
-<h4 id="1-gpasswd">1 gpasswd</h4>
+<h3 id="-">对应命令</h3>
+<h4 id="gpasswd">gpasswd</h4>
 <p>设置一个组群的组群密码，或者是在组群 中添加、删除用户。</p>
 <pre><code class="lang-shell">#把用户it添加到kk组群中。
 [root@rhel ~]# gpasswd -a it kk
 
 </code></pre>
-<h4 id="2-id">2 id</h4>
+<h4 id="id">id</h4>
 <pre><code class="lang-shell"># 查询用户ab的UID、GID 以及归属组群的情况。
 [root@rhel ～]# id ab
 
 </code></pre>
-<h2 id="2-5-">2.5 磁盘分区</h2>
+<h2 id="-">磁盘分区</h2>
 <p>​        在Linux系统中，如果需要在某个磁盘上存 储数据，则需要将磁盘进行分区，然后创 建文件系统，最后将文件系统挂载到目录 下才可以。在安装Linux系统后需要添加更多的交换空 间，可以通过添加一个交换分区或添加一 个交换文件来实现。</p>
-<h3 id="2-5-1-">2.5.1 什么是磁盘分区</h3>
+<h3 id="-">什么是磁盘分区</h3>
 <ul>
 <li>磁盘分区是指对硬盘物理介质的逻辑划分。将磁盘分成多 个分区，不仅仅利于对文件的管理，而且不同的分区可以 建立不同的文件系统，这样才能在不同的分区上安装不同 的操作系统。</li>
 <li>磁盘分区一共有3种：主分区、扩展分区和逻辑驱动器。 扩展分区只不过是逻辑驱动器的“容器”，实际上只有主 分区和逻辑驱动器才能进行数据存储。<strong>在一块磁盘上最多只能有四个主分区，可以另外建立一个扩展分区来代替四个主分区的其中一个，然后在扩展分区下可以建立更多的 逻辑驱动器。</strong></li>
 </ul>
-<h3 id="2-5-2-fdisk-">2.5.2 磁盘分区fdisk 举例</h3>
+<h3 id="-fdisk-">磁盘分区fdisk 举例</h3>
 <p>对硬盘上的剩余空间进行分区，创建两个逻辑驱动器，容量分别为1GB和3GB。</p>
 <p>1， 由于当时装系统的时候，已经将磁盘的空间都用完了，所以不能给sda分配逻辑分区了，所以在虚拟机上在装一个磁盘sdb</p>
 <p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/8.png" alt=""></p>
@@ -744,7 +744,7 @@ m n l 回车 +3G
 w
 </code></pre>
 <p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/7.png" alt=""></p>
-<h3 id="2-5-3-">2.5.3 创建文件系统</h3>
+<h3 id="-">创建文件系统</h3>
 <p>​        首先需要确认文件系统的类型，然后才能 挂载使用，通过mount加载或者通过修改 /etc/fstab文件开机自动加载都可以实现 该功能。</p>
 <ul>
 <li>对一个新的磁盘进行分区以后，还要对这些分区进行格式 化并创建文件系统。一个分区只有建立了某种文件系统后， 这个分区才能使用。建立文件系统的过程，就是用相应的 格式化工具格式化分区的过程，这个过程和在Windows 系统中格式化某个分区为NTFS分区的过程类似。</li>
@@ -759,7 +759,7 @@ w
 mkfs -t xfs -f  /dev/sdb5
 
 </code></pre>
-<h3 id="2-5-4-">2.5.4 挂载和卸载文件系统</h3>
+<h3 id="-">挂载和卸载文件系统</h3>
 <p>​        如果要挂载一个分区，首先需要确认文件 系统的类型，然后才能挂载使用，通过使 用mount和umount命令可以实现文件系统的 挂载和卸载。</p>
 <p>mount [选项] [设备] [挂载目录] </p>
 <pre><code class="lang-shell">#挂载分区/dev/sda5到/mnt/kk目录中。
@@ -774,10 +774,10 @@ mount /dev/sda5 /mnt/kk
 [root@rhel ~]# df
 
 </code></pre>
-<h4 id="1-df">1 查看磁盘分区挂载情况 df</h4>
+<h4 id="-df">查看磁盘分区挂载情况 df</h4>
 <p>​        要查看Linux系统上的磁盘分区挂载情况，可以使 用df命令来获取信息。使用df命令可以显示每个 文件所在的文件系统的信息，默认是显示所有文 件系统。检查文件系统的磁盘空间使用情况，利 用该命令获取硬盘使用了多少空间、目前还剩下 多少空间等相关信息。</p>
 <p>df [选项] [文件]</p>
-<h4 id="2-">2 开机自动挂载文件系统</h4>
+<h4 id="-">开机自动挂载文件系统</h4>
 <p>​        只有将某个分区或是设备挂载以后才能使 用，但是当计算机重新启动以后，又需要 重新挂载，这个时候可以通过修改 /etc/fstab文件实现开机自动挂载文件系统。</p>
 <ul>
 <li>/etc/fstab文件包含了所有磁盘分区以及存储设备的信息。 其中包含了磁盘分区和存储设备如何挂载，以及挂载在什 么目录上的信息。/etc/fstab文件是一个简单的文本文件， 必须要以root用户登录才可以编辑该文件。</li>
@@ -797,9 +797,9 @@ mount /dev/sda5 /mnt/kk
 </ul>
 <p>设置开机自动挂载文件系统</p>
 <p>编辑/etc/fstab文件，在该文件末尾添加下 列内容。 <strong>/dev/sda5 /mnt/www xfs defaults 1 2</strong></p>
-<h3 id="2-5-5-">2.5.5 使用交换空间</h3>
+<h3 id="-">使用交换空间</h3>
 <p>​        用户有时需要在安装Linux系统后添加更多的交换 空间，可以通过添加一个交换分区（推荐优先使 用）或添加一个交换文件来实现。交换空间的总 大小一般为计算机物理内存的1～2倍左右，计算 机物理内存越大，倍数越小。</p>
-<h4 id="1-">1 添加交换分区</h4>
+<h4 id="-">添加交换分区</h4>
 <pre><code class="lang-shell"># 创建交换分区
 [root@rhel ~]# mkswap /dev/sda5
 # 启用交换分
@@ -821,7 +821,7 @@ cat /proc/swaps
 # 然后删除/etc/fstab里面指定的内容
 
 </code></pre>
-<h4 id="2-">2 添加交换文件</h4>
+<h4 id="-">添加交换文件</h4>
 <p>1， 创建/swapfile文件。将大小乘以1024来判定块的大小。例如，大小为68MB的交换文件的块 大小为65536。在Shell提示下以root用户身份输入以下命令，其中的count等于想要输 入的块大小。</p>
 <pre><code class="lang-shell"> #Linux dd命令用于读取、转换并输出数据。dd可从标准输入或文件中读取数据，根据指定的格式来转换数据，再输出到文件、设备或标准输出。
  #if=文件名：输入文件名，默认为标准输入。即指定源文件。of=文件名：输出文件名，默认为标准输出。即指定目的文件。bs=bytes：同时设置读入/输出的块大小为bytes个字节。count=blocks：仅拷贝blocks个块，块大小等于ibs指定的字节数。//2097152  2G  4194304 4G
@@ -845,18 +845,18 @@ cat /proc/swaps
 <pre><code class="lang-shel;">[root@rhel ~]# rm -rf /swapfile
 </code></pre>
 <p>8,     编辑/etc/fstab文件,删除对应的内容</p>
-<h2 id="2-6-">2.6 软件包管理</h2>
+<h2 id="-">软件包管理</h2>
 <p>​        在Linux系统中，最常用的软件包是RPM包和 tar包。要管理RPM软件包可以使用rpm和yum 命令，<strong>yum命令自动化地收集RPM软件包的相 关信息，检查依赖性，并且一次安装所有依赖的软件包，无需繁琐地一次次安装。</strong></p>
-<h3 id="2-6-1-rpm-">2.6.1 RPM软件包管理</h3>
-<h4 id="1-">1 概念</h4>
+<h3 id="rpm-">RPM软件包管理</h3>
+<h4 id="-">概念</h4>
 <ul>
 <li>RPM（Red Hat Package Manager，Red Hat软 件包管理器）是一种开放的软件包管理系统，按 照GPL条款发行，可以运行于各种Linux系统上。</li>
 <li>RPM 维护一个已经安装软件包和它们的文件的数据库， 因此，可以在系统上使用查询和校验软件包功能。</li>
 <li>RPM允许把软件编码包装成源码包和程序包，然 后提供给终端用户，这个过程非常简单，这种对 用户的纯净源码、补丁和建构指令的清晰描述减 轻了发行软件新版本所带来的维护负担。<strong>Linux系 统上的所有软件都被分成可被安装、升级或卸载 的RPM软件包。</strong></li>
 </ul>
-<h4 id="2-">2 命令</h4>
+<h4 id="-">命令</h4>
 <p>使用rpm命令可以在Linux系统中安装、删 除、刷新、升级、查询RPM软件包。</p>
-<h5 id="1-rpm-">1 安装RPM软件包</h5>
+<h5 id="-rpm-">安装RPM软件包</h5>
 <p>rpm -ivh [RPM软件包文件名称]</p>
 <pre><code class="lang-shell"> #安装bind-9.9.4-29.el7.x86_64.rpm软件包。
  rpm -ivh bind-9.9.4-29.el7.x86_64.rpm
@@ -864,33 +864,33 @@ cat /proc/swaps
  rpm -ivh --replacepkgs bind-9.9.4-29.el7.x86_64.rpm
 
 </code></pre>
-<h5 id="2-rpm-">2    删除RPM软件包</h5>
+<h5 id="-rpm-">删除RPM软件包</h5>
 <p>rpm -e [RPM包名称]</p>
 <pre><code class="lang-shell">#删除bind-chroot软件包。
 rpm -e bind-chroot
 </code></pre>
-<h5 id="3-rpm-">3     升级RPM软件包</h5>
+<h5 id="-rpm-">升级RPM软件包</h5>
 <p>使用rpm -Uvh命令可以在Linux系统中升级 RPM软件包，升级软件包实际上是删除和 安装的组合。不管该软件包的早期版本是 否已被安装，升级选项都会安装该软件包。</p>
 <p>rpm -Uvh [RPM软件包文件名称]</p>
 <pre><code class="lang-shell">#升级bind-9.9.4-29.el7.x86_64.rpm软件包，升级软件包实际上是删除和安装的组合。
 rpm -Uvh bind-9.9.4-29.el7.x86_64.rpm 
 </code></pre>
-<h5 id="4-">4    刷新软件包</h5>
+<h5 id="-">刷新软件包</h5>
 <p>​        使用rpm -Fvh命令可以在Linux系统中刷新RPM 软件包。使用RPM刷新软件包时，系统会比较指 定的软件包的版本和系统上已安装的版本。<strong>当 RPM的刷新选项处理的版本比已安装的版本更新， 它就会升级到更新的版本。如果软件包先前没有 安装</strong>，RPM的刷新选项将<strong>不会安装该软件包</strong>，这 和RPM的升级选项不同。</p>
 <p>rpm -Fvh [RPM软件包文件名称]</p>
 <pre><code class="lang-shell">#  刷新bind-9.9.4-29.el7.x86_64.rpm软件包。
 [root@rhel Packages]# rpm -Fvh bind-9.9.4-29.el7.x86_64.rpm
 </code></pre>
-<h5 id="5-">5    查询</h5>
+<h5 id="-">查询</h5>
 <p>rpm -q [RPM包名称]      查询指定RPM软件包是否已经安装</p>
 <p> rpm –qa      查询系统内所有已安装的RPM软件包。</p>
 <p>rpm -qi [RPM包名称]  查询已安装RPM软件包的 描述信息</p>
 <p>rpm -ql [RPM包名称]     查询指定已安装RPM软件包 所包含的文件列表</p>
 <p>rpm -qR [RPM包名称]     查询RPM软件包的依赖关系</p>
 <p>rpm -qf [文件名]    查询系统中指定文件属于哪个 RPM软件包</p>
-<h3 id="2-6-2-yum-rpm-">2.6.2 使用yum管理RPM软件包</h3>
+<h3 id="-yum-rpm-">使用yum管理RPM软件包</h3>
 <p>​        在Linux系统中安装软件包使用rpm命令， 但是使用rpm命令安装软件包特别的麻烦， 原因在于需要手动寻找安装该软件包所需 要的一系列依赖关系。当软件包不用时需 要卸载的话，由于卸载掉了某个依赖关系 而导致其它的软件包不能用。在Linux系统 中使用yum命令，令Linux的软件安装变得 简单。</p>
-<h4 id="1-">1 概念</h4>
+<h4 id="-">概念</h4>
 <ul>
 <li>yum（Yellow dog Updater Modified）起初是由 Terra Soft研发，其宗旨是自动化地升级、安装和删除RPM软件包，收集RPM软件包的相关信息， 检查依赖性并且一次安装所有依赖的软件包，无须繁琐地一次次安装。</li>
 <li>yum的关键之处是要有可靠的软件仓库，软件仓 库可以是HTTP站点、FTP站点或者是本地软件 池，但必须包含rpm的header，header包括了 RPM软件包的各种信息，包括描述、功能、提供 的文件以及依赖性等。正是收集了这些header并 加以分析，才能自动化地完成余下的任务。</li>
@@ -902,9 +902,9 @@ rpm -Uvh bind-9.9.4-29.el7.x86_64.rpm
 <li>自动解决安装或者删除RPM软件包时遇到 的依赖性问题；</li>
 <li>保持与RPM数据库的一致性。</li>
 </ul>
-<h4 id="2-yum-">2 yum软件仓库配置文件</h4>
+<h4 id="yum-">yum软件仓库配置文件</h4>
 <p>​        repo文件是Linux系统中yum源（软件仓库） 的配置文件，通常一个repo文件定义了一 个或者多个软件仓库的细节内容，比如从 哪里下载需要安装或者升级的软件包， repo文件中的设置内容将被yum读取和应 用。软件仓库配置文件默认存储在 <strong>/etc/yum.repos.d</strong>目录中。</p>
-<h4 id="3-yum-">3 yum命令使用</h4>
+<h4 id="yum-">yum命令使用</h4>
 <p> 使用yum命令可以安装、更新、删除、显 示软件包。yum可以自动进行系统更新， 基于软件仓库的元数据分析，解决软件包 依赖性关系。</p>
 <h5 id="-yum-">使用yum命令进行软件管理</h5>
 <p>1.yum help 显示使用信息 
@@ -940,7 +940,7 @@ rpm -Uvh bind-9.9.4-29.el7.x86_64.rpm
 【例9.23】删除bind软件包。
 [root@rhel ~]# yum remove bind 
 </code></pre>
-<h3 id="2-6-3-tar">2.6.3 tar</h3>
+<h3 id="tar">tar</h3>
 <pre><code class="lang-shell">#备份/root/abc目录及其子目录下的全部文件，备份文件名为abc.tar。
 #-c或--create 建立新的备份文件。
 #-v或--verbose 显示指令执行过程。
@@ -977,8 +977,8 @@ tar xf /etc/tos/conf/tos.tar.gz manifest.json
 <pre><code class="lang-shell">#将目录/root/abc及该目录所有文件压缩成abc.tar.bz2文件。
 [root@rhel ~]# tar jcvf abc.tar.bz2 /root/abc
 </code></pre>
-<h2 id="2-7-">2.7 日常管理和维护</h2>
-<h3 id="2-7-1-">2.7.1 进程管理</h3>
+<h2 id="-">日常管理和维护</h2>
+<h3 id="-">进程管理</h3>
 <h4 id="-">进程和程序的区别</h4>
 <p>​        程序 只是一个静态的命令集合，不占系统的运行资源； 而进程是一个随时都可能发生变化的、动态的、 使用系统运行资源的程序。一个程序可以启动多个进程。</p>
 <h4 id="-">进程的特征</h4>
@@ -990,7 +990,7 @@ tar xf /etc/tos/conf/tos.tar.gz manifest.json
 <li>结构特征：进程由<strong>程序、数据和进程控制块</strong>三部分组成。</li>
 <li>多个不同的进程可以包含相同的程序：一个程序在不同的 数据集里就构成不同的进程，能得到不同的结果；但是执 行过程中，程序不能发生改变。</li>
 </ul>
-<h3 id="2-7-2-">2.7.2 查看进程</h3>
+<h3 id="-">查看进程</h3>
 <h4 id="ps">ps</h4>
 <p>​        使用该命令可以确定有哪些进 程正在运行以及进程运行的状态、进程是 否结束、进程有没有僵死，以及哪些进程 占用了过多的资源等。</p>
 <pre><code class="lang-shell">#显示所有进程。
@@ -1021,7 +1021,7 @@ tar xf /etc/tos/conf/tos.tar.gz manifest.json
 <p>​            要关闭某个应用程序可以通过杀死其进程的方式 实现，如果进程一时无法杀死，可以将其强制杀 死。使用kill命令可以杀死进程。在使用kill命令之 前，需要得到要被杀死的进程的PID（进程号）。 <strong>用户可以使用ps命令获得进程的PID，然后用进 程的PID作为kill命令的参数。</strong></p>
 <p> kill –9 1659</p>
 <p>强制杀死进程号为1659的进程。</p>
-<h3 id="2-7-3-">2.7.3 任务计划</h3>
+<h3 id="-">任务计划</h3>
 <p>​        如果要在固定的时间上触发某个作业，就 需要创建任务计划，按时执行该作业，在 Linux系统中常用cron实现该功能。使用cron实现任务自动化可以通过<strong>修改 /etc/crontab文件以及使用crontab</strong>命令实 现，其结果是一样的。</p>
 <h4 id="-etc-crontab-">/etc/crontab文件详解</h4>
 <ul>
@@ -1154,11 +1154,11 @@ no crontab for zhangsan
 8 * * * * cp /home/zhangsan/aa /home/zhangsan/bb
 #恢复以后可以看到丢失的crontab文件条目
 </code></pre>
-<h3 id="2-7-4-linux-">2.7.4 Linux系统启动过程</h3>
-<h4 id="1-bios-">1．BIOS自检</h4>
-<h4 id="2-grub-2">2．启动GRUB 2</h4>
-<h4 id="3-">3．加载内核</h4>
-<h4 id="4-systemd-">4．执行systemd进程</h4>
+<h3 id="linux-">Linux系统启动过程</h3>
+<h4 id="bios-">BIOS自检</h4>
+<h4 id="-grub-2">启动GRUB 2</h4>
+<h4 id="-">加载内核</h4>
+<h4 id="-systemd-">执行systemd进程</h4>
 <ul>
 <li><p>systemd进程是系统所有进程的起点，内核 在完成核内引导以后，即在本进程空间内 加载systemd程序。</p>
 </li>
@@ -1170,10 +1170,10 @@ no crontab for zhangsan
 </ul>
 </li>
 </ul>
-<h4 id="5-">5．初始化系统环境</h4>
-<h4 id="6-bin-login-">6．执行/bin/login程序</h4>
-<h1 id="3-linux-">3 Linux网络基本配置</h1>
-<h2 id="3-1-">3.1 常用网络配置文件</h2>
+<h4 id="-">初始化系统环境</h4>
+<h4 id="-bin-login-">执行/bin/login程序</h4>
+<h1 id="linux-">Linux网络基本配置</h1>
+<h2 id="-">常用网络配置文件</h2>
 <h4 id="-etc-sysconfig-network-scripts-ifcfgeno16777736-">/etc/sysconfig/network-scripts/ifcfgeno16777736文件</h4>
 <p>在Linux统中，系统网络设备的配置文件保 存在/etc/sysconfig/network-scripts目录下， 其中文件ifcfg-eno16777736包含一块网卡 的配置信息，文件ifcfg-lo包含回路IP地址 信息。</p>
 <h4 id="-etc-resolv-conf-">/etc/resolv.conf文件</h4>
@@ -1182,7 +1182,7 @@ no crontab for zhangsan
 <p>当计算机启动时，在可以查询DNS以前， 计算机需要查询一些主机名到IP地址的匹 配。这些匹配信息存放在/etc/hosts文件中。 在没有域名服务器的情况下，系统上的所 有网络程序都通过查询该文件来解析对应 于某个主机名的IP地址。</p>
 <h4 id="-etc-services-">/etc/services文件</h4>
 <p>/etc/services文件定义了Linux系统中所有 服务的名称、协议类型、服务的端口等信 息。</p>
-<h2 id="3-2-">3.2 常用网络命令</h2>
+<h2 id="-">常用网络命令</h2>
 <p>在Linux系统中提供了大量的网络命令用于 网络配置、网络测试以及网络诊断，如 traceroute、ifconfig、ping、netstat、 arp以及tcpdump等。</p>
 <h4 id="traceroute">traceroute</h4>
 <p>使用traceroute命令可以显示数据包到目标 主机之间的路径。traceroute命令使用户可 以追踪网络数据包的路由途径，预设IPv4数 据包大小是60字节，用户可以另外设置。</p>
@@ -1226,7 +1226,7 @@ no crontab for zhangsan
 [root@rhel ～]# tcpdump -i eno16777736
 
 </code></pre>
-<h2 id="3-3-">3.3 管理网络服务</h2>
+<h2 id="-">管理网络服务</h2>
 <p>RHEL 7系统使用systemd，它提供更优秀 的框架以表示系统服务间的依赖关系，并 实现系统初始化时服务的并行启动，同时 达到降低Shell的系统开销的效果，最终代 替现在常用的System V。</p>
 <ul>
 <li>在RHEL7之前，服务管理工作是由System V通过 /etc/rc.d/init.d目录下的Shell脚本来执行的，通过这 些脚本允许管理员控制服务的状态。在RHEL 7中， 这些脚本被服务单元文件替换。在systemd中，服 务、设备、挂载等资源统一被称为单元，所以 systemd中有许多单元类型，服务单元文件的扩展 名是.service，同Shell脚本的功能相似。比如有查 看、启动、停止、重启、启用或者禁止服务的参数。</li>
@@ -1269,8 +1269,8 @@ no crontab for zhangsan
 <li>另一个使用OpenSSH的原因是，它自动把DISPLAY变量 转发给客户主机。如果在本地主机上运行X窗口系统，并 且使用ssh命令登录到远程主机上，当在远程主机上执行 一个需要X的程序时，该程序会在本地主机上执行。rpm -ivh nfs-utils-1.3.0- 0.21.el7.x86_64.rpm </li>
 </ul>
 <h1 id="-">补充（鸟哥）</h1>
-<h2 id="1-bash">1，bash</h2>
-<h3 id="1-">1 命令</h3>
+<h2 id="bash">bash</h2>
+<h3 id="-">命令</h3>
 <h5 id="history">history</h5>
 <p>查看历史命令，这些命令保存在了 ~/.bash_history这个文件里面。</p>
 <h5 id="read">read</h5>
@@ -1278,7 +1278,7 @@ no crontab for zhangsan
 -p 后面根提示字符
 read -p &quot;my_name:&quot; myname
 </code></pre>
-<h3 id="2-">2 组合键</h3>
+<h3 id="-">组合键</h3>
 <table>
 <thead>
 <tr>
@@ -1300,8 +1300,8 @@ read -p &quot;my_name:&quot; myname
 </tr>
 </tbody>
 </table>
-<h3 id="3-">3 正则表达式</h3>
-<h4 id="1-">1 特殊符号</h4>
+<h3 id="-">正则表达式</h3>
+<h4 id="-">特殊符号</h4>
 <table>
 <thead>
 <tr>
@@ -1363,7 +1363,7 @@ read -p &quot;my_name:&quot; myname
 </tr>
 </tbody>
 </table>
-<h4 id="2-grep-">2, grep练习</h4>
+<h4 id="grep-">grep练习</h4>
 <pre><code class="lang-shell">#找到开头不是英文字母的那些行
 grep -n &#39;^[^[:alpha:]]&#39; text
 grep -n &#39;^[^a-zA-Z]&#39; txt
@@ -1392,9 +1392,9 @@ grep -v &#39;^$&#39; text | grep -v &#39;^#&#39;
 #查找 good或者gaod
 grep -n &#39;g(oo|ao)d&#39; text
 </code></pre>
-<h1 id="3-">3 工具</h1>
-<h2 id="3-1-vim">3.1 vim</h2>
-<h3 id="3-1-1-">3.1.1 光标移动</h3>
+<h1 id="-">工具</h1>
+<h2 id="vim">vim</h2>
+<h3 id="-">光标移动</h3>
 <table>
 <thead>
 <tr>
@@ -1429,7 +1429,7 @@ grep -n &#39;g(oo|ao)d&#39; text
 </tr>
 </tbody>
 </table>
-<h3 id="3-1-2-">3.1.2 命令模式</h3>
+<h3 id="-">命令模式</h3>
 <table>
 <thead>
 <tr>
@@ -1496,8 +1496,8 @@ grep -n &#39;g(oo|ao)d&#39; text
 </tr>
 </tbody>
 </table>
-<h2 id="3-2-bc">3.2 bc</h2>
-<h3 id="3-3-curl">3.3 curl</h3>
+<h2 id="bc">bc</h2>
+<h2 id="curl">curl</h2>
 <p><a href="http://www.ruanyifeng.com/blog/2019/09/curl-reference.html">http://www.ruanyifeng.com/blog/2019/09/curl-reference.html</a></p>
 <p>​        curl 是常用的命令行工具，用来请求 Web 服务器。它的名字就是客户端（client）的 URL 工具的意思。它的功能非常强大，命令行参数多达几十种。如果熟练的话，完全可以取代 Postman 这一类的图形界面工具。</p>
 <pre><code class="lang-shell">curl https://www.example.com
@@ -1784,7 +1784,55 @@ done
                 path = /share     
                 public = no             
                 writable = yes          
+</code></pre><h1 id="-">日常问题</h1>
+<h2 id="-3-transwarp-">配置3台主机 transwarp用户互相免密登录</h2>
+<p>1，三台主机都切换到transwarp用户，执行</p>
+<pre><code class="lang-shell">ssh-keygen -t rsa 
 </code></pre>
+<p>2， 再tdh-100  中执行</p>
+<pre><code class="lang-shell">cat /home/transwarp/.ssh/id_rsa.pub &gt;&gt; /home/transwarp/.ssh/authorized_keys
+#将密钥复制到其他两台主机上
+ssh transwarp@tdh-101 cat /home/transwarp/.ssh/id_rsa.pub &gt;&gt; /home/transwarp/.ssh/authorized_keys
+
+ssh transwarp@tdh-102 cat /home/transwarp/.ssh/id_rsa.pub &gt;&gt; /home/transwarp/.ssh/authorized_keys
+</code></pre>
+<p>现在其他两台主机可以免密登录tdh-100了</p>
+<p>3， 进入tdh-101, tdh-102 执行2</p>
+<h2 id="screen-">screen的使用</h2>
+<pre><code class="lang-shell">#安装
+yum install -y screen
+#创建一个ttt的窗口
+screen -S  ttt
+#暂时退出窗口
+ctrl a  ctrl d
+#查看窗口
+screen -ls
+#重新进入窗口
+screen -r tt
+#进入窗口后永久退出这个窗口，只需要输入exit就可以了
+</code></pre>
+<h2 id="ntp-">ntp同步时间</h2>
+<pre><code class="lang-shell">yum install -y ntpdate
+ntpdate cn.pool.ntp.org
+</code></pre>
+<h2 id="yum-">yum配置国内镜像</h2>
+<pre><code class="lang-shell">第一步：备份你的原镜像文件，以免出错后可以恢复。
+mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+
+第二步：下载新的CentOS-Base.repo 到/etc/yum.repos.d/
+CentOS 7
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+
+#epel源#
+Epel 7
+wget -O /etc/yum.repos.d/epel-7.repo http://mirrors.aliyun.com/repo/epel-7.repo
+
+第三步：运行yum makecache生成缓存
+
+yum clean all
+yum makecache
+</code></pre>
+
           	</article>
         </div>
 		</div>

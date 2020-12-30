@@ -1,232 +1,244 @@
-## 关键路径
-
-### AOV 网和 AOE网
-
-AOV网（Avtivity On Vertex）顶点活动图是指用顶点表示活动，而用边集表示活动间优先关系的有向图。如下图
-
-![image-20201225092956815](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225092956815.png)
-
-AOE网（Avtivity On Vertex）边活动网是指用带权的边集表示活动，而用顶点表示事件的有向图，其中边权表示完成活动所需要的时间。如下图
-
-![image-20201225093535436](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225093535436.png)
-
-**考虑到工程总会有一个起始时刻和结束时刻，因此AOV网一般只有一个源点与结束点。**
-
-**AOE网中的最长路径被称为关键路径，如a1 a3 a5 a6 就是关键路径，因为这条路径决定了工程的最短完成时间。**
 
 
 
-### 求最长路径
-
-对一个没有正环的图，要求其最长路径，可以将所有的边权乘以-1，令其变为相反数，然后使用Bellman-Ford算法，或SPFA算法求最短路径，最后将结果求反即可。 注意：不能使用Dijkstra算法。
 
 
 
-### 关键路径的求法 ** 
+# 动态规划
 
-比较复杂，算法笔记p419
+如果一个问题的最优解可以由其子问题的最优解有效的构造出来，那么称这个问题的拥有**最优子结构**。一个问题必须拥有**最优子结构和重叠子问题**才能用动态规划去解决。
 
-求解有向无环图的（DAG）最长路径的方法。
+**分治和动态规划的区别**
 
-**设置两个数组e,l 其中e[r] 和 l[r]分别表示活动a~r~ 最早开始时间和最迟结束时间。求出数组后如果e[r] == l[r] ，表示活动r的最早开始时间和结束时间一样，证明 活动r是关键路径。**
+​		分治和动态规划都是将问题分为子问题，然后合并子问题的解得到原问题的解。但是不同的是，分支法分解出来的子问题是不重叠的，因此**分治法解决的问题不拥有重叠子问题，而动态规划解决的问题拥有重叠子问题。**例如，归并排序和快速排序都是分别处理左序列和右序列，然后将左右序列的结果合并。分支法解决的不一定是最优化的问题，而动态规划解决的问题一定是最优化问题。
 
-#### 如何求解e, l ？
+**贪心与动态规划**
 
-![image-20201225100728283](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225100728283.png)
+​		贪心和动态规划都要求原问题必须拥有最优子结构。二者的区别在于，贪心法采用的类似于自顶向下，但是并不等待子问题求解完毕之后在选择使用哪个，而是通过一种策略直接选择一个子问题去求解。例如，对于数塔问题而言，贪心法从上层开始，每次选择左下和右下两个数字中的较大的一个，显然这不一定能得到最优解。而动态规划则会考虑所有子问题，并选择继承能得到最优结果的那个。
 
-如图，事件V~i~在经过活动a~r~到达事件V~j~ 。设置数组ve,vl, ve[i]，vl[i]表示事件i 最早和最迟的发生时间。
+## 例题
 
-1. 对于a~r~来说，e[r] = ve[i]，活动r的最早发生时间，就是事件i的最早发生时间。
-2. l[r] + len[r] = vl[j] 活动r最迟发生事件，加上活动r所需要的时间，就是事件j的最迟发生时间。
+### 斐波那契数列问题
 
-于是求解出ve，和vl 就可以求出e 和 l
+令dp[i] 为 F(i)的 则dp[i] = dp[i-1] + dp[i - 2]，边界条件为dp[0] = 1, dp[1] = 1
 
-### 求解ve -- 事件的最早发生时间
+### 数塔问题
 
-![image-20201225101617366](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225101617366.png)
+![image-20201226101917540](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201226101917540.png)
 
-如图，V~j~的最早发生时间就是ve[i1] + len[r1] ~ ve[ik] + len[rk]中的最大值。因为V~j~的发生要等到所有Vi 都发生才能发生。
+**问题描述**
 
-可以发现，要想获得ve[j]的正确值，ve[i1] ~ ve[ik]都必须已经得到了。因此，在访问vj时必须保证其前驱结点都已经被访问过，可以使用拓扑排序。**一个好的做法时，在拓扑排序访问到vi时，让ve[i]更新ve[j]的值**，这样访问到ve[j]时，ve[j]的所有前驱都已更新过它，保证了它的正确性。
+> 从第一层走到第n层，每次只能走下一层连接的两个数字。问从最后路径上所有数字相加和最大是多少？`f[i][j]为第i行j列上的数字`
 
-```c++
-#include <cstdio>
-#include <algorithm>
-#include <queue>
-#include <stack>
-using namespace std;
-struct Node{
-    int v,w;
-};
-const int maxv = 100;
-vector<Node> G[maxv];
-//拓扑排序
-int n;//顶点个数
-int inDegree[maxv];
-int ve[maxv], vl[maxv];
-stack<int> topOrder;
+**求解**
 
+> 令`dp[i][j]`表示从第i行第j个数字出发到达底层所有路径中能得到的最大和，则可得
+>
+> `dp[i][j] = max(dp[i+1][j],dp[i+1][j+1]) + f[i][j]`
+>
+> 边界条件为最后一层的值:
+>
+> 即`dp[n][j]=f[n][j]`
+>
+> 最后：`dp[1][1]` 即为所求
 
-bool topologicalSort(){
-    queue<int> q;
-    for (int i = 0; i < n; ++i) {
-        if(inDegree[i] == 0){
-            q.push(i);
+### 最大连续子序列
+
+**问题描述**
+
+> 给定一个数列A1 ... An，求i,j使得Ai +... +Aj 最大，输出这个最大值。
+>
+> 如`-2 11 -4 13 -5 -2 ` 显然最大值为`11+-4+13=20`
+
+**求解**
+
+> 令`dp[i]`表示以Ai作为末尾的连续序列最大值和，那么由于dp[i]要求必须以A[i]结尾，那么只有两种情况：
+>
+> 1. 这个最大和的连续连续序列只有一个元素，即A[i]本身
+> 2. 这个最大和连续序列有多个元素，即从前面A[p]开始，一直到A[i]结尾。此时最大和为`dp[i-1] + A[i]`
+>
+> 所以得到状态转移方程：`dp[i]=max(A[i], dp[i-1]+A[i])`
+>
+> 边界：`dp[0] = A[0]`
+
+### 最长不下降子序列LIS
+
+longest increasing sequence
+
+**问题描述**
+
+> 在一个数字序列中，找到一个最长的子序列（可以不连续），使得这个子序列是不下降的（非递减的）。
+>
+> 如`1 2 3 -1 -2 7 9`,它的最长不下降子序列是`1 2 3 7 9`长度为5。
+
+**求解**
+
+> 令dp[i]为以Ai作为结尾的最长不下降子序列长度。则有两种情况：
+>
+> 1. 如果存在A[i] 之前的元素 A[j]使得（j < i），使得A[j]<= A[i]且 `dp[j]+1 > dp[i]`（即以Aj结尾的LIS，再加上Ai构成了一个新的LIS），那么就令`dp[i]=dp[j+1]+1`
+> 2. 如果A[i]之前的元素都比A[i]大，那么A[i]就自己形成了一个LIS，dp[i]=1
+>
+> 所以可得状态转移方程：`dp[i]=max(dp[j]+1,1)(j=1..i-1 && A[j]<=A[i])`
+>
+> 边界：`dp[0]=1, dp[i]>=1`
+
+### 最长公共子序列LCS
+
+longest common subsequence
+
+**问题描述**
+
+> 字符串A，B，求一个字符串，使得这个字符串是A，B的最长公共部分。如"sadstory"与"adminsorry"的最长公共子序列为"adsory"
+
+**求解**
+
+> 令`dp[i][j]`表示字符串A的i号位和字符串B的j号位之前的LCS长度（下标从1开始），如`dp[4][5]`表示"sads"与“admin”的LCS长度。那么可以根据`A[i] 、B[j]`的情况，分为两种决策：
+>
+> 1. 若`A[i]==B[j]`,则字符串A与B的LCS增加一位，即有`dp[i][j]=dp[i-1][j-1]+1`。如`dp[4][6]`表示"sads"与“admins”的LCS长度，由于`A[4]==B[6]`所以`dp[4][6]=dp[3][5]+1`
+> 2. 若`A[i]!=B[j]`，则字符串A的i号位与字符串B的j号位之前的字符串无法延长，因此`dp[i][j]=max{dp[i-1][j],dp[i][j-1]}`。
+>
+> 所以可得状态转移方程：
+>
+> ```java
+> dp[i][j]=dp[i-1][j-1],A[i]==B[j]
+> dp[i][j]=max(dp[i-1][j],dp[i],[j-1]),A[i]!=B[j]
+> ```
+>
+> 边界条件：`dp[i][0]=dp[0][j]=0`
+>
+> 最终`dp[lenA][lenB]`就是LCS的长度。
+
+### 最长回文子串
+
+**问题描述**
+
+> 给出一个字符串S，求S的最长回文字符串的长度。
+>
+> 例如：“patzjujztaccbcc”的最长回文字符串为“atzjujzta”长度为6
+
+**求解**
+
+> 令`dp[i][j]`表示S[i]到S[j]所表示的字串是否为回文子串，是则是1，不是则是0。这样根据s[i]是否等于s[j]可以把问题分为2类：
+>
+> 1. 若s[i]==s[j]，那么只要s[i+1]至s[j-1]是回文字符串，那么s[i] 至 是s[j]就是回文子串；如果s[i+1]至s[j-1]不是回文字符串，则s[i] 至s[j]也不是回文字符串。
+> 2. 若s[i]!=s[j]，那么s[i]至s[j]肯定不是回文字符串。
+>
+> 所以可以得到状态转移方程：
+>
+> ```java
+> dp[i][j]=dp[i+1][j-1],s[i]==s[j]
+> dp[i][j]=0,s[i]!=s[j]
+> ```
+>
+> 边界条件：`dp[i][i]=1,dp[i][i+1]=(S[i]==S[i+1])?1:0`
+
+**怎么遍历？**
+
+边界条件为长度为1，2的子串；只有长度为2的子串的dp求出来之后才能得到长度为3的子串的dp。所以按照长度遍历最合适。
+
+```java
+for(int L = 3;L<=len;L++){
+	for(int i=0;i+L-1 <len; i++){
+		int j = i + L -1;// 子串的右端点
+        if(s[i] == s[j] && dp[i+1][j-1] == 1){
+            dp[i][j]=1;
+            ans = L;
         }
-    }
-    while (!q.empty()){
-        int u = q.front();
-        q.pop();
-        topOrder.push(u);
-        for (int i = 0; i < G[u].size(); ++i) {
-            int v = G[u][i].v;
-            inDegree[v] --;
-            if(inDegree[v] == 0){
-                q.push(v);
-            }
-            if(ve[u] + G[u][i].w > ve[v]){
-                ve[v] = ve[u] + G[u][i].w;
-            }
-
-        }
-    }
-    if(topOrder.size() == n){
-        return true;
-    }
-    return false;
+	}
 }
 ```
 
-### 求解vl--事件发生的最晚时间
+### 0 1 背包问题
 
-![image-20201225103139457](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225103139457.png)
+**问题描述**
 
-如图，vi 的最迟发生时间，就是vl[j1] - len[r1] ~ vl[jk] - len[rk]中的**最小值**，这样的话能保证所有vj都能在，规定时间内完成。
+> 有n件物品，每间的重量为w[i]，价值为c[i]。现在有一个容量为V的背包，问如何选取物品放入背包，使得背包内的总价值最大。其中每种物品只有一件。
+>
+> 样例
+>
+> n=5, V=8
+>
+> 3 5 1 2 2 //w[i]
+>
+> 4 5 2 1 3 //c[i]
 
-如何实现？可以使用拓扑逆序列来实现。
+**求解**
 
-![image-20201225100728283](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225100728283.png)
+> 令`dp[i][v]`表示前i件物品（1≤i≤n）,恰好装入容量为v的背包中所能获得的最大价值。两种策略：
+>
+> 1. 不放第i件物品，则问题转换为前i-1件物品恰好装入容量为v的背包中所能获得的最大价值。此时`dp[i][v]=dp[i-1][v]`
+> 2. 放第i件物品，则问题转换为前i-1件物品恰好转入容量为v-w[i]的背包中所能获得的最大价值。此时`dp[i][v]=dp[i-1][v-w[i]+c[i]`
+>
+> 所以可得状态转移方程：
+>
+> ```java
+> dp[i][v]=max{dp[i-1][v],dp[i-1][v-w[i]+c[i]} 1≤i≤n, w[i]≤v≤V
+> ```
+>
+> 边界：`dp[0][v]=0`
+>
+> 这样时间空间复杂度都为O(nV)；
 
-如图，当访问vj的时候，用vl[j]更新vl[i],这样当v[i] 被访问到的时候就一定是正确的。在拓扑逆序列中vj 一定在vi之前被访问。
+**优化**
 
-```c++
-void getVl(){
-    //初始值，都设置为终点的最迟（早）发生时间。
-    fill(vl, vl + n, ve[n -1 ]);
+![image-20201227133749078](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201227133749078.png)
 
-    while(!topOrder.empty()){
-        int u = topOrder.top();
-        topOrder.pop();
-        for (int i = 0; i < G[u].size(); ++i) {
-            int v = G[u][i].v;//
-            if(vl[u] - G[u][i].w < vl[u]){
-                vl[u] = vl[u] - G[u][i].w;
-            }
-        }
+注意到计算`dp[i][v]`时总是需要`dp[i-1][v]`和其左侧部分的数据，且完全不需要i-2的数据，所以可以开一个一维数组，这样状态转移方程变成了：`dp[v]=max(dp[v],dp[v-w[i]] + c[i]) 1≤i≤n, w[i]≤v≤V`,枚举方向改变为i从1-n，v 从 V 到0。
+
+**为什么从V到0？ 因为，要求d[v]，需要用到之前已经求好的上一层求得d[v-w[i]] 这个数据，这个数据实在d[v]之前得，如果从小到大遍历，会先把d[v-w[i]]这个数据给覆盖掉，然后才遍历到d[v]**
+
+**核心代码**
+
+```java
+for(int i = 0; i <= V; i ++){
+    dp[v]=0;
+}
+for(int i = 1; i <= n; i ++){
+    for(int v = V; v >= w[i]; v --){
+        dp[v]=max(dp[v],dp[v-w[i]] + c[i])
     }
 }
 ```
 
-### 总结
+### 完全背包问题
 
-![image-20201225104342005](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201225104342005.png)
+**问题描述**
 
+> 和01背包问题一样，就是每件物品可以放很多次了。
 
+**求解**
 
-### 最后的关键路径长度
+> 令`dp[i][v]`表示前i件物品（1≤i≤n）,恰好装入容量为v的背包中所能获得的最大价值。两种策略：
+>
+> 1. 不放第i件物品，则问题转换为前i-1件物品恰好装入容量为v的背包中所能获得的最大价值。此时`dp[i][v]=dp[i-1][v]`
+> 2. 放第i件物品，则问题转换为**前i**件物品恰好转入容量为v-w[i]的背包中所能获得的最大价值。此时`dp[i][v]=dp[i][v-w[i]+c[i]` （因为还可以接着放第i件物品）
+>
+> 所以可得状态转移方程：
+>
+> ```java
+> dp[i][v]=max{dp[i-1][v],dp[i][v-w[i]+c[i]} 1≤i≤n, w[i]≤v≤V
+> ```
+>
+> 边界：`dp[0][v]=0`
 
-如果事先不知道终点编号，那么关键路径的长度就是ve[]中最大的值。
+**优化**
 
+![image-20201227134126511](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201227134126511.png)
 
+注意到计算`dp[i][v]`时总是需要`dp[i][v]`和其左侧部分的数据，且完全不需要i-2的数据，所以可以开一个一维数组，这样状态转移方程变成了：`dp[v]=max(dp[v],dp[v-w[i]] + c[i]) 1≤i≤n, w[i]≤v≤V` **但是枚举方向是从w[i]到V**。
 
-### 完整代码
+**为什么从w[i]到V（即是从前到后）? 因为d[v] 是根据本层d[v-w[i]]和上层d[v]确定的，要先确定好之前的状态才好求d[v];**
 
-这里假设v[n-1]是 终点
+**核心代码**
 
-```c++
-#include <cstdio>
-#include <algorithm>
-#include <queue>
-#include <stack>
-#include <cstring>
-using namespace std;
-
-struct Node{
-    int v,w;
-};
-const int maxv = 100;
-vector<Node> G[maxv];
-//拓扑排序
-int n;//顶点个数
-int inDegree[maxv];
-int ve[maxv], vl[maxv];
-stack<int> topOrder;
-
-
-bool topologicalSort(){
-    queue<int> q;
-    for (int i = 0; i < n; ++i) {
-        if(inDegree[i] == 0){
-            q.push(i);
-        }
-    }
-    while (!q.empty()){
-        int u = q.front();
-        q.pop();
-        topOrder.push(u);
-        for (int i = 0; i < G[u].size(); ++i) {
-            int v = G[u][i].v;
-            inDegree[v] --;
-            if(inDegree[v] == 0){
-                q.push(v);
-            }
-            if(ve[u] + G[u][i].w > ve[v]){
-                ve[v] = ve[u] + G[u][i].w;
-            }
-
-        }
-    }
-    if(topOrder.size() == n){
-        return true;
-    }
-    return false;
+```C++
+for(int i = 0; i <= V; i ++){
+    dp[v]=0;
 }
-
-void getVl(){
-    //初始值，都设置为终点的最迟（早）发生时间。
-    fill(vl, vl + n, ve[n -1 ]);
-
-    while(!topOrder.empty()){
-        int u = topOrder.top();
-        topOrder.pop();
-        for (int i = 0; i < G[u].size(); ++i) {
-            int v = G[u][i].v;//
-            if(vl[u] - G[u][i].w < vl[u]){
-                vl[u] = vl[u] - G[u][i].w;
-            }
-        }
+for(int i = 1; i <= n; i ++){
+    for(int v = V; v >= w[i]; v --){
+        dp[v]=max(dp[v],dp[v-w[i]] + c[i])
     }
 }
-
-int CriticalPath(){
-    memset(ve, 0, sizeof(ve));
-    if(topologicalSort() == false){
-        return -1;
-    }//有环
-    getVl();
-    //遍历所有边，计算活动的最早开始时间和e和最迟开始时间l
-    for (int u = 0; u < n; ++u) {
-        for (int i = 0; i < G[u].size(); ++i) {
-            int v = G[u][i].v, w = G[u][i].w;
-            int e = ve[u], l = vl[v] - w;
-            if(e == l){
-                //输出关键路径
-                printf("%d->%d", u,v);
-            }
-        }
-    }
-    return ve[n - 1];//返回关键路径长度。
-}
-
 ```
 
