@@ -3814,3 +3814,112 @@ public class Leetcode315 {
 
 ## 使用树状数组解决第当前序列中第K大的数
 
+逻辑的hash[x] 表示x出现的次数，那么序列第k大，就是使得hash[1] + ... hash[i] >= k 成立的最小i。可以使用二分法查找。
+
+```c++
+int findKthElement(int k){
+    int l = 1, r = maxn, mid;
+    while(l < r){
+        mid = (l + r) / 2;
+        if(getSum(mid) >= k){
+            r = mid;
+        }else {
+            l = mid + 1;
+        }
+    }
+    return l;
+}
+```
+
+## 扩展
+
+### 扩展到二维 
+
+如果求`A[1][1] ~ A[x][y]`这个子矩阵的所有元素和，以及给单点`A[x][y]`加上整数v?  做法一样，
+
+```c++
+void update(int x, int y, int v){
+    for(int i = x; i < maxn; i += lowbit(i)){
+        for(int j = y; j < maxn; j += lowbit(j) ){
+            c[i][j] += v;
+        }
+    }
+}
+`A[1][1] ~ A[x][y]`这个子矩阵的所有元素和
+int getsum(int x, int y){
+    int sum = 0;
+    for(int i = x; i > 0; i -= lowbit(i)){
+        for(int j = y; j > 0; j -= lowbit(j)){
+            sum += c[i][j];
+        }
+    }
+    return sum;
+}
+```
+
+ 
+
+# 滑动窗口问题--解决子串匹配的一种方案
+
+## 从一个问题出发
+
+https://leetcode-cn.com/problems/permutation-in-string/
+
+https://labuladong.gitee.io/algo/%E7%AE%97%E6%B3%95%E6%80%9D%E7%BB%B4%E7%B3%BB%E5%88%97/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%8A%80%E5%B7%A7%E8%BF%9B%E9%98%B6.html
+
+![image-20210106210600627](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210106210600627.png)
+
+
+
+### 思路：
+
+1. 先不断地增加 `right` 指针扩大窗口 `[left, right)`，直到窗口中的字符串符合要求。
+2. 此时，我们停止增加 `right`，转而不断增加 `left` 指针缩小窗口 `[left, right)`，直到窗口中的字符串不再符合要求。同时，每次增加 `left`，我们都要更新一轮结果。
+3. 重复第 2 和第 3 步，直到 `right` 到达字符串 `S` 的尽头。
+
+```java
+public class LC567 {
+	public boolean checkInclusion(String s1, String s2) {
+		//need为要匹配的字符串种各个字符出现的次数
+		//window为当前窗口满足条件字符出现的次数
+		Map<Character,Integer> need = new HashMap<>(), window = new HashMap<>();
+		for (int i = 0; i < s1.length(); i++) {
+			char ch = s1.charAt(i);
+			need.put(ch, need.getOrDefault(ch, 0) + 1);
+		}
+		int left = 0, right = 0;
+		int valid = 0;//valid 表示当前windows种满足条件，字符种类的个数
+		while (right < s2.length()){
+			char ch = s2.charAt(right);
+			right ++;//滑动窗口右移，使得ch被放进窗口
+			if(need.containsKey(ch)){//ch是满足条件的字符
+				window.put(ch, window.getOrDefault(ch, 0) + 1);
+				if(window.get(ch).equals(need.get(ch))){//ch这个字符(种类)满足条件的个数
+					valid ++;
+				}
+			}
+			while (valid == need.size()){//此时满足条件
+				if(right - left == s1.length()){
+					return true;
+				}
+				//d为即将移除窗口的那个字符
+				char d = s2.charAt(left);
+				left ++;//左移
+				if(need.containsKey(d)){//如果这个字符是need里面的字符
+					if(window.get(d).equals( need.get(d))){ //如果此时窗口种d的数量恰好满足条件，那么把d移出去就恰好不满足条件了
+						valid --;
+					}
+					window.put(d, window.get(d) - 1);//把d移出去
+
+				}
+			}
+		}
+		return false;
+	}
+	@Test
+	public void test(){
+	    checkInclusion("adc", "dcda");
+	}
+}
+```
+

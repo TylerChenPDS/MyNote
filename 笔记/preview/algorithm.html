@@ -2785,6 +2785,500 @@ for(int i = 1; i &lt;= n; i ++){
 
       docker run -d -p 11280:80 --name onlyoffice --restart always onlyoffice/documentserver
 </code></pre>
+<h1 id="kmp-">KMP 算法</h1>
+<p>给定2个字符串text,和pattern 判断pattern是否为text的子串，如text=&quot;ababababa&quot; 则 “aba” 就是text的子串。</p>
+<h2 id="-">暴力算法：</h2>
+<p>枚举text的起始位置i，然后从该位置开始逐位于模式串pattern进行匹配，如果匹配过程中，每一位都相等，则匹配成功，否则，只要出现某位不相等，就让text串的起始位置变为i+1，并从头开始于模式串进行匹配。时间复杂度为O(nm);</p>
+<h2 id="kmp-">KMP算法</h2>
+<p>使用kmp算法的时间复杂度可以降低为O(nm);</p>
+<h3 id="next-">next数组求法</h3>
+<p><strong>见算法笔记p457</strong></p>
+<p>int next[m]; m为pattern的长度。</p>
+<p><strong>next[i]表示使子串s[0...i] 的前缀等于后缀 s[i-k...i]的最大k, 也就是所求最长相等前后缀中前缀最后一位下标。如果找不到则next[i] = -1</strong></p>
+<p>如：对于pattern=&quot;ababaab&quot;;</p>
+<p>对于i=0 ，子串 “a”，找不到相等的前后缀（<strong>前后缀不能是子串本身</strong>），所以next[0]=-1（对于其他串next[0]也一定是-1）。</p>
+<p>对于i=1，子串&quot;ab&quot;,找不到相等的前后缀，next[1]=-1。</p>
+<p>对于i=2，子串&quot;aba&quot;, 找到相等的前后缀“a”,所以next[2]=0;</p>
+<p>对于i=3,    子串&quot;abab&quot;,相等前后缀为&quot;ab&quot;，所以next[3]=1;</p>
+<p>对于i=4，子串&quot;ababa&quot;,相等的前后缀&quot;aba“，所以next[4]=2；</p>
+<p>对于i=5，子串&quot;ababaa&quot; ,next[5]=0</p>
+<p><strong>求解next数组的算法</strong></p>
+<ol>
+<li>初始化next 数组，令j = next[0] = -1</li>
+<li>让i再1~len-1范围遍历，对于每个i，执行3，4</li>
+<li>不断令j = next[j]，直到j 回退到 -1, 或者 s[i] == s[j + 1]成立</li>
+<li>如果s[i] == s[j + 1], 则next[i] = j + 1;  否则 s[i] = j (此时j 一定是-1)</li>
+</ol>
+<pre><code class="lang-c++">int next1[100];
+//
+void getNext(char s[], int len){
+    int j = -1;
+    next1[0] = -1;
+    for (int i = 1; i &lt; len; ++i) {
+        while (j != -1 &amp;&amp; s[i] != s[j + 1]){
+            j = next1[j];
+        }
+        if(s[i] == s[j + 1]){
+            j ++;
+        }
+        next1[i] = j;
+    }
+}
+</code></pre>
+<h3 id="kmp-">kmp进行模式匹配</h3>
+<p>算法思路：(要先求好pattern地next)</p>
+<ol>
+<li>初始化j=-1, 表示pattern当前已被匹配的最后一位</li>
+<li>让i遍历文本串text，对每个i执行，3，4</li>
+<li>不断地令j=next[j]直到  j==-1 或者  text[i] == pattern[j + 1]</li>
+<li>如果text[i] == pattern[j + 1],则令j ++，如果j达到 len(pattern) - 1，说明pattern 匹配成功，返回true</li>
+<li>返回false</li>
+</ol>
+<pre><code class="lang-c++">bool kmp(char text[] , char pattern[]){
+    int n = strlen(text);
+    int m = strlen(pattern);
+    int j = -1;
+    for (int i = 0; i &lt; n; ++i) {
+        while (j != -1 &amp;&amp; text[i] != pattern[j + 1] ){
+            j = next1[j];
+        }
+        if(text[i] == pattern[j + 1]){
+            j ++;
+        }
+        if(j == m - 1){
+            return true;
+        }
+    }
+    return false;
+}
+</code></pre>
+<p>使用kmp匹配字符串出现的次数：</p>
+<pre><code class="lang-c++">/**
+ * 获得pattern再text中出现的次数
+ * @return
+ */
+int kmpGetPatternNum(char text[], char pattern[]){
+    int n = strlen(text), m = strlen(pattern);
+    int ans = 0;
+    int j = -1;
+    for (int i = 0; i &lt; n; ++i) {
+        while (j != -1 &amp;&amp; text[i] != pattern[j + 1]){
+            j = next1[j];
+        }
+        if(text[i] == pattern[j + 1]){
+            j ++;
+        }
+        if(j == m - 1){//匹配成功一次
+            ans ++;
+            j = next1[j];
+        }
+
+    }
+    return ans;
+}
+</code></pre>
+<h1 id="-">分块思想</h1>
+<p>对于一个问题：给出一个非负整数序列A，实时查询序列元素第K大的元素。一般来说在查询过程中元素个数可能会发生变化（如，插入，删除）等，就说这种查询为<strong>在线查询</strong>。如果使用暴力算法，在添加和删除时，就要有O(n)的时间复杂度来移动元素。</p>
+<p>如果使用分块的话，只需要O(2logn)的时间复杂度：</p>
+<p>对于有N个元素的有序序列来说，除了最后一个块，每块元素个数都应该为logn (向下取整)，这样就把n个元素的序列分成了logn(向上取整块)，如 11个元素，可以分成4块，块元素个数为 3 3 3 2；</p>
+<p>一般来说序列中元素都是不超过10^5的非负整数， 可以设置一个hash数组，<strong>table[100001],table[x]代表元素当前序列A中的个数</strong>；接着将0~10^5 分为 317块，其中每块元素个数为316。<strong>定义一个block[316]（317也可）数组，block[i]表示，第i块上元素的个数</strong>。 </p>
+<p>如果要新增加一个元素x, 就可以先求得其所在的块号，block[x / 316] ++, 表示对应块上的元素多了一个，同时table[x] ++， 表示像x这样大的元素多了一个。</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20201230222819145.png" alt="image-20201230222819145"></p>
+<p>这样以来，查询思路：先用O(logn)的时间找到第K大的元素在哪个快，然后再用O(logn)的时间在对应块中找到这个元素。时间复杂度为O(logn)。</p>
+<p><strong>代码如下</strong></p>
+<pre><code class="lang-c++">const int maxn = 100010;
+const int sqrN = 316; //sqrt(100010)线下取证，表示块内元素
+stack&lt;int&gt; st;
+int block[sqrN];//记录每一个块中的元素个数
+int table[maxn]; //hash数组，hash[i]记录元素在当前序列中存在的个数
+
+//找到现存数列中第K大的数
+void peekMedian(int K) {
+    int sum = 0; //sum存放当前累计存在的个数
+    int idx = 0; //块号
+    while (sum + block[idx] &lt; K) {
+        sum += block[idx++];
+    }
+    //此时 第K大的数一定在idx块号中
+    int num = idx * sqrN;//idx 号块中的第一个元素
+    while (sum + table[num] &lt; K) {
+        sum += table[num++];
+    }
+    //此时 sum &lt; K , 但是 sum + num的个数 &gt; K, 说明num就是第K大的数
+    printf(&quot;%d\n&quot;, num);
+}
+
+//向序列--栈中加入x 这个数
+void push(int x) {
+    st.push(x);
+    //x所在的块 里面元素个数++
+    block[x / sqrN]++;
+    table[x]++; //x的个数加一
+}
+
+void pop() {
+    int x = st.top();
+    st.pop();
+    block[x / sqrN]--;//x所在块的元素减一
+    table[x]--;
+    printf(&quot;%d\n&quot;, x);
+}
+</code></pre>
+<h2 id="-">例题</h2>
+<p>对栈来说，PeekMedian操作是指查看栈中中间大的那个数，假设栈中有n个数字，如果n为偶数，则输出第n/2 大的数，如果为奇数，输出(N+1)/2大的数。</p>
+<p><strong>输入</strong></p>
+<p>第一行，是操作的个数N, N不大于10^5，接下来N行是3中操作中的一个：</p>
+<pre><code>Push key
+Pop
+PeekMedian
+</code></pre><p>key也不大于10^5。</p>
+<p><strong>输出</strong></p>
+<p>如果push，则把push进栈，如果是操作pop，则将栈顶元素输出，并出栈，如果是PeekMedian，则查看中间大的那个数。如果栈为空，操作为pop,或PeekMedian 输出Invalid。每个输出占一行。</p>
+<p><strong>Sample Input</strong></p>
+<pre><code>17
+Pop
+PeekMedian
+Push 3
+PeekMedian
+Push 2
+PeekMedian
+Push 1
+PeekMedian
+Pop
+Pop
+Push 5
+Push 4
+PeekMedian
+Pop
+Pop
+Pop
+Pop
+</code></pre><p><strong>sample output</strong></p>
+<pre><code>Invalid
+Invalid
+3
+2
+2
+1
+2
+4
+4
+5
+3
+Invalid
+</code></pre><pre><code class="lang-c++">#include &lt;stack&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+
+using namespace std;
+const int maxn = 100010;
+const int sqrN = 316; //sqrt(100010)线下取证，表示块内元素
+stack&lt;int&gt; st;
+int block[sqrN];//记录每一个块中的元素个数
+int table[maxn]; //hash数组，hash[i]记录元素在当前序列中存在的个数
+
+//找到现存数列中第K大的数
+void peekMedian(int K) {
+    int sum = 0; //sum存放当前累计存在的个数
+    int idx = 0; //块号
+    while (sum + block[idx] &lt; K) {
+        sum += block[idx++];
+    }
+    //此时 第K大的数一定在idx块号中
+    int num = idx * sqrN;//idx 号块中的第一个元素
+    while (sum + table[num] &lt; K) {
+        sum += table[num++];
+    }
+    //此时 sum &lt; K , 但是 sum + num的个数 &gt; K, 说明num就是第K大的数
+    printf(&quot;%d\n&quot;, num);
+}
+
+//向序列--栈中加入x 这个数
+void push(int x) {
+    st.push(x);
+    //x所在的块 里面元素个数++
+    block[x / sqrN]++;
+    table[x]++; //x的个数加一
+}
+
+void pop() {
+    int x = st.top();
+    st.pop();
+    block[x / sqrN]--;//x所在块的元素减一
+    table[x]--;
+    printf(&quot;%d\n&quot;, x);
+}
+
+int main() {
+    int x, query;
+    memset(block, 0, sizeof(block));
+    memset(table, 0, sizeof(table));
+    char cmd[20];// 命令
+    scanf(&quot;%d&quot;, &amp;query);
+    for (int i = 0; i &lt; query; ++i) {
+        scanf(&quot;%s&quot;, cmd);
+        if (cmd[1] == &#39;u&#39;) { //push
+            scanf(&quot;%d&quot;, &amp;x);
+            push(x);
+        } else if (cmd[1] == &#39;o&#39;) {//pop
+            if (st.empty()) {
+                printf(&quot;Invalid\n&quot;);//站空
+            } else {
+                pop();
+            }
+        }else{ //peekMedian
+            if(st.empty()){
+                printf(&quot;Invalid\n&quot;);//站空
+            }else {
+                int K = st.size();
+                if(K % 2 == 0){ //偶数
+                    K /= 2;
+                }else {
+                    K = (K + 1) / 2;
+                }
+                peekMedian(K);
+            }
+        }
+    }
+}
+</code></pre>
+<h1 id="-">树状数组</h1>
+<h2 id="lowbit-">lowbit运算</h2>
+<p>定义lowbit(x) = x &amp; (-x) , 整数在计算机中一般用补码表示，补码等于x的反码+1，例如 6 = (0110)~2~ （假设最高位是符号位）其补码就是 (1010)~2~ , 同理 -6=(1110)~2~的补码就是 (0010)~2~，所以lowbit(6) = 2。</p>
+<p><strong>容易得到：lowbit(x) 就是取x二进制码最右边的1，和它右边的所有0</strong>。如x=7=(111)~2~则lowbit(7) = 1，lowbit(10) =  4 。</p>
+<h2 id="-">树状数组</h2>
+<p>假设A是原始数组，A[1]~A[16] 共有16个元素（下标必须从1开始），定义数组C是树状数组，则C[i]，存放在i号位之前的元素和，包括第i位。如C[6] = A[5] + A[6]。</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20201231105757435.png" alt="image-20201231105757435"></p>
+<h3 id="-">解决的问题</h3>
+<ol>
+<li>设计函数getSum(x), 实现返回前x个数之和A[1] + ... A[x]。</li>
+<li>设计一个update(x, v), 实现将第x个数加上v的功能，即A[x] + v。</li>
+</ol>
+<p>易得：</p>
+<blockquote>
+<p>C[x] = A[x - lowbit[x] + 1] +... A[x]</p>
+</blockquote>
+<p>所以：</p>
+<blockquote>
+<p>sum(1, x) = A[1] + A[2] + ...A[x] 
+                 = A[1] + ... + A[x-lowbit(x)] + A[x - lowbit(x) + 1] + ... + A[x]<br>                 = sum(1, x-lowbit(x)) + C[x]</p>
+</blockquote>
+<p>所以易得代码：</p>
+<pre><code class="lang-c++">#define lowbit(i) ((i) &amp; (-i))
+//获取前x个整数之和
+int getSum(int x){
+    int sum = 0;
+    for (int i = x; i &gt; 0 ; i -= lowbit(i)) {
+        sum += c[i];
+    }
+    return sum;
+}
+</code></pre>
+<p>i - lowbit(i) 是个啥？i = i - lowbit(i)实际上是不断把i 的二进制最右边的1，置为0 的过程。 所以for 循环的次数，就是x 二进制中1的次数。所以getSum(x)的时间复杂度至多为O(logn)；</p>
+<p>如果要求数组下标[x, y] 之内的核， 只需要求getSum(y) - getSum(x-1)即可</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20201231111212489.png" alt="image-20201231111212489"></p>
+<p>第二个问题：</p>
+<p>假设A[6] 增加 v， 数组C 怎么变化？ 由上图易得，C[6] C[8] C[16] 都要加上v，因为他们的和都覆盖了A[6]。</p>
+<p><strong>那么C[x] 如何找到最近能覆盖C[x]的C[y]呢（C[6]找C[8]）？</strong> </p>
+<p>首先这个数肯定比x大（如果y比x小，C[y]覆盖的值中不可能含有A[x]）；所以这个问题等价于求一个尽可能小的数a，使得 lowbit(a + x) &gt; lowbit(x)。</p>
+<p>显然， 如果lowbit(a) &lt; lowbit(x), lowbit(a + x) &lt; lowbit(x) （可以换算成2进制看看）。所以lowbit(a) 不能小于lowbit(x)。那么a 可以取 lowbit(x)，此时a的最后一个1，和x的最后一个1，是在同一位上，相加之后的lowbit一定大于lowbit(x)，即lowbit(x + lowbit(x)) &gt; lowbit(x)。</p>
+<p>所以update函数只需要让x不断加上lowbit(x),然后让每一步C[x] 都加上v, 即可。代码如下：</p>
+<pre><code class="lang-c++">//将数组中A[x] 加上v
+void update(int x, int v){
+    for (int i = x; i &lt;= N; i += lowbit(i)) {
+        c[i] += v;
+    }
+}
+</code></pre>
+<p>同理，update函数的时间复杂度也是log(n)</p>
+<h2 id="-">例题</h2>
+<p><strong>问题描述：</strong></p>
+<p>给定一个有N个正整数的序列A，求出序列中它左边比他小的数的个数。</p>
+<p>如{2，5，1，3，4}则应该输出{0，1，0，2，3}</p>
+<p><strong>思路</strong></p>
+<p>使用一个hash数组，hash[x] 表示当前序列 x  出现的次数。从左到右遍历A，令hash[A[i]] ++, 此时序列中比A[i] 小的个数等于 hash[1] + ... +  hash[A[i] - 1]。</p>
+<p>所以可以设置一个树状数组C，初始C里面元素都为0，因为hash里面的元素都为0。hash[A[i]] ++, 可以使用 update(A[i], 1)代替，而hash[1] + ... +  hash[A[i] - 1] 可以使用 getSum(A[i] - 1)代替。</p>
+<pre><code class="lang-c++">#include &lt;cstdio&gt;
+#define lowbit(i) ((i) &amp; (-i))
+const int N = 10010;
+int c[N];  //C的大小位hash数组的大小，即题目出现的最大值
+
+//获取前x个整数之和
+int getSum(int x){
+    int sum = 0;
+    for (int i = x; i &gt; 0 ; i -= lowbit(i)) {
+        sum += c[i];
+    }
+    return sum;
+}
+
+//将数组中A[x] 加上v
+void update(int x, int v){
+    for (int i = x; i &lt;= N; i += lowbit(i)) {
+        c[i] += v;
+    }
+}
+int main() {
+    int a[5] = {2,5,1,3,4};
+    for (int i = 0; i &lt; 5; ++i) {
+        update(a[i], 1); //表示a[i] 出现的次数+1
+        //此时左边a[i]左边 比a[i] 小的数的个数为
+        printf(&quot;%d &quot;, getSum(a[i] - 1));
+    }
+}
+</code></pre>
+<p>如果统计在元素左边比该元素大的元素，等价于求hash[A[i] + 1] + .... hash[N]，于是至于要求getSum(N) - getSum(A[i]) 就可以了。</p>
+<h2 id="-">改进： 离散化</h2>
+<p>如果A[i] 过大怎么办? 其实对于上面的问题来说，{99999999，15，6666，88888} 和 {4，1，2，3}是一样的。</p>
+<p>此时可以定义一个临时数组A保存，原数组的列表排名。（从1，开始）</p>
+<pre><code class="lang-c++">struct {
+    int value; //原始值
+    int pos; //原始的顺序
+}temp[n]
+int A[n]; //记录
+int main(){
+    for(int i = 0; i &lt; n; i ++){
+        temp[i].value = orgin[i];
+        temp[i].pos = i;//原始序号
+    }
+    sort(temp, temp +n ,cmp);//按照value,从小到打排序
+    for(int i = 0; i &lt; n; i ++){
+        if(i == 0|| temp [i].value != temp[i-1].value){
+            A[temp[i].pos] = i + 1;
+        }else {
+            A[temp[i].pos] = A[temp[i-1].pos];
+        }
+    }
+    //后面的就和上面一样了
+}
+</code></pre>
+<h2 id="-2">例题2</h2>
+<p>给定一个整数数组 nums，按要求返回一个新数组 counts。数组 counts 有该性质： counts[i] 的值是  nums[i] 右侧小于 nums[i] 的元素的数量。 </p>
+<p>示例：</p>
+<p>输入：nums = [5,2,6,1]
+输出：[2,1,1,0] </p>
+<p>提示：</p>
+<p>0 &lt;= nums.length &lt;= 10^5
+-10^4 &lt;= nums[i] &lt;= 10^4</p>
+<p>来源：力扣（LeetCode）
+链接：<a href="https://leetcode-cn.com/problems/count-of-smaller-numbers-after-self">https://leetcode-cn.com/problems/count-of-smaller-numbers-after-self</a></p>
+<p>这一题可以使用树状数组来解决，只需要从后往前遍历即可，然后将得到的数，放到结果列表的第一位。由于nums[i] 的值可能为赋值，所以可以使用离散化来处理。</p>
+<pre><code class="lang-java">package lowbit;
+
+import lombok.val;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * @author TylerChen
+ * @date 2020/12/31 - 12:59
+ */
+public class Leetcode315 {
+    int lowbit(int x){
+        return x &amp; -x;
+    }
+    int []A; //离散化后的数组，保留的是排名
+    int []C; //树状数组
+    static class Node {
+        int val, pos;
+        Node(int val, int pos){
+            this.val = val;
+            this.pos = pos;
+        }
+    }
+
+    /**
+     * 获取hash[1] + ... hash[x]的值
+     * @param x
+     * @return
+     */
+    int getSum(int x){
+        int sum = 0;
+        for (int i = x; i &gt; 0 ; i -= lowbit(i)) {
+            sum += C[i];
+        }
+        return sum;
+    }
+
+    /**
+     * hash[x] += v
+     * @param x
+     * @param v
+     * @return
+     */
+    void update(int x, int v){
+        for (int i = x; i &lt; C.length ; i += lowbit(i)) {
+            C[i] += v;
+        }
+    }
+    public List&lt;Integer&gt; countSmaller(int[] nums) {
+        Node[] nodes = new Node[nums.length];
+        A = new int[nums.length + 1];
+        C = new int[nums.length + 1];
+        for (int i = 0; i &lt; nums.length; i++) {
+            nodes[i] = new Node(nums[i], i);
+        }
+        Arrays.sort(nodes, (a,b)-&gt; a.val - b.val); //从小到达进行排序
+        for (int i = 0; i &lt; nodes.length; i++) {
+            if(i == 0 || nodes[i].val != nodes[i - 1].val){
+                A[nodes[i].pos] = i + 1; //排名从1开始
+            }else {
+                A[nodes[i].pos] = A[nodes[i - 1].pos]; //和上一个的排名一样
+            }
+        }
+        LinkedList&lt;Integer&gt; res = new LinkedList&lt;&gt;();
+        for (int i = A.length - 2; i &gt;= 0 ; i--) {
+            update(A[i],1);//A出现加一次
+            res.addFirst(getSum(A[i] - 1));
+        }
+        return res;
+    }
+    @Test
+    public void test(){
+        System.out.println(countSmaller(new int[]{5,2,6,1}));
+    }
+}
+
+</code></pre>
+<h2 id="-k-">使用树状数组解决第当前序列中第K大的数</h2>
+<p>逻辑的hash[x] 表示x出现的次数，那么序列第k大，就是使得hash[1] + ... hash[i] &gt;= k 成立的最小i。可以使用二分法查找。</p>
+<pre><code class="lang-c++">int findKthElement(int k){
+    int l = 1, r = maxn, mid;
+    while(l &lt; r){
+        mid = (l + r) / 2;
+        if(getSum(mid) &gt;= k){
+            r = mid;
+        }else {
+            l = mid + 1;
+        }
+    }
+    return l;
+}
+</code></pre>
+<h2 id="-">扩展</h2>
+<h3 id="-">扩展到二维</h3>
+<p>如果求<code>A[1][1] ~ A[x][y]</code>这个子矩阵的所有元素和，以及给单点<code>A[x][y]</code>加上整数v?  做法一样，</p>
+<pre><code class="lang-c++">void update(int x, int y, int v){
+    for(int i = x; i &lt; maxn; i += lowbit(i)){
+        for(int j = y; j &lt; maxn; j += lowbit(j) ){
+            c[i][j] += v;
+        }
+    }
+}
+`A[1][1] ~ A[x][y]`这个子矩阵的所有元素和
+int getsum(int x, int y){
+    int sum = 0;
+    for(int i = x; i &gt; 0; i -= lowbit(i)){
+        for(int j = y; j &gt; 0; j -= lowbit(j)){
+            sum += c[i][j];
+        }
+    }
+    return sum;
+}
+</code></pre>
 
           	</article>
         </div>

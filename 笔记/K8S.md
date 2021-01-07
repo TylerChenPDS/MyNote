@@ -419,4 +419,224 @@ hostPath Volume的作用是将Docker Host文件系统中已经存在的目录mou
 
 # PersistentVolume & PersistentVolumeClaim  
 
-PersistentVolume（PV） 是外部存储系统中的一块存储空间， 由管理员创建和维护。 与Volume一样， PV具有持久性， 生命周期独立于Pod。  
+PersistentVolume（PV） 是外部存储系统中的一块存储空间， 由管理员创建和维护。 与Volume一样， PV具有持久性， 生命周期独立于Pod。 
+
+ PersistentVolumeClaim（PVC） 是对PV的申请（Claim） 。 PVC通常由普通用户创建和维护。 需要为Pod分配存储资源时， 用户可以创建一个PVC， 指明存储资源的容量大小和访问模式（比如只读） 等信息， Kubernetes会查找并提供满足条件的PV。  有了PersistentVolumeClaim， 用户只需要告诉Kubernetes需要什么样的存储资源， 而不必关心真正的空间从哪里分配、 如何访问等底层细节信息。 这些Storage Provider的底层信息交给管理员来处理， 只有管理员才应该关心创建PersistentVolume的细节信息。  
+
+## NFS PersistentVolume  
+
+1. 首先在master节点上搭建nfs服务器
+
+2. 然后创建nfs-pv1.yml
+
+   ![image-20210107145048477](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107145048477.png)
+
+   1. capacity指定PV的容量为1GB。  
+
+   2. accessModes指定访问模式为ReadWriteOnce， 支持的访问模式
+      有3种：
+
+      ReadWriteOnce表示PV能以read-write模式mount到单个节点，
+      ReadOnlyMany表示PV能以read-only模式mount到多个节点，
+      ReadWriteMany表示PV能以read-write模式mount到多个节点。  
+
+   3. persistentVolumeReclaimPolicy指定当PV的回收策略为Recycle， 支持的策略有3种： Retain表示需要管理员手工回收；Recycle表示清除PV中的数据， 效果相当于执行rm -rf/thevolume/*；Delete表示删除Storage Provider上的对应存储资源  
+
+   4. storageClassName指定PV的class为nfs。 相当于为PV设置了一个分类， PVC可以指定class申请相应class的PV    
+
+   5. 指定PV在NFS服务器上对应的目录。  
+
+3. 执行命令`kubectl apply -f nfs-pv1.yml`
+
+4. ![image-20210107145648931](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107145648931.png)
+
+   STATUS为Available， 表示mypv1就绪， 可以被PVC申请。  
+
+5. 接下来创建nfs-pvc1.yml
+
+   ![image-20210107145810165](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107145810165.png)
+
+   ![image-20210107145932156](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107145932156.png)
+
+6. 接下来就可以在Pod中使用存储了  
+
+   ![image-20210107150019134](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107150019134.png)
+
+7. 实验
+
+   ![image-20210107150111974](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107150111974.png)
+
+## 回收pv
+
+1. 首先删除pvc
+
+   `kubectl delete pvc mypvc1`
+
+   Kubernetes启动了一个新Podrecycler-for-mypv1， 这个Pod的作用就是清除PV mypv1的数据。 此时
+   mypv1的状态为Released，  当数据清除完毕， mypv1的状态重新变为Available， 此时可以被新的PVC申请  。
+
+## PV动态供给  
+
+提前创建了PV， 然后通过PVC申请PV并在Pod中使用， 这种方式叫作**静态供给**（Static Provision） 。  
+
+如果没有满足PVC条件的PV， 会动态创建PV  ，叫做 **动态供给**
+
+动态供给是通过StorageClass实现的， StorageClass定义了如何创建PV
+
+## 为MySQL数据库提供持久化存储的栗子
+
+### 1, 首先创建PV和PVC， 配置说明如下  
+
+mysql-pv.yml
+
+![image-20210107154243083](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107154243083.png)
+
+mysql-pvc.yml  
+
+![image-20210107154303977](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107154303977.png)
+
+
+
+执行命令
+
+```
+kubectl apply -f mysql-pv.yml
+kubectl apply -f mysql-pvc.yml
+```
+
+### 2 部署mysql
+
+![image-20210107154551493](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107154551493.png)
+
+PVC mysql-pvc Bound的PV mysql-pv将被mount到MySQL的数据目录var/lib/mysql  
+
+### 3 测试
+
+mysql服务会被部署到一个node节点上，
+
+```
+kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-cli
+```
+
+向数据库种插入一条数据。关掉部署mysql那个节点。过段时间，发现应用被部署到另外一个节点上，然后查询，发现数据还在。
+
+# Secret &Configmap  
+
+## Secret 
+
+Secret会以密文的方式存储数据， **避免了直接在配置文件中保存敏感信息**。 Secret会以**Volume**的形式被mount到Pod， 容器可通过文件的方式使用Secret中的敏感数据； 此外， 容器也可以环境变量的方式使用这些数据。  
+
+### 创建Secret
+
+1. 通过--from-literal  
+
+   `kubectl create secret generic mysecret --from-literal=username=***`
+
+2. 通过--form-file
+
+   ![image-20210107172527176](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107172527176.png)
+
+3. 通过--from-env-file：  ![image-20210107172542052](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107172542052.png)
+
+4. 通过YAML配置文件  
+
+   ![image-20210107172606120](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107172606120.png)
+
+然后`kubectl apply -f mysecret.yml`
+
+文件中的敏感数据必须是通过base64编码后的结果。`echo admin | base64`
+
+`echo -n YWFhY2EK | base64 --decode `//将密码反编码
+
+### 查看secret
+
+```
+kubectl get secret //查看存在的secret
+kubectl describe secret myscret //查看myscret的具体信息，和key
+kubectl edit secret mysecret //查看编码后的value
+echo -n YWFhY2EK | base64 --decode //将密码反编码
+```
+
+### 在pod中使用secret
+
+Pod可以通过Volume或者环境变量的方式使用Secret。  
+
+#### 通过Volume 
+
+
+
+![image-20210107173525172](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107173525172.png)
+
+**创建Pod并在容器中读取Secret**  
+
+![image-20210107173607267](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107173607267.png)
+
+**也可以自定义存放数据的文件名**  
+
+![image-20210107173914027](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107173914027.png)
+
+
+
+
+
+以Volume方式使用的Secret支持动态更新： Secret更新后， 容器中的数据也会更新 。
+
+#### 环境变量方式  
+
+通过Volume使用Secret， 容器必须从文件读取数据， 稍显麻烦，Kubernetes还支持通过环境变量使用Secret。  
+
+1，创建pod
+
+![image-20210107174116135](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107174116135.png)
+
+创建Pod并读取Secret  
+
+![image-20210107174203283](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107174203283.png)
+
+环境变量读取Secret很方便， 但无法支撑Secret动态更新。
+
+## ConfigMap    
+
+Secret可以为Pod提供密码、 Token、 私钥等敏感数据； 对于一些非敏感数据， 比如应用的配置信息， 则可以用ConfigMap。  ConfigMap的创建和使用方式与Secret非常类似， 主要的不同是数据以明文的形式存放。  
+
+### 创建ConfigMap
+
+与Secret一样， ConfigMap也支持四种创建方式：  
+
+前三种不过就是前面的命令变成了`kubectl create configmap myconfigmap  `。
+
+通过yml方式
+
+![image-20210107174638268](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107174638268.png)
+
+### 使用
+
+用法和secret也是一样的
+
+### Volume
+
+![image-20210107174833218](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107174833218.png)
+
+#### 环境变量
+
+![image-20210107174812794](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107174812794.png)
+
+# Kubernetes的包管理器  Helm  
+
+## 为什么需要Helm
+
+对于一个mysql服务，k8s需要部署：下面东西
+
+1. Service， 让外界能够访问到MySQL  
+
+   ![image-20210107175623559](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107175623559.png)
+
+2. Secret， 定义MySQL的密码  
+
+   ![image-20210107175644015](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107175644015.png)
+
+3. PersistentVolumeClaim， 为MySQL申请持久化存储空间  
+
+   ![image-20210107175706785](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107175706785.png)
+
+4. Deployment， 部署MySQL Pod， 并使用上面的这些支持对象  
