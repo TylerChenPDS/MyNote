@@ -1588,6 +1588,277 @@ public class Heap {
 
 # 图
 
+## 连通分量的求法
+
+首先连通分量的个数和矩阵中相连1的个数无关
+
+![image-20210107222507526](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107222507526.png)
+
+如题，相连1的个数为4，但是连通分量的个数为1。
+
+https://leetcode-cn.com/problems/number-of-provinces/
+
+### 方法一：并查集
+
+```java
+public class LC547 {
+	//求联通分量的格式，hi使用并查集
+	int[] father;
+	void union(int a, int b){
+		int faA = findFather(a);
+		int faB = findFather(b);
+		if(faA != faB) {
+			father[faA] = faB;
+		}
+	}
+	int findFather(int x){
+		int a = x;
+		while (x != father[x]){
+			x = father[x];
+		}
+		//路径压缩
+		while (a != father[a]){
+			int z = a;
+			a = father[a];
+			father[z] = x;
+		}
+		return x;
+	}
+	public int findCircleNum(int[][] isConnected) {
+		father = new int[isConnected.length];
+		for (int i = 0; i < father.length; i++) {
+			father[i] = i;
+		}
+		for (int i = 0; i < father.length; i++) {
+			for (int j = 0; j < i; j++) {
+				if(isConnected[i][j] == 1){
+					union(i, j);
+				}
+			}
+		}
+
+		int ans = 0;
+		for (int i = 0; i < father.length; i++) {
+			if(father[i] == i){
+				ans ++;
+			}
+		}
+		return ans;
+	}
+}
+
+```
+
+### 方法二：BFS
+
+```java
+public class LC547_2_re {
+
+   //求连通分量的个数，
+   //使用BFS
+   public int findCircleNum(int[][] isConnected) {
+      int n = isConnected.length;
+      boolean[] inq = new boolean[n];
+      Queue<Integer> q = new LinkedList<>();
+      int ans = 0;
+      for (int i = 0; i < n; i++) {
+         if (!inq[i]) { //i未被访问过，说明i是一个新的联通分量
+            ans ++;
+            q.offer(i);
+            //把从i出发所有能到达的点，都设置成已访问过
+            inq[i] = true;
+            while (!q.isEmpty()){
+               int v = q.poll();
+               for (int j = 0; j < n; j++) {
+                  if(isConnected[v][j] == 1 && !inq[j]){
+                     inq[j] = true;
+                     q.offer(j);
+                  }
+               }
+            }
+         }
+      }
+      return ans;
+   }
+   @Test
+   public void test(){
+      System.out.println(findCircleNum(new int[][]{{1, 0, 0, 1}, {0, 1, 1, 0}, {0, 1, 1, 1}, {1, 0, 1, 1}}));//1
+   }
+}
+```
+
+### 方法三：DFS
+
+```java
+public class LC547_3_re {
+	//求连通分量的个数，
+	//使用BFS
+	boolean[] inq;
+	int n;
+	int[][] matrix;
+	public int findCircleNum(int[][] isConnected) {
+		n = isConnected.length;
+		matrix = isConnected;
+		inq = new boolean[n];
+		int ans = 0;
+		for (int i = 0; i < n; i++) {
+			if (!inq[i]) {
+				ans ++;
+				DFS(i);
+			}
+		}
+		return ans;
+	}
+	void DFS(int i) {
+		inq[i] = true;
+		for (int j = 0; j < n; j++) {
+			if (matrix[i][j] == 1 && !inq[j]) {
+				DFS(j);
+			}
+		}
+	}
+	@Test
+	public void test(){
+		System.out.println(findCircleNum(new int[][]{{1, 0, 0, 1}, {0, 1, 1, 0}, {0, 1, 1, 1}, {1, 0, 1, 1}}));//1
+	}
+}
+```
+
+### 求相连1的个数
+
+#### BFS
+
+```java
+public class LC547_2 {
+	//求相连1的块数
+	boolean[][] inq;//
+	int n;
+	int[] X = {0, 0, 1, -1};
+	int[] Y = {1, -1, 0, 0};
+	int[][] matrix;
+
+	//判断某个坐标是否需要访问
+	boolean judge(int x, int y) {
+		if (x < 0 || y < 0 || x >= n || y >= n) {
+			return false;
+		}
+		if (inq[x][y] || matrix[x][y] == 0) {
+			return false;
+		}
+		return true;
+	}
+	static class Node {
+		int x, y;
+
+		Node(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+	}
+	void BFS(Node root) {
+		Queue<Node> q = new LinkedList<>();
+		q.offer(root);
+		inq[root.x][root.y] = true;
+		while (!q.isEmpty()) {
+			Node p = q.poll();
+			for (int i = 0; i < 4; i++) {
+				int newX = p.x + X[i];
+				int newY = p.y + Y[i];
+				if (judge(newX, newY)) {
+					q.offer(new Node(newX, newY));
+					inq[newX][newY] = true;
+				}
+			}
+		}
+	}
+	public int findCircleNum(int[][] isConnected) {
+		n = isConnected.length;
+		inq = new boolean[n][n];
+		matrix = isConnected;
+		int ans = 0;
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				if (!inq[i][j] && matrix[i][j] == 1) {
+					ans++;
+					BFS(new Node(i, j));
+				}
+			}
+		}
+		return ans;
+	}
+	@Test
+	public void test(){
+		System.out.println(findCircleNum(new int[][]{{1, 0, 0, 1}, {0, 1, 1, 0}, {0, 1, 1, 1}, {1, 0, 1, 1}}));//4
+	}
+}
+```
+
+#### DFS
+
+```java
+public class LC547_3 {
+	//求相连1的块数
+	boolean[][] inq;//
+	int n;
+	int[] X = {0, 0, 1, -1};
+	int[] Y = {1, -1, 0, 0};
+	int[][] matrix;
+
+	//判断某个坐标是否需要访问
+	boolean judge(int x, int y) {
+		if (x < 0 || y < 0 || x >= n || y >= n) {
+			return false;
+		}
+		if (inq[x][y] || matrix[x][y] == 0) {
+			return false;
+		}
+		return true;
+	}
+
+	static class Node {
+		int x, y;
+
+		Node(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+	}
+	void DFS(Node root) {
+		inq[root.x][root.y] = true;
+		for (int i = 0; i < 4; i++) {
+			int newX = root.x + X[i];
+			int newY = root.y + Y[i];
+			if (judge(newX, newY)) {
+				DFS(new Node(newX, newY));
+			}
+		}
+	}
+
+	public int findCircleNum(int[][] isConnected) {
+		n = isConnected.length;
+		inq = new boolean[n][n];
+		matrix = isConnected;
+
+		int ans = 0;
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				if (!inq[i][j] && matrix[i][j] == 1) {
+					ans++;
+					DFS(new Node(i, j));
+				}
+			}
+		}
+		return ans;
+	}
+	@Test
+	public void test() {
+		System.out.println(findCircleNum(new int[][]{{1, 0, 0, 1}, {0, 1, 1, 0}, {0, 1, 1, 1}, {1, 0, 1, 1}}));//4
+	}
+}
+```
+
+
+
 ## Dijkstra算法 （算法笔记367）
 
 Dijkstra算法解决**单源最短路径**问题，即给定图G(V,E)，和起点s，求从起点s到达其他顶点的最短距离
