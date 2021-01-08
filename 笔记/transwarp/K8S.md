@@ -640,3 +640,27 @@ Secret可以为Pod提供密码、 Token、 私钥等敏感数据； 对于一些
    ![image-20210107175706785](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210107175706785.png)
 
 4. Deployment， 部署MySQL Pod， 并使用上面的这些支持对象  
+
+   ![image-20210108095550427](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210108095550427.png)
+
+
+
+## 安装下载使用
+
+http://www.mydlq.club/article/51/
+
+https://blog.csdn.net/tuobicui6522/article/details/107417727
+
+
+
+k8s集群监控工具：
+
+Weave Scope：https://www.cnblogs.com/yanxinjiang/p/12889469.html
+
+Dashboard：
+
+https://blog.csdn.net/Day_Day_No_Bug/article/details/107866291
+
+虚拟机配置：
+
+https://www.cnblogs.com/duanwandao/p/9947400.html
