@@ -1122,15 +1122,44 @@ public class LC399_2 {
 
 
 
+# 其他
+
+## 数组反转
+
+https://leetcode-cn.com/problems/rotate-array/solution/javadai-ma-3chong-fang-shi-tu-wen-xiang-q8lz9/
+
+![image-20210108225307438](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210108225307438.png)
 
 
 
 
 
+思路：
+
+![image-20210108225548227](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210108225548227.png)
 
 
 
+```java
+public void rotate(int[] nums, int k) {
+    int length = nums.length;
+    k %= length;
+    reverse(nums, 0, length - 1);//先反转全部的元素
+    reverse(nums, 0, k - 1);//在反转前k个元素
+    reverse(nums, k, length - 1);//接着反转剩余的
+}
 
+//把数组中从[start，end]之间的元素两两交换,也就是反转
+public void reverse(int[] nums, int start, int end) {
+    while (start < end) {
+        int temp = nums[start];
+        nums[start] = nums[end];
+        nums[end] = temp;
+        start ++;
+        end --;
+    }
+}
+```
 
 
 

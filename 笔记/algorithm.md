@@ -1,4 +1,4 @@
-[摘自算法笔记]
+[摘自算法笔记] & https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA
 
 ## 全排列问题
 
@@ -3325,6 +3325,55 @@ longest increasing sequence
 >
 > 边界：`dp[0]=1, dp[i]>=1`
 
+#### 别的方法求解
+
+![image-20210110124356825](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210110124356825.png)把题目给的序列看成扑克牌，从左到右放。然后从左到右遍历扑克牌，把扑克牌分成n堆，对于每一堆新放上去的元素要比，堆顶元素小，如果找不到这样的堆，则自成一堆。（A是最大的），如果遇到多个可以选择的堆，则放到最左边的那个堆上。
+
+最后堆的个数，就是最长不下降子序列的长度。
+
+```java
+public class LC300_2 {
+	//这道题也可用二分法来求
+	public int lengthOfLIS(int[] nums) {
+		int[] top = new int[nums.length];
+		int piles = 0;//堆的个数
+		for (int i = 0; i < nums.length; i++) {
+			//要处理的那张牌
+			int poker = nums[i];
+
+			int left = 0, right = piles;
+			while (left < right){
+				int mid = ( left + right ) / 2;
+				if(top[mid] >= poker){
+					right = mid;
+				}else {
+					left = mid + 1;
+				}
+			}
+			if(left == piles){ //说明没有找到合适的堆。
+				piles ++;
+			}
+			top[left] = poker;
+		}
+		return piles;
+	}
+}
+```
+
+#### 题目变体--俄罗斯套娃
+
+https://leetcode-cn.com/problems/russian-doll-envelopes/
+
+![image-20210110125959855](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210110125959855.png)
+
+思路：将数组按照w升序排列，然后按照h降序排列。然后再h上找最长上升子序列就行。逆序排序保证在`w`相同的数对中最多只选取一个计入 LIS。
+
+**![image-20210110130137643](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210110130137643.png)**
+
+
+
+
+
 ### 最长公共子序列LCS
 
 longest common subsequence
@@ -3350,6 +3399,62 @@ longest common subsequence
 > 边界条件：`dp[i][0]=dp[0][j]=0`
 >
 > 最终`dp[lenA][lenB]`就是LCS的长度。
+
+```java
+public class 最长公共子序列 {
+	int getMaxLCS(String a, String b) {
+		int lenA = a.length();
+		int lenB = b.length();
+		//dp[i][j] 表示字符串 a[0~i-1],  b[0~j-1] 的LCS，
+		int[][] dp = new int[lenA + 1][lenB + 1];
+		//初始化 dp[0][i]=dp[j][0]=0，java
+		//状态转移方程，有2中情况：
+		//1.a[i-1] == b[j-1] , dp[i][j] = dp[i-1][j-1] + 1
+		//2,a[i-1] != b[j-1], dp[i][j] = max{dp[i-1][j], dp[i][j-1]}
+		for (int i = 1; i <= lenA; i++) {
+			for (int j = 1; j <= lenB; j++) {
+				if (a.charAt(i - 1) == b.charAt(j - 1)) {
+					dp[i][j] = dp[i - 1][j - 1] + 1;
+				} else {
+					dp[i][j] = Integer.max(dp[i - 1][j], dp[i][j - 1]);
+				}
+			}
+		}
+		return dp[lenA][lenB];
+	}
+	@Test
+	public void test() {
+		System.out.println(getMaxLCS("sads", "admin"));//2
+		System.out.println(getMaxLCS("sads", "admins"));//3
+	}
+}
+```
+
+### 编辑距离
+
+https://leetcode-cn.com/problems/edit-distance/
+
+![image-20210110141401417](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210110141401417.png)
+
+**求解**
+
+> 令`dp[i][j]`表示s1[0...i] 变成 s2[0...j]的最小操作数，则可以根据s1[i] 和 s2[j]是否相等分成2种情况：
+>
+> 1. 若s1[i] == s2[j] 则`dp[i][j] = dp[i-1][j-1]`，因为此时 s1[0...i]变成s2[0...j]的操作次数等于s1[0...i-1]变成s2[0...j-1]的操作次数。
+>
+> 2. 若s1[i] != s2[j] 则 `dp[i][j] =min{dp[i][j-1] + 1, dp[i-1][j] + 1,  dp[i-1][j-1] + 1}` 
+>
+>    `dp[i][j-1] + 1` ，表示插入操作，在s1[i]这个位置上插入s2[j]，这样，j需要前移一位。`
+>
+>    `dp[i-1][j-1] + 1`表示修改操作，直接令s1[i] = s2[j]，这样i, j 需要都往前移动一步
+>
+>    `dp[i-1][j] + 1`表示删除操作，删除s1[i]处的字符，这样i往前移动一步，j继续匹配。
+>
+> ![image-20210110143538296](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210110143538296.png)
+>
+> 边界条件：`dp[0][i] = i, dp[i][0] =i`, 空串变成另外一个字符串，需要进行len(str)步操作
+>
+> 
 
 ### 最长回文子串
 
@@ -3390,6 +3495,87 @@ for(int L = 3;L<=len;L++){
 	}
 }
 ```
+
+#### 例题
+
+https://leetcode-cn.com/problems/longest-palindromic-substring/
+
+![image-20210110153152505](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210110153152505.png)
+
+```java
+package 动态规划;
+
+import org.junit.Test;
+
+import java.util.Arrays;
+
+/**
+ * @author TylerChen
+ * @date 2021/1/7 - 20:25
+ */
+public class LC5最长回文子串 {
+	public String longestPalindrome(String s) {
+		int n = s.length();
+		int maxLen = 1;
+		int left = 0;
+		boolean[][] dp = new boolean[n][n];
+		//dp[i][j]=1 表示子串 s[i...j]是回文串
+		//初始装态dp[i][i]=1, dp[i][i+1] = s[i]==s[i + 1]
+		//1， 初始化
+		for (int i = 0; i < n - 1; i++) {
+			dp[i][i] = true;
+			if (s.charAt(i) == s.charAt(i + 1)) {
+				dp[i][i + 1] = true;
+				if (2 > maxLen) {
+					maxLen = 2;
+					left = i;
+				}
+			}
+		}
+		dp[n - 1][n - 1] = true;
+		//根据s[i] 和 s[j]是否相等分成2种情况
+		//1, s[i]==s[j], dp[i][j] = dp[i+1][j-1]
+		//2, s[i]!=s[j], dp[i][j] = 0
+		//边界条件为长度为1，2的子串；只有长度为2的子串的dp求出来之后才能得到长度为3的子串的dp。
+		// 所以按照长度遍历最合适。
+
+		//遍历1，
+		for (int L = 3; L <= n; L++) {
+			for (int i = 0; i + L - 1 < n; i++) {
+				int j = i + L - 1;// 子串的右端点
+				if (s.charAt(i) == s.charAt(j) && dp[i + 1][j - 1] == true) {
+					dp[i][j] = true;
+					if (L > maxLen) {
+						maxLen = L;
+						left = i;
+					}
+				}
+			}
+		}
+		//遍历2， 也可以倒着遍历
+		for (int i = n - 2; i >= 0; i--) {
+			//i 从后往前，j 从前往后因为dp[i][j]和dp[i+1][j-1]状态有关
+			for (int j = i + 1; j < n; j++) {
+				if (s.charAt(i) == s.charAt(j) && dp[i + 1][j - 1] == true){
+					dp[i][j] = true;
+					if (j - i + 1 >= maxLen) {
+						maxLen = j - i + 1;
+						left = i;
+					}
+				}
+			}
+		}
+		return s.substring(left, left + maxLen);
+	}
+
+	@Test
+	public void test() {
+		System.out.println(longestPalindrome("cbbd"));
+	}
+}
+```
+
+
 
 ### 0 1 背包问题
 
