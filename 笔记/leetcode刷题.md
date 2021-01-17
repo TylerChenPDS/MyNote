@@ -1120,6 +1120,525 @@ public class LC399_2 {
 }
 ```
 
+## 拓扑排序
+
+### [1203. 项目管理](https://leetcode-cn.com/problems/sort-items-by-groups-respecting-dependencies/)
+
+![image-20210112150042025](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210112150042025.png)
+
+
+
+![image-20210112150054571](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210112150054571.png)
+
+思路：首先如果不考虑group的话，有的项目有前置项目，前置项目完成后才可以进行当前项目。如上图：项目1进行之前，项目6必须完成，于是可以构建拓扑图：
+
+![image-20210112150550995](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210112150550995.png)
+
+但是，题目又有相同组的项目先后顺序必须相邻，所以也必须构建组之间的先后顺序，如果对于组有u->v，那么则有排序{u的项目，v的项目}，且这个排序也要满足上面拓扑图，对于不属于任何一个组的项目，我们可以假定它属于一个唯一的组。改造完之后可得：
+
+![image-20210112151212627](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210112151212627.png)
+
+怎么构建？对于item1，属于group3，前置项目为item6，item6属于group0，所以构建一条边：group0->group3，同理可得拓扑图（自身环需要去掉）：
+
+![image-20210112151527025](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210112151527025.png)
+
+最后：创建一个函数：`List<Integer> topuSort(int[] deg, Map<Integer, ArrayList<Integer>> graph, Set<Integer> items)`，返回一个items 里面节点的拓扑排序。
+
+首先得到组的拓扑排序，然后遍历组编号，对于组内项目元素构成一个set集合，调用上面的函数，获得拓扑排序，将排序加入结果集。
+
+细节见代码，可以单步调试看下过程：
+
+```java
+package 拓扑排序;
+
+import org.junit.Test;
+
+import java.util.*;
+
+/**
+ * @author TylerChen
+ * @date 2021/1/12 - 11:16
+ */
+public class LC1203 {
+
+	/**
+	 * @param n           n个项目
+	 * @param m           m个小组
+	 * @param group       group[i]表示小组 group[i] 负责第i个项目
+	 * @param beforeItems beforeItems[i] 表示项目i的前置项目
+	 * @return
+	 */
+	public int[] sortItems(int n, int m, int[] group, List<List<Integer>> beforeItems) {
+		//首先建立小组之间的关系图，假设所有的未被小组接手的项目属于一个小组（假设编号从m开始）
+		// 示例1中： item1属于小组8，item1的前置项目为item6，item6属于小组0，
+		// 因此建立0->8这个小组关系
+
+		//小组拓扑图
+		Map<Integer, ArrayList<Integer>> groupMap = new HashMap<>();
+		//项目拓扑图
+		Map<Integer, ArrayList<Integer>> itemMap = new HashMap<>();
+		//首先将-1组，重新编号，从m开始
+		int k = m;
+		for (int i = 0; i < group.length; i++) {
+			if (group[i] == -1) {
+				group[i] = k ++;
+			}
+		}
+		//项目拓扑图中，项目节点的入度
+		int[] inDegreeItem = new int[n];
+
+		//小组拓扑图中，小组节点的入度
+		int[] inDegreeGroup = new int[k];
+
+		//这个循环，创建项目拓扑图中，和小组拓扑图中
+		for (int i = 0; i < group.length; i++) {
+			//项目i的前置项目
+			List<Integer> beforeItemi = beforeItems.get(i);
+			for (Integer j : beforeItemi) { //前置项目
+				//查找前置项目的组号
+				if (group[j] != group[i]) { //防止出现自环的情况
+					ArrayList<Integer> list = groupMap.getOrDefault(group[j], new ArrayList<>());
+					list.add(group[i]);
+					groupMap.put(group[j], list);
+					//group[i]的入度加一
+					inDegreeGroup[group[i]]++;
+				}
+
+				//构建项目拓扑图
+				ArrayList<Integer> itemList = itemMap.getOrDefault(j, new ArrayList<>());
+				itemList.add(i);
+				itemMap.put(j, itemList);
+				inDegreeItem[i]++;
+			}
+
+		}
+
+		//获取小组的点集合
+		Set<Integer> set = new HashSet<>();
+		for (int i = 0; i < k; i++) {
+			set.add(i);
+		}
+		//得到的是一个组的排序
+		List<Integer> integers = topuSort(inDegreeGroup, groupMap, set);
+		//出现环路，构不成一个排序
+		if (integers.size() == 0) {
+			return new int[0];
+		}
+
+		//结果集
+		List<Integer> res = new ArrayList<>();
+
+		//构建小组对应的项目集合
+		Map<Integer, Set<Integer>> groupIdToItems = new HashMap<>();
+		for (int i = 0; i < group.length; i++) {
+			Set<Integer> set1 = groupIdToItems.getOrDefault(group[i],new HashSet<>());
+			set1.add(i);
+			groupIdToItems.put(group[i],set1);
+		}
+
+		//对一个组内的项目进行拓扑排序
+		for (Integer groupId: integers){
+			Set<Integer> itms = groupIdToItems.get(groupId);
+			if(itms != null){
+				List<Integer> li = topuSort(inDegreeItem, itemMap, itms);
+				if(li.size()==0){
+					return new int[0];
+				}
+				res.addAll(li);
+			}
+
+		}
+
+		//结果转换
+		int[] ans = new int[res.size()];
+		int index = 0;
+		for(Integer item : res){
+			ans[index ++] = item;
+		}
+		return ans;
+	}
+
+	/**
+	 * @param deg   对应点的入度
+	 * @param graph 对应的图
+	 * @param items 需要topu排序的节点
+	 * @return
+	 */
+	List<Integer> topuSort(int[] deg, Map<Integer, ArrayList<Integer>> graph, Set<Integer> items) {
+		int n = items.size();
+		Queue<Integer> queue = new LinkedList<Integer>();
+		for (int item : items) {
+			if (deg[item] == 0) {
+				queue.offer(item);
+			}
+		}
+		List<Integer> res = new ArrayList<>();
+		while (!queue.isEmpty()) {
+			int u = queue.poll();
+			ArrayList<Integer> integers = graph.get(u);
+			//当前项目做完，与它的后置项目的入度需要-1
+			if( items.contains(u) && integers != null && integers.size() != 0){
+				for (int v : graph.get(u)) {
+					deg[v]--;
+					if (deg[v] == 0) {
+						queue.offer(v);
+					}
+				}
+			}
+			if (items.contains(u)) {
+				items.remove(u);
+				res.add(u);
+			}
+		}
+		return res.size() == n ? res : new ArrayList<>();
+	}
+	
+	@Test
+	public void test(){
+//		List<List<Integer>> a = new ArrayList<>();
+//		a.add(new ArrayList<>());
+//		a.add(Arrays.asList(6));
+//		a.add(Arrays.asList(5));
+//		a.add(Arrays.asList(6));
+//		a.add(Arrays.asList(3,6));
+//		a.add(new ArrayList<>());
+//		a.add(new ArrayList<>());
+//		a.add(new ArrayList<>());
+//		System.out.println(Arrays.toString(sortItems(8, 2, new int[]{-1, -1, 1, 0, 0, 1, 0, -1}, a)));
+		List<List<Integer>> a = new ArrayList<>();
+		a.add(new ArrayList<>());
+		a.add(Arrays.asList(0));
+		a.add(Arrays.asList(1));
+		System.out.println(Arrays.toString(sortItems(3, 1, new int[]{-1,0, -1}, a)));
+	}
+}
+
+```
+
+
+
+## 连通图
+
+![image-20210115215457481](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210115215457481.png)
+
+把二维坐标平面上的石头想象成图的顶点，如果两个石头横坐标相同、或者纵坐标相同，在它们之间形成一条边。
+
+![image-20210115215536792](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210115215536792.png)
+
+根据可以移除石头的规则：如果一块石头的 同行或者同列 上有其他石头存在，那么就可以移除这块石头。可以发现：**一定可以把一个连通图里的所有顶点根据这个规则删到只剩下一个顶点。**所以：**最多可以移除的石头的个数 = 所有石头的个数 - 连通分量的个数**。
+
+```java
+class Solution {
+    public int removeStones(int[][] stones) {
+        int n = stones.length;
+        List<List<Integer>> edge = new ArrayList<List<Integer>>();
+        for (int i = 0; i < n; i++) {
+            edge.add(new ArrayList<Integer>());
+            for (int j = 0; j < n; j++) {
+                if (stones[i][0] == stones[j][0] || stones[i][1] == stones[j][1]) {
+                    edge.get(i).add(j);
+                }
+            }
+        }
+        boolean[] vis = new boolean[n];
+        int num = 0;
+        for (int i = 0; i < n; i++) {
+            if (!vis[i]) {
+                num++;
+                dfs(i, edge, vis);
+            }
+        }
+        return n - num;
+    }
+
+    public void dfs(int x, List<List<Integer>> edge, boolean[] vis) {
+        vis[x] = true;
+        for (int y : edge.get(x)) {
+            if (!vis[y]) {
+                dfs(y, edge, vis);
+            }
+        }
+    }
+}
+```
+
+
+
+## 803 打砖块
+
+![image-20210116131833460](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210116131833460.png)
+
+![image-20210116131848722](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210116131848722.png)
+
+![image-20210116131950546](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210116131950546.png)
+
+思路：容易想到的做法是DFS，打碎砖块前从屋顶DFS，查看与屋顶相连砖块的个数m，打碎后再次从屋顶DFS查看与屋顶相连砖块的个数n，然后m-n-1即为所求。但是超时了。
+
+```java
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author TylerChen
+ * @date 2021/1/16 - 10:39
+ */
+public class LC803 {
+
+	//使用DFS，发现超时
+	boolean[][] vis;
+	int m, n;
+	int[][] G;
+	int[] X = {0, 0, 1, -1};
+	int[] Y = {1, -1, 0, 0};
+
+	public int[] hitBricks(int[][] grid, int[][] hits) {
+		m = grid.length;
+		n = grid[0].length;
+		vis = new boolean[m][n];
+		G = grid;
+		int num = 0; //当前砖的个数
+		num = getNum();
+		int[] res = new int[hits.length];
+		int index = 0;
+		for (int[] hit : hits) {
+			//使用DFS查看敲掉当前的砖后屋顶还有多少砖
+			if (vis[hit[0]][hit[1]]) { //此时是连接屋顶的砖块
+				G[hit[0]][hit[1]] = 0;
+				vis = new boolean[m][n];
+				int a = getNum();
+				res[index++] = num - a - 1;
+				num = a;
+			} else {
+				res[index++] = 0;
+			}
+
+		}
+
+		return res;
+	}
+
+	int getNum() {
+		int num = 0;
+		for (int i = 0; i < n; i++) {
+			if (G[0][i] == 1 && !vis[0][i]) {
+				DFS(0, i);
+				num += kNum;
+				kNum = 0;
+			}
+		}
+		return num;
+	}
+
+	int kNum = 0;
+
+	void DFS(int i, int j) {
+		vis[i][j] = true;
+		kNum++;
+		for (int k = 0; k < 4; k++) {
+			int x = i + X[k];
+			int y = j + Y[k];
+			if (x >= 0 && x < m && y >= 0 && y < n
+					&& G[x][y] == 1 && !vis[x][y]) {
+				DFS(x, y);
+			}
+		}
+	}
+
+	@Test
+	public void test() {
+//		hitBricks(new int[][]{{1}, {1}, {1}, {1}, {1}}, new int[][]{{3, 0}, {4, 0}, {1, 0}, {2, 0},
+//				{0, 0}});
+
+		hitBricks(new int[][]{{1,0,1},{1,1,1}},new int[][]{{0,0},{0,2},{1,1}});
+	}
+}
+
+```
+
+另外一种思路是使用并查集
+
+https://leetcode-cn.com/problems/bricks-falling-when-hit/solution/803-da-zhuan-kuai-by-leetcode-r5kf/
+
+首先令copy=grid，将需要打碎的砖块在copy种都设置为0，然后把copy种所有相连的砖块放到一个集合中，并且把与顶部相连的砖块放到一个特殊的集合X中，（需要记录集合中元素的个数），然后倒叙把砖块补上，并把补上的砖块加入到与之相连的集合种，这样集合X中会多出n个砖，n-1，就是敲掉补上的砖，掉下去的砖块个数。
+
+```java
+public class Solution {
+
+	private int rows;
+	private int cols;
+
+	public static final int[][] DIRECTIONS = {{0, 1}, {1, 0}, {-1, 0}, {0, -1}};
+
+	public int[] hitBricks(int[][] grid, int[][] hits) {
+		this.rows = grid.length;
+		this.cols = grid[0].length;
+
+		// 第 1 步：把 grid 中的砖头全部击碎，通常算法问题不能修改输入数据，
+		// 这一步非必需，可以认为是一种答题规范
+		int[][] copy = new int[rows][cols];
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				copy[i][j] = grid[i][j];
+			}
+		}
+
+		// 把 copy 中的砖头全部击碎
+		for (int[] hit : hits) {
+			copy[hit[0]][hit[1]] = 0;
+		}
+
+		// 第 2 步：建图，把砖块和砖块的连接关系输入并查集，size 表示二维网格的大小，
+		// 也表示虚拟的「屋顶」在并查集中的编号
+		int size = rows * cols;
+		UnionFind unionFind = new UnionFind(size + 1);
+
+		// 将下标为 0 的这一行的砖块与「屋顶」相连
+		for (int j = 0; j < cols; j++) {
+			if (copy[0][j] == 1) {
+				unionFind.union(j, size);
+			}
+		}
+
+		// 其余网格，如果是砖块向上、向左看一下，如果也是砖块，在并查集中进行合并
+		for (int i = 1; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				if (copy[i][j] == 1) {
+					// 如果上方也是砖块
+					if (copy[i - 1][j] == 1) {
+						unionFind.union(getIndex(i - 1, j), getIndex(i, j));
+					}
+					// 如果左边也是砖块
+					if (j > 0 && copy[i][j - 1] == 1) {
+						unionFind.union(getIndex(i, j - 1), getIndex(i, j));
+					}
+				}
+			}
+		}
+
+		// 第 3 步：按照 hits 的逆序，在 copy 中补回砖块，把每一次因为补回砖块而与屋顶相连的砖块的增量记录到 res 数组中
+		int hitsLen = hits.length;
+		int[] res = new int[hitsLen];
+		for (int i = hitsLen - 1; i >= 0; i--) {
+			int x = hits[i][0];
+			int y = hits[i][1];
+
+			// 注意：这里不能用 copy，语义上表示，如果原来在 grid 中，这一块是空白，这一步不会产生任何砖块掉落
+			// 逆向补回的时候，与屋顶相连的砖块数量也肯定不会增加
+			if (grid[x][y] == 0) {
+				continue;
+			}
+
+			// 补回之前与屋顶相连的砖块数
+			int origin = unionFind.getSize(size);
+
+			// 注意：如果补回的这个结点在第 1 行，要告诉并查集它与屋顶相连（逻辑同第 2 步）
+			if (x == 0) {
+				unionFind.union(y, size);
+			}
+
+			// 在 4 个方向上看一下，如果相邻的 4 个方向有砖块，合并它们
+			for (int[] direction : DIRECTIONS) {
+				int newX = x + direction[0];
+				int newY = y + direction[1];
+
+				if (inArea(newX, newY) && copy[newX][newY] == 1) {
+					unionFind.union(getIndex(x, y), getIndex(newX, newY));
+				}
+			}
+
+			// 补回之后与屋顶相连的砖块数
+			int current = unionFind.getSize(size);
+			// 减去的 1 是逆向补回的砖块（正向移除的砖块），与 0 比较大小，是因为存在一种情况，添加当前砖块，不会使得与屋顶连接的砖块数更多
+			res[i] = Math.max(0, current - origin - 1);
+
+			// 真正补上这个砖块
+			copy[x][y] = 1;
+		}
+		return res;
+	}
+
+	/**
+	 * 输入坐标在二维网格中是否越界
+	 *
+	 * @param x
+	 * @param y
+	 * @return
+	 */
+	private boolean inArea(int x, int y) {
+		return x >= 0 && x < rows && y >= 0 && y < cols;
+	}
+
+	/**
+	 * 二维坐标转换为一维坐标
+	 *
+	 * @param x
+	 * @param y
+	 * @return
+	 */
+	private int getIndex(int x, int y) {
+		return x * cols + y;
+	}
+
+	private class UnionFind {
+
+		/**
+		 * 当前结点的父亲结点
+		 */
+		private int[] parent;
+		/**
+		 * 以当前结点为根结点的子树的结点总数
+		 */
+		private int[] size;
+
+		public UnionFind(int n) {
+			parent = new int[n];
+			size = new int[n];
+			for (int i = 0; i < n; i++) {
+				parent[i] = i;
+				size[i] = 1;
+			}
+		}
+
+		/**
+		 * 路径压缩，只要求每个不相交集合的「根结点」的子树包含的结点总数数值正确即可，因此在路径压缩的过程中不用维护数组 size
+		 *
+		 * @param x
+		 * @return
+		 */
+		public int find(int x) {
+			if (x != parent[x]) {
+				parent[x] = find(parent[x]);
+			}
+			return parent[x];
+		}
+
+		public void union(int x, int y) {
+			int rootX = find(x);
+			int rootY = find(y);
+
+			if (rootX == rootY) {
+				return;
+			}
+			parent[rootX] = rootY;
+			// 在合并的时候维护数组 size
+			size[rootY] += size[rootX];
+		}
+
+		/**
+		 * @param x
+		 * @return x 在并查集的根结点的子树包含的结点总数
+		 */
+		public int getSize(int x) {
+			int root = find(x);
+			return size[root];
+		}
+	}
+}
+
+```
+
 
 
 # 其他
@@ -1160,6 +1679,170 @@ public void reverse(int[] nums, int start, int end) {
     }
 }
 ```
+
+
+
+
+
+# 并查集
+
+## [1202. 交换字符串中的元素](https://leetcode-cn.com/problems/smallest-string-with-swaps/)
+
+![image-20210111105226141](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210111105226141.png)
+
+![image-20210111105337238](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210111105337238.png)
+
+**思路**
+
+https://leetcode-cn.com/problems/smallest-string-with-swaps/solution/1202-jiao-huan-zi-fu-chuan-zhong-de-yuan-wgab/
+
+理解「交换关系具有传递性」：
+
+[0, 3] 和 [0, 2] 有共同索引 0 ，说明索引 0、2、3 可以任意交换；
+[1, 2] 和 [0, 2] 有共同索引 2 ，说明索引 0、1、2 可以任意交换； 因此 [0, 2] 把 [0, 3] 和 [1, 2] 中出现的索引 0、1、2、3 连在了一起。
+
+题目中说「可以 任意多次交换 在 pairs 中任意一对索引处的字符」。于是我们可以将 0、1、2、3 这 44 个索引位置上的字符按照 ASCII 值升序排序。采用基于比较的原地排序算法（选择排序、插入排序、冒泡排序、快速排序）均可。
+
+可以使用并查集+优先队列（最小堆）的方式，先使用并查集找到在一个集合中的index，然后把同一个集合中的index对应的字符存到一个优先队列中。
+
+然后遍历0~s.length-1，找到 i 对应的集合，从里面取出一个元素放到i这个位置，最终形成的新字符串即为所求。
+
+**代码：最小堆+并查集**
+
+```java
+public class LC1202_3 {
+	//使用并查集和小顶堆
+	int[] father;
+	int n;
+
+	int findFather(int x) {
+		int a = x;
+		while (x != father[x]) {
+			x = father[x];
+		}
+		while (a != father[a]) {
+			int z = a;
+			a = father[a];
+			father[z] = x;
+		}
+		return x;
+	}
+
+	void union(int a, int b) {
+		int faA = findFather(a);
+		int faB = findFather(b);
+		if (faA != faB) {
+			father[faA] = faB;
+		}
+	}
+
+	public String smallestStringWithSwaps(String s, List<List<Integer>> pairs) {
+		n = s.length();
+		father = new int[n];
+		for (int i = 0; i < n; i++) {
+			father[i] = i;
+		}
+		for (List<Integer> pair : pairs) {
+			union(pair.get(0), pair.get(1));
+		}
+		Map<Integer, MinHeap> map = new HashMap<>();
+		for (int i = 0; i < n; i++) {
+			MinHeap minHeap = map.getOrDefault(findFather(i), new MinHeap(1000));
+			minHeap.add(s.charAt(i));
+			map.put(father[i], minHeap);
+		}
+		//
+		StringBuilder res = new StringBuilder(n);
+		for (int i = 0; i < n; i++) {
+			res.append(map.get(findFather(i)).deleteTop());
+		}
+		return res.toString();
+	}
+
+	@Test
+	public void test() {
+		List<List<Integer>> a = new ArrayList<>();
+		a.add(Arrays.asList(0, 3));
+		a.add(Arrays.asList(1, 2));
+		a.add(Arrays.asList(0, 2));
+		smallestStringWithSwaps("dcab", a);
+	}
+
+	//使用堆实现小顶堆
+	static class MinHeap {
+		char[] heap;
+		int n;//堆中元素的个数
+
+		MinHeap(int len) {
+			n = 0;//n为堆中元素的个数
+			heap = new char[len + 1];
+		}
+
+		//向下调整,范围[low,high]
+		//low为预调整节点的数组下标，high一般为堆的左后一个元素的数组下标
+		void downAdjust(int low, int high) {
+			int i = low;
+			int j = 2 * i;//左孩子节点
+			while (j <= high) {
+				//找到孩子节点中较小的那一个
+				if (j + 1 <= high && heap[j + 1] < heap[j]) {
+					j = j + 1;
+				}
+				if (heap[j] < heap[i]) {//如果孩子节点比父节点小则交换,否则直接跳出循环
+					char temp = heap[j];
+					heap[j] = heap[i];
+					heap[i] = temp;
+					//然后父节点指向孩子节点，接着循环，看能否还能继续向下调整
+					i = j;
+					j = 2 * j;
+				} else {
+					break;
+				}
+			}
+		}
+
+		//向上调整
+		//对heap数组在[low,high]范围进行向上调整
+		//其中low一般设置为1，high表示欲调整的数组下标
+		void upAdjust(int low, int high) {
+			int i = high, j = i / 2; //j 为i的父亲节点
+			while (j >= low) {
+				if (heap[j] > heap[i]) {
+					char temp = heap[i];
+					heap[i] = heap[j];
+					heap[j] = temp;
+					i = j;
+					j = i / 2;
+				} else {
+					break;
+				}
+			}
+		}
+
+		//向堆中添加一个元素
+		void add(char x) {
+			if(n + 1 == heap.length){//此时需要扩容
+				char[] temp = new char[heap.length * 2];
+				for (int i = 1; i <= n ; i++) {
+					temp[i] = heap[i];
+				}
+				heap = temp;
+			}
+			heap[++n] = x;
+			upAdjust(1, n);
+		}
+		//删除堆中的一个元素
+		char deleteTop() {
+			char top = heap[1];
+			heap[1] = heap[n--];
+			downAdjust(1, n);
+			return top;
+		}
+	}
+}
+```
+
+
 
 
 
