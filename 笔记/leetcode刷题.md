@@ -1641,6 +1641,47 @@ public class Solution {
 
 
 
+#### [1584. 连接所有点的最小费用](https://leetcode-cn.com/problems/min-cost-to-connect-all-points/)
+
+![](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210119160652511.png)
+
+![image-20210119160717297](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210119160717297.png)
+
+![image-20210119160732667](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210119160732667.png)
+
+官方题解注释
+
+https://leetcode-cn.com/problems/min-cost-to-connect-all-points/solution/lian-jie-suo-you-dian-de-zui-xiao-fei-yo-kcx7/
+
+#### 建图优化的Kruskal
+
+所谓优化，就是不把不需要的边加入
+
+先说结论
+
+1. **结论一**：对于图中的任意三点 A,B,C  假设边 AB,AC,BC 中 AB 为最长边，那么最终答案中必然不包含边 AB。
+
+2. **结论二**：对于下图中同属同一个区块的任意两点 B,C，A为原点，那么 BC不可能为三边中最长边
+
+   ![image-20210119161345248](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210119161345248.png)
+
+3. 结论三：假设存在一点 A在原点处，那么对于图中的任意一个 45°区域，我们都至多只选择其中的一个点与 A相连，且该点必然为该区域中距离 A最近的点。
+
+   我们首先利用反证法证明：假设最后答案中包含 AB与 AC，且 B与 C 均位于同一个 45°
+    区域中。那么由结论二可知，BC必不为三边中的最长边。即最长边必然为 AB或 AC。由结论一可知，AB与 AC 中必然有一个不包含在答案中，这与假设相悖，因此我们最多仅会选择一个点与 AA 相连。
+
+结论2证明太复杂，其实可以转换成如下问题：
+
+![image-20210119162050279](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210119162050279.png)
+
+**这就很好证了，假设∠ACB，∠ABC 必然至少有一个大于45°（∠ACB+∠ABC>180-45>2*45）,这样，根据三角形的特性，大边对大角，小边对小角，AB,BC至少有一个大于BC。**
+
+
+
+
+
+
+
 # 其他
 
 ## 数组反转

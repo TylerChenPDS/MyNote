@@ -420,6 +420,28 @@ public class MyTest {
 	void quickSort(int a[]) {
 		quickSort(a, 0, a.length - 1);
 	}
+    
+    //快速排序的非递归实现：
+   // 递归的算法主要是在划分子区间，如果要非递归实现快排，只要使用一个栈来保存区间就可以了。一般将递归程序改成非递归首先想到的就是使用栈，因为递归本身就是一个压栈的过程。
+     void quickSort1(int[] arr, int left, int right) {
+		Stack<Integer> st = new Stack<>();
+		st.push(left);
+		st.push(right);
+		while (!st.empty()) {
+			int r = st.pop();
+			int l = st.pop();
+			int i = partation(arr, l, r);
+			if (i - 1 > l) {
+				st.push(l);
+				st.push(i - 1);
+			}
+
+			if (i + 1 < r) {
+				st.push(i + 1);
+				st.push(r);
+			}
+		}
+	}
 
 	@Test
 	public void test() {
@@ -429,6 +451,10 @@ public class MyTest {
 	}
 }
 ```
+
+
+
+
 
 ## 数学问题
 

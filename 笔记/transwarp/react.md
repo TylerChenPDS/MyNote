@@ -62,7 +62,7 @@ ReactDOM.render(
 
 注意，原生 HTML 元素名以小写字母开头，而**自定义的 React 类名以大写字母开头**，比如 HelloMessage 不能写成 helloMessage。除此之外还需要注意组件类只能包含一个顶层标签，否则也会报错。
 
-## 组件声明周期
+## 组件生命周期
 
 ```
 import React from 'react'
@@ -105,9 +105,19 @@ export default Clock
 
 **componentDidMount()** 与 **componentWillUnmount()** 方法被称作生命周期钩子。
 
-componentDidMount，当对应组件被挂载的时候执行
+**componentWillMount** 在渲染前调用,
 
-componentWillUnmount，当组件被卸载之前执行
+**componentDidMount**，当对应组件被挂载的时候执行
+
+componentWillReceiveProps 在组件接收到一个新的 prop (更新后)时被调用。这个方法在初始化render时不会被调用。
+
+**componentWillUnmount**，当组件被卸载之前执行
+
+
+
+
+
+
 
 # React Props
 
@@ -226,4 +236,55 @@ MyComponent.propTypes = {
 # 事件处理
 
 https://www.runoob.com/react/react-event-handle.html
+
+
+
+
+
+# React 组件 API
+
+```
+setState(object nextState[, function callback])
+nextState，将要设置的新状态，该状态会和当前的state合并
+callback，可选参数，回调函数。该函数会在setState设置成功，且组件重新渲染后调用。
+
+replaceState(object nextState[, function callback])
+nextState，将要设置的新状态，该状态会替换当前的state。
+callback，可选参数，回调函数。该函数会在replaceState设置成功，且组件重新渲染后调用。
+
+
+setProps(object nextProps[, function callback])
+nextProps，将要设置的新属性，该状态会和当前的props合并
+callback，可选参数，回调函数。该函数会在setProps设置成功，且组件重新渲染后调用。
+
+replaceProps(object nextProps[, function callback])
+nextProps，将要设置的新属性，该属性会替换当前的props。
+callback，可选参数，回调函数。该函数会在replaceProps设置成功，且组件重新渲染后调用。
+
+forceUpdate([function callback])
+参数说明
+callback，可选参数，回调函数。该函数会在组件render()方法调用后调用。
+forceUpdate()方法会使组件调用自身的render()方法重新渲染组件，组件的子组件也会调用自己的render()。但是，组件重新渲染时，依然会读取this.props和this.state，如果状态没有改变，那么React只会更新DOM。
+forceUpdate()方法适用于this.props和this.state之外的组件重绘（如：修改了this.state后），通过该方法通知React需要调用render()
+一般来说，应该尽量避免使用forceUpdate()，而仅从this.props和this.state中读取状态并由React触发render()调用。
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
