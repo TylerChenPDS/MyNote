@@ -1,6 +1,6 @@
 [摘自算法笔记] & https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA
 
-## 全排列问题
+## 全排列问题（回溯）
 
 求 1- n的全排列
 
@@ -139,6 +139,20 @@ public class LeetCode51 {
 给定一个整数 *n*，返回 *n* 皇后不同的解决方案的数量。
 
 同上。
+
+
+
+### 关于回溯的练习
+
+中等
+
+[79. 单词搜索](https://leetcode-cn.com/problems/word-search/)
+
+困难
+
+
+
+
 
 
 
@@ -298,6 +312,80 @@ class Solution {
 ```
 
 ## 排序
+
+### 插入排序
+
+**插入排序对于小规模数据或者基本有序的数据排序非常十分高效**
+
+```java
+void insertSort(int[] arr){
+	//插入排序
+    for (int i = 1; i < n; i++) {
+        int temp = arr[i];
+        int j = i;
+        while (j  - 1 >= 0 && arr[j - 1] > temp) {
+            arr[j] = arr[j - 1];
+            j--;
+        }
+        arr[j] = temp;
+    }
+}
+```
+
+### 希尔排序
+
+https://blog.csdn.net/qq_39207948/article/details/80006224
+
+首先它把较大的数据集合分割成若干个小组（逻辑上分组），然后对每一个小组分别进行插入排序，此时，插入排序所作用的数据量比较小（每一个小组），插入的效率比较高
+
+![image-20210120134702726](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210120134702726.png)
+
+每个分组进行插入排序后，各个分组就变成了有序的了（整体不一定有序）
+
+![image-20210120134746524](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210120134746524.png)
+
+然后缩小增量为上个增量的一半:2，继续划分分组，此时，每个分组元素个数多了，但是，数组变的部分有序了，插入排序效率同样比高
+
+![image-20210120134831360](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210120134831360.png)
+
+....直到增量为1，此时数组已经基本有序，然后一趟插入排序就可以了
+
+```java
+public class 希尔排序测试 {
+
+	static void shellSort(int[] arr) {
+		int n = arr.length;
+		for (int gap = n / 2; gap > 0; gap /= 2) {
+			for (int i = gap; i < n; i ++ ) {
+				insertI(arr, gap, i);
+			}
+		}
+	}
+	/**
+	 * 将arr[i]插入到所在分组正确的位置上，arr[i]所在的 分组为：
+	 * ... arr[i-2*gap]  arr[i-gap] arr[i] arr[i + gap]...
+	 */
+	private static void insertI(int[] arr, int gap, int i) {
+		int temp = arr[i];
+		int j = i;
+		while (j - gap >= 0  && arr[j - gap] > temp) {
+			arr[j] = arr[j - gap];
+			j -= gap;
+		}
+		arr[j] = temp;
+	}
+
+	public static void main(String[] args) {
+		int[] a = new int[]{1,5,2,6,9,8,7,3};
+		shellSort(a);
+		System.out.println(Arrays.toString(a));
+	}
+}
+```
+
+
+
+
 
 ### 归并排序
 
@@ -1569,7 +1657,7 @@ import org.junit.Test;
 public class Heap {
 	int maxn = 100;
 	int[] heap = new int[maxn];
-	int n;//堆种元素的个数
+	int n;//堆中元素的个数
 
 	//1，建立大顶堆，
 	//建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆

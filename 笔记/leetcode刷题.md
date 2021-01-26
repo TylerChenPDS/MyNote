@@ -1887,3 +1887,122 @@ public class LC1202_3 {
 
 
 
+# 二分法
+
+#### [寻找旋转排序数组中的最小值](https://leetcode-cn.com/problems/find-minimum-in-rotated-sorted-array/)
+
+数组种无重复值
+
+![image-20210125131445297](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210125131445297.png)
+
+
+
+比较简单的做法是遍历求最小值 
+
+```java
+public int minArray(int[] numbers) {
+   int min = numbers[0];
+   for (int i = 1; i < numbers.length ; i++) {
+      if(numbers[i] < numbers[i-1]){
+         return Math.min(min, numbers[i]);
+      }
+   }
+   return min;
+}
+```
+
+如何判断一个数组是否被反转？
+
+数组种最后一个元素 如果大于 第一个元素，则这个数组被反转了，此时直接可以返回第一个元素。
+
+如果数组是反转的，可以使用而分叉找到其最小值
+
+![image-20210125132030715](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210125132030715.png)
+
+如图，在变化点左侧，所有元素都大于第一个元素，在变化点右侧，所有元素都小于第一个元素。
+
+找到数组的中间元素 mid。
+
+如果中间元素 > 数组第一个元素，我们需要在 mid 右边搜索变化点。
+
+如果中间元素 < 数组第一个元素，我们需要在 mid 左边搜索变化点。
+
+nums[mid] > nums[mid + 1]，因此 mid+1 是最小值。
+
+nums[mid - 1] > nums[mid]，因此 mid 是最小值。
+
+```java
+public int findMin(int[] nums) {
+
+    if (nums.length == 1) {
+        return nums[0];
+    }
+    //此时数组没有被反转
+    if (nums[nums.length - 1] > nums[0]) {
+        return nums[0];
+    }
+
+    int left = 0, right = nums.length - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] > nums[mid + 1]) {
+            return nums[mid + 1];
+        }
+        if (nums[mid - 1] > nums[mid]) {
+            return nums[mid];
+        }
+
+        if (nums[mid] > nums[0]) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+
+    }
+    return -1;
+}
+```
+
+也可以与右端点进行比较
+
+```java
+public int findMin(int[] nums) {
+    int low = 0;
+    int high = nums.length - 1;
+    while (low < high) {
+        int mid = low + (high - low) / 2;
+        if (nums[mid] < nums[high]) {
+            // high 不能是 mid - 1,因为，如果是mid - 1的话，则可能把最小值错过了
+            high = mid;
+        } else if (nums[mid] > nums[high]) {
+            low = mid + 1;
+        }
+    }
+    return nums[low];
+}
+```
+
+如果里面允许有重复的值：
+
+https://leetcode-cn.com/problems/find-minimum-in-rotated-sorted-array-ii/solution/xun-zhao-xuan-zhuan-pai-xu-shu-zu-zhong-de-zui--16/
+
+```java
+public int findMin(int[] nums) {
+    int low = 0;
+    int high = nums.length - 1;
+    while (low < high) {
+        int mid = low + (high - low) / 2;
+        if (nums[mid] < nums[high]) {
+            // high 不能是 mid - 1,因为，如果是mid - 1的话，则可能把最小值错过了
+            high = mid;
+        } else if (nums[mid] > nums[high]) {
+            low = mid + 1;
+        } else {
+            
+            high --;
+        }
+    }
+    return nums[low];
+}
+```
+
