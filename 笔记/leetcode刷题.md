@@ -471,7 +471,7 @@ public ListNode reverseList(ListNode head){
 ![image-20210104123224899](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104123224899.png)
 
 ```java
-ListNode reverseList2(ListNode head){
+ListNode reverseList(ListNode head){
 	//新的链表
     ListNode newHead = null;
     while (head != null){

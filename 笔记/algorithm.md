@@ -1,5 +1,184 @@
 [摘自算法笔记] & https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA
 
+## 字典树
+
+### 字典树应用
+
+Trie (发音为 "try") 或前缀树是一种树数据结构，用于检索字符串数据集中的键。这一高效的数据结构有多种应用：
+
+- 自动补全
+- 拼写检查
+- ip路由
+- 打字预测
+
+### 字典树和Hash表的区别
+
+尽管哈希表可以在 O(1) 时间内寻找键值，却无法高效的完成以下操作：
+
+- 找到具有同一前缀的全部键值。
+- 按词典序枚举字符串的数据集。
+
+Trie 树优于哈希表的另一个理由是，随着哈希表大小增加，会出现大量的冲突，时间复杂度可能增加到 O(n），其中 n 是插入的键的数量。与哈希表相比，Trie 树在存储多个具有相同前缀的键时可以使用**较少的空间**。此时 Trie 树只需要 O(m)的时间复杂度，其中 m 为键长。而在平衡树中查找键值需要 O(mlog n) 时间复杂度。
+
+### 字典树的数据结构
+
+```java
+class TrieNode {
+		boolean isEnd;//该结点是否是一个串的结束
+		TrieNode[] next = new TrieNode[26]; //字母映射表
+}
+```
+
+![image-20210213201613039](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210213201613039.png)
+
+
+
+Trie 中一般都含有大量的空链接，因此在绘制一棵单词查找树时一般会忽略空链接，同时为了方便理解我们可以画成这样：
+
+![image-20210213201716503](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210213201716503.png)
+
+### 基本操作
+
+#### 插入
+
+```java
+//这个操作和构建链表很像。首先从根结点的子结点开始与 word 第一个字符进行匹配，
+// 一直匹配到前缀链上没有对应的字符，这时开始不断开辟新的结点，直到插入完 word 的最后一个字符，
+// 同时还要将最后一个结点isEnd = true;，表示它是一个单词的末尾。
+void insert(String word){
+    TrieNode node = this;
+    for (int i = 0; i < word.length(); i++) {
+        int index = word.charAt(i) - 'a';
+        if(node.next[index] == null){
+            node.next[index] = new TrieNode();
+        }
+        node = node.next[index];
+    }
+    node.isEnd = true;
+}
+```
+
+#### 查找
+
+```java
+// 查找
+//从根结点的子结点开始，一直向下匹配即可，如果出现结点值为空就返回 false，
+// 如果匹配到了最后一个字符，那我们只需判断 node->isEnd即可。
+boolean search(String word){
+    TrieNode node = this;
+    for (int i = 0; i < word.length(); i++) {
+        node = node.next[word.charAt(i) - 'a'];
+        if(node == null){
+            return false;
+        }
+    }
+    return node.isEnd;
+}
+```
+
+#### 前缀匹配
+
+```java
+// 前缀匹配
+//和 search 操作类似，只是不需要判断最后一个字符结点的isEnd，因为既然能匹配到最后一个字符，
+// 那后面一定有单词是以它为前缀的。
+boolean startsWith(String prefix){
+    TrieNode node = this;
+    for (int i = 0; i < prefix.length(); i++) {
+        node = node.next[prefix.charAt(i) - 'a'];
+        if(node == null){
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+#### 完整代码
+
+```java
+class Trie {
+    static class TrieNode {
+		boolean isEnd;
+		TrieNode[] next = new TrieNode[26];
+
+		//这个操作和构建链表很像。首先从根结点的子结点开始与 word 第一个字符进行匹配，
+		// 一直匹配到前缀链上没有对应的字符，这时开始不断开辟新的结点，直到插入完 word 的最后一个字符，
+		// 同时还要将最后一个结点isEnd = true;，表示它是一个单词的末尾。
+		void insert(String word){
+			TrieNode node = this;
+			for (int i = 0; i < word.length(); i++) {
+				int index = word.charAt(i) - 'a';
+				if(node.next[index] == null){
+					node.next[index] = new TrieNode();
+				}
+				node = node.next[index];
+			}
+			node.isEnd = true;
+		}
+
+		// 查找
+		//从根结点的子结点开始，一直向下匹配即可，如果出现结点值为空就返回 false，
+		// 如果匹配到了最后一个字符，那我们只需判断 node->isEnd即可。
+		boolean search(String word){
+			TrieNode node = this;
+			for (int i = 0; i < word.length(); i++) {
+				node = node.next[word.charAt(i) - 'a'];
+				if(node == null){
+					return false;
+				}
+			}
+			return node.isEnd;
+		}
+
+
+		// 前缀匹配
+		//和 search 操作类似，只是不需要判断最后一个字符结点的isEnd，因为既然能匹配到最后一个字符，
+		// 那后面一定有单词是以它为前缀的。
+		boolean startsWith(String prefix){
+			TrieNode node = this;
+			for (int i = 0; i < prefix.length(); i++) {
+				node = node.next[prefix.charAt(i) - 'a'];
+				if(node == null){
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
+    TrieNode help;
+
+    /** Initialize your data structure here. */
+    public Trie() {
+        help = new TrieNode();
+    }
+    
+    /** Inserts a word into the trie. */
+    public void insert(String word) {
+        help.insert(word);
+    }
+    
+    /** Returns if the word is in the trie. */
+    public boolean search(String word) {
+        return help.search(word);
+    }
+    
+    /** Returns if there is any word in the trie that starts with the given prefix. */
+    public boolean startsWith(String prefix) {
+        return help.startsWith(prefix);
+    }
+}
+```
+
+
+
+
+
+
+
+
+
 ## 全排列问题（回溯）
 
 求 1- n的全排列
@@ -142,13 +321,62 @@ public class LeetCode51 {
 
 
 
-### 关于回溯的练习
+![image-20210208141605812](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210208141605812.png)
 
-中等
 
-[79. 单词搜索](https://leetcode-cn.com/problems/word-search/)
 
-困难
+解题思路
+使用generate(int index, int cap)，代表递归的函数，其中index表示我当当前递归到了数组nums中的第几个数，cap表示 我们还需要几个数。
+对于当前的第index数，有2中选法：选或者不选。如果选，我们调用 generate(index + 1, cap - 1), 不选则调用generate(index + 1, cap);
+每次递归开始的时候，如果cap值为0，说明我们需要找的数找够了，并将找到的数放入结果集。
+注意：每次我们选则对应的数的时候，我们就需要将其放到列表末尾，该列表保存了我们需要的所有数。进行不选调用的时候需要将刚刚才加入的数删掉。
+以上是标准的回溯算法，但是题目 给的数据有重复值，不能直接使用，例如：nums=【2，2】的时候，会得到2个 {2}。
+**于是我们可以把相同的数放到一起处理，如果数x出现了y次，那么在递归时一次性处理他们，即对x分别选择1...y次。**
+具体细节见代码：
+
+代码
+
+```java
+class Solution {
+    static class Frequency{
+		int num;
+		int frequency;
+		Frequency(int _num, int _frequency){
+			num = _num;
+			frequency = _frequency;
+		}
+	}
+	List<List<Integer>> res = new ArrayList<>();
+	List<Integer> temp = new ArrayList<>();
+	List<Frequency> arr = new ArrayList<>();
+	public List<List<Integer>> subsetsWithDup(int[] nums) {
+        res.add(new ArrayList<>());
+		Arrays.sort(nums);
+        arr.add(new Frequency(nums[0], 1));
+		for (int i = 1; i < nums.length; i++) {
+			Frequency fr = arr.get(arr.size() - 1);
+			if(fr == null || fr.num != nums[i]){
+				fr = new Frequency(nums[i],0);
+				arr.add(fr);
+			}
+			fr.frequency ++;
+		}
+
+    for (int i = 1; i <= nums.length; i++) {
+            generate(0, i);
+        }
+
+        return res;
+    }
+```
+
+
+
+
+
+
+
+
 
 
 
@@ -4554,6 +4782,480 @@ public class LC567 {
 	@Test
 	public void test(){
 	    checkInclusion("adc", "dcda");
+	}
+}
+```
+
+# 超级经典的题
+
+不舍得忘记
+
+https://leetcode-cn.com/problems/path-with-minimum-effort/
+
+
+
+## 反转二叉树
+
+![image-20210209200012273](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210209200012273.png)
+
+
+
+```java
+class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        if(root == null){
+            return null;
+        }
+		//使用BFS进行反转
+		Queue<TreeNode> q = new LinkedList<>();
+		q.offer(root);
+		while (!q.isEmpty()){
+			TreeNode p = q.poll();
+			//反转p的左右子树
+			TreeNode tmp = p.left;
+			p.left = p.right;
+			p.right = tmp;
+			if(p.left != null){
+				q.offer(p.left);
+			}
+			if(p.right != null){
+				q.offer(p.right);
+			}
+		}
+		return root;
+
+	}
+}
+```
+
+方法二：
+
+```java
+class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        return reverse(root);
+    }
+    TreeNode reverse(TreeNode root){
+        if(root == null){
+            return null;
+        }
+        TreeNode l = reverse(root.left);
+        TreeNode r = reverse(root.right);
+        root.left =  r;
+        root.right = l;
+        return root;
+    }
+}
+```
+
+## 链表反转
+
+### 方法一：使用栈
+
+链表的反转是老生常谈的一个问题了，同时也是面试中常考的一道题。最简单的一种方式就是使用**栈**，因为**栈是先进后出**的。实现原理就是把链表节点一个个入栈，当全部入栈完之后再一个个出栈，出栈的时候在把出栈的结点串成一个新的链表。原理如下
+
+![image-20210104114757346](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104114757346.png)
+
+```java
+//反转链表的3种方式
+//使用栈的方式 
+public ListNode reverseList(ListNode head){
+    Stack<ListNode> stack = new Stack<>();
+    //把链表节点全部摘掉放到栈中
+    while (head != null){
+        stack.push(head);
+        head = head.next;
+    }
+    ListNode res = stack.pop(), p = res;
+    //栈中的结点全部出栈，然后重新连成一个新的链表
+    while (!stack.isEmpty()){
+        p.next = stack.pop();
+        p = p.next;
+    }
+    //最后一个结点就是反转前的头结点，一定要让他的next
+    //等于空，否则会构成环
+    p.next = null;
+    return res;
+}
+```
+
+### 方法二：双链表
+
+时间复杂度O(n)，空间复杂度O(1)
+
+双链表求解是把原链表的结点一个个摘掉，每次摘掉的链表都让他成为新的链表的头结点，然后更新新链表。下面以链表1→2→3→4为例画个图来看下。
+
+![image-20210104123159168](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104123159168.png)
+
+
+
+![image-20210104123224899](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104123224899.png)
+
+```java
+ListNode reverseList(ListNode head){
+	//新的链表
+    ListNode newHead = null;
+    while (head != null){
+        //先保存访问的节点的下一个节点，保存起来
+        //留着下一步访问的
+        ListNode temp = head.next;
+        //每次访问的原链表头节点都会成为新链表的头结点，
+        head.next = newHead;
+        //更新新链表
+        newHead = head;
+        //重新赋值，继续访问
+        head = temp;
+    }
+    return newHead;
+}
+```
+
+### 方法三：使用递归
+
+```java
+ListNode reverseList3(ListNode head){
+   if(head == null || head.next == null){
+      return head;
+   }
+   //保存当前节点的下一个结点
+   ListNode next = head.next;
+   //从当前节点的下一个结点开始递归调用
+   ListNode reverse = reverseList(next);
+   //reverse是反转之后的链表，因为函数reverseList
+   // 表示的是对链表的反转，所以反转完之后next肯定
+   // 是链表reverse的尾结点，然后我们再把当前节点
+   //head挂到next节点的后面就完成了链表的反转。
+   next.next = head;
+   //这里head相当于变成了尾结点，尾结点都是为空的，否则会构成环
+   head.next = null;
+   return reverse;
+}
+```
+
+## 倒着打印链表
+
+```java
+//反向打印链表
+void printReverse(ListNode head){
+    if(head != null){
+        printReverse(head.next);
+        System.out.print(head.val + " ");
+    }else {
+        //这句话会首先打印
+        System.out.print("反转链表为：");
+    }
+}
+```
+
+## 回文链表
+
+### 方法一：使用双指针和反转链表
+
+https://leetcode-cn.com/problems/palindrome-linked-list-lcci/solution/di-gui-zhan-deng-3chong-jie-jue-fang-shi-zui-hao-2/
+
+这题是让判断链表是否是回文链表，所谓的回文链表就是以链表中间为中心点两边对称。我们常见的有判断一个字符串是否是回文字符串，这个比较简单，可以使用两个指针，一个最左边一个最右边，两个指针同时往中间靠，判断所指的字符是否相等。
+
+但这题判断的是链表，因为这里是单向链表，只能从前往后访问，不能从后往前访问，所以使用判断字符串的那种方式是行不通的。**但我们可以通过找到链表的中间节（或者偏右一点）点然后把链表后半部分反转，最后再用后半部分反转的链表和前半部分一个个比较即可。这里以示例2为例画个图看一下。**
+
+![image-20210104133852466](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104133852466.png)
+
+![image-20210104133918392](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104133918392.png)
+
+
+
+```java
+public boolean isPalindrome(ListNode head) {
+    //首先找到链表的中间，或者中间靠右的那个节点
+    //这个可以使用快慢指针来实现
+    ListNode fast = head, low = head;
+    while (fast != null && fast.next != null){
+        fast = fast.next.next;
+        low = low.next;
+    }
+    //fast 不是null,说明节点为奇数个
+    if(fast != null){
+        low = low.next;
+    }
+    //low指向的节点开始反转
+    low = reverse(low);
+    fast = head;
+    //
+    while (low != null){
+        if(low.val != fast.val){
+            return false;
+        }
+        low = low.next;
+        fast = fast.next;
+    }
+    return true;
+}
+
+ListNode reverse(ListNode head){
+    ListNode newNode = null;
+    while (head != null){
+        ListNode temp = head.next;
+        head.next = newNode;
+        newNode = head;
+        head = temp;
+    }
+    return newNode;
+}
+```
+
+### 方法二：使用栈
+
+可以将链表一个一个放到栈中，这样在访问就是倒序了。稍微优化一点的做法就是，入栈的时候记录链表长度，这样判断回文的时候，就不需要遍历整个链表了。
+
+### 方法三：使用递归--逆序打印列表
+
+```java
+ListNode temp;
+
+public boolean isPalindrome(ListNode head) {
+    temp = head;
+    return check(head);
+}
+
+private boolean check(ListNode head) {
+    if (head == null)
+        return true;
+    boolean res = check(head.next) && (temp.val == head.val);
+    temp = temp.next;
+    return res;
+}
+```
+
+
+
+
+
+## 树形态的动态规划
+
+![image-20210210163546707](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210210163546707.png)
+
+使用f(o)表示选择o节点时，以o为根节点子树上的最大值。g(o) 表示不选择o节点时，以o为根节点能选择的最大权值。
+
+对于o节点，
+
+如果选择o节点：则 `f(o) = o.val +  g(o.left) + g(o.right)` // 选择o之后 o的直接子节点都不能选了
+
+如果不选则o节点，则 o的左右孩子都是可以选，也可以不选所以  `g(o) = Math.max(f(o.left), g(o.left)) +  Math.max(f(o.right), g(o.right))`。
+
+可以使用
+
+```
+Map<TreeNode, Integer> f = new HashMap<TreeNode, Integer>();
+Map<TreeNode, Integer> g = new HashMap<TreeNode, Integer>();
+```
+
+来记录f, 和g。最终答案就是`Math.max(f.getOrDefault(root, 0), g.getOrDefault(root, 0));`
+
+**注意，由于求o节点时，需要直到o子节点的，f,g所以需要使用后序遍历，这样可以保障求o时，其子节点已经求过了。**
+
+```java
+HashMap<TreeNode, Integer> f = new HashMap<>(), g = new HashMap<>();
+
+	public int rob(TreeNode root) {
+		traverse(root);
+		return Math.max(f.getOrDefault(root, 0), g.getOrDefault(root, 0));
+	}
+	void traverse(TreeNode root){
+		if(root != null){
+			traverse(root.left);
+			traverse(root.right);
+			// f(root) = root.val +  g(root.left) + g(root.right)
+			f.put(root, root.val +  g.getOrDefault(root.left, 0) + g.getOrDefault(root.right, 0));
+//			g(root) = Math.max(f(root.left), g(root.left)) +  Math.max(f(root.right), g(root.right)
+			g.put(root, Math.max(f.getOrDefault(root.left, 0), g.getOrDefault(root.left, 0)) + Math.max(f.getOrDefault(root.right, 0), g.getOrDefault(root.right, 0)));
+		}
+	}
+```
+
+// 经过分析可以发现，o的状态，只与其孩子节点的状态有关，所以
+
+```java
+class Solution {
+    static class Status {
+		int selected, notSelected;
+	}
+	public int rob(TreeNode root) {
+		Status rootS = traverse(root);
+		return Math.max(rootS.selected, rootS.notSelected);
+	}
+	Status traverse(TreeNode root){
+		Status now = new Status();
+		if(root != null){
+			Status l = traverse(root.left);
+			Status r =traverse(root.right);
+			// f(root) =root.val +  g(root.left) + g(root.right)
+			now.selected = root.val +  l.notSelected + r.notSelected;
+			now.notSelected = Math.max(l.selected, l.notSelected) + Math.max(r.selected, r.notSelected);
+		}
+		return now;
+	}
+}
+```
+
+## 非递归遍历树
+
+### 前序
+
+```java
+public List<Integer> preorderTraversal(TreeNode root) {
+		if(root == null){
+			return new ArrayList<>();
+		}
+		List<Integer> res = new ArrayList<>();
+		Stack<TreeNode> stack = new Stack<>();
+		stack.add(root);
+		while (!stack.isEmpty()){
+			TreeNode p = stack.pop();
+			res.add(p.val);
+			if(p.right != null){
+				stack.add(p.right);
+			}
+			if(p.left != null){
+				stack.add(p.left);
+			}
+		}
+		return res;
+	}
+```
+
+### 中序
+
+```java
+public List<Integer> inorderTraversal(TreeNode root) {
+		List<Integer> res = new ArrayList<>();
+		if(root == null){
+			return res;
+		}
+		Stack<TreeNode> stack = new Stack<>();
+		TreeNode cur = root;
+		while ( cur != null || !stack.isEmpty()){
+			while (cur != null){
+				stack.push(cur);
+				cur = cur.left;
+			}
+			TreeNode p = stack.pop();
+			res.add(p.val);
+			cur = p.right;
+		}
+		return res;
+	}
+```
+
+中序遍历的Morris  算法
+
+![image-20210211162807280](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210211162807280.png)
+
+其实整个过程我们就多做一步：假设当前遍历到的节点为 xx，将 xx 的左子树中最右边的节点的右孩子指向 xx，这样在左子树遍历完成后我们通过这个指向走回了 xx，且能通过这个指向知晓我们已经遍历完成了左子树，而不用再通过栈来维护，省去了栈的空间复杂度。
+
+```java
+class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+		List<Integer> res = new ArrayList<>();
+		if(root == null){
+			return res;
+		}
+		TreeNode predecessor = null;
+		while (root != null){
+			if(root.left != null){
+				//先找到，root 左子树上最右边的节点, 即访问root之前应该访问的节点
+				predecessor = root.left;
+				while (predecessor.right != null && predecessor.right != root){
+					predecessor = predecessor.right;
+				}
+
+				//如果predecessor.right 为空，则让predecessor.right 指向 root,
+				if(predecessor.right == null){
+					predecessor.right = root;
+					root = root.left; //此时root可以放心大胆的访问root的左子树了
+				}else { //此时 说明root的左子树已经访问完，
+					//此时把root 的值放入res，然后接着访问右子树
+					// root = predecessor.right;
+					res.add(root.val);
+					root = root.right;
+					//断链，不改变树的原结构
+					predecessor.right = null;
+				}
+			}else {
+				//左子树为空，那么直接访问当前节点，然后访问后续节点
+				res.add(root.val);
+				root = root.right;
+			}
+		}
+		return res;
+	}
+}
+```
+
+![image-20210211164043701](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210211164043701.png)
+
+
+
+### 后序
+
+
+
+```java
+class Solution {
+    public List<Integer> postorderTraversal(TreeNode root) {
+        List<Integer> res = new ArrayList<Integer>();
+        if (root == null) {
+            return res;
+        }
+
+        Deque<TreeNode> stack = new LinkedList<TreeNode>();
+        TreeNode prev = null; //prev 记录上次访问那个节点
+        while (root != null || !stack.isEmpty()) {
+            while (root != null) {
+                stack.push(root);
+                root = root.left;
+            }
+            root = stack.pop();
+            // 如果 右子树为空 或者右子树 已经遍历完了，此时可以把root 的值放进结果集合了
+            // 如果上次访问的节点是当前节点的右孩子的话，说明右子树已经遍历完了
+            if (root.right == null || root.right == prev) {
+                res.add(root.val);
+                prev = root;
+                root = null;
+            } else { //右子树没有遍历完，需要root重新入栈，然后去遍历右子树
+                stack.push(root);
+                root = root.right;
+            }
+        }
+        return res;
+    }
+}
+```
+
+## 有序列表转换成二叉搜索树
+
+```java
+class Solution {
+    public TreeNode sortedListToBST(ListNode head) {
+		return build(head, null);
+	}
+
+	TreeNode build(ListNode start, ListNode end){
+		if(start == null || start == end){
+			return null;
+		}
+		ListNode mid = getMid(start, end);
+		TreeNode root = new TreeNode(mid.val);
+		root.left = build(start, mid);
+		root.right = build(mid.next, end);
+		return root;
+	}
+	//获得中间的那个节点
+	ListNode getMid(ListNode start, ListNode end){
+		ListNode fast = start, low = start;
+		while (fast != end && fast.next != end){
+			fast = fast.next.next;
+			low = low.next;
+		}
+		return low;
 	}
 }
 ```

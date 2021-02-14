@@ -1,3 +1,5 @@
+
+
 # IOC 加载过程
 
 ![image-20210125183755706](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210125183755706.png)
@@ -372,4 +374,147 @@ https://note.youdao.com/ynoteshare1/index.html?id=c18f0f8b8bae3dd7e4ff292f043fe9
 https://blog.csdn.net/fxp850899969/article/details/78229758
 
 https://www.it610.com/article/1295306604677242880.htm
+
+
+
+
+
+# IOC容器加载源码阅读笔记
+
+## Bean定义
+
+先看下什么是Bean定义 
+
+它是用来描述Bean的，里面存放着关于Bean的一系列信息，比如Bean的作用域，Bean所对应的Class，是 否懒加载，是否Primary等等
+
+
+
+
+
+![image-20210126200456898](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126200456898.png)
+
+
+
+![image-20210126200840485](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126200840485.png)
+
+## 进入this()
+
+![image-20210126201807860](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126201807860.png)
+
+//**会隐式调用父类的构造方法，初始化DefaultListableBeanFactory**  
+
+可以先进入到其父容器里面看下 GenericApplicationContext
+
+![image-20210126202004525](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126202004525.png)
+
+DefaultListableBeanFactory是相当重要的，从字面意思就可以看出它是一个Bean的工厂
+
+出去后然后调用下面这句话
+
+### this.reader = new AnnotatedBeanDefinitionReader(this); 
+
+里面主要做了2件事
+
+1. 注册内置BeanPostProcessor
+2. 注册相关的BeanDefinition
+
+继续往里面探索 ，
+
+![image-20210126212421712](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126212421712.png)
+
+框中的方法，会注册所有registry中的postPreocessor,  这里的registry指的是 Annotated...Context ，它也实现了BeanDefinitionRegistry这个方法。
+
+继续进入这个方法
+
+![image-20210126213114723](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126213114723.png)
+
+1. 判断容器中是否已经存在了ConfigurationClassPostProcessor Bean `org.springframework.context.annotation.internalConfigurationAnnotationProcessor`
+2. 如果不存在（当然这里肯定是不存在的），就通过RootBeanDefinition的构造方法获得 ConfigurationClassPostProcessor的BeanDefinition，RootBeanDefinition是BeanDefinition的子类 
+
+​	3. 执行registerPostProcessor方法，registerPostProcessor方法内部就是注册Bean，当然这里注册 其他Bean也是一样的流程。
+
+继续进入registerPostProcessor这个方法中
+
+![image-20210126213825230](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126213825230.png)
+
+发现这个角色被打上了ROLE_INFRASTRUCTURE 这个标签，如下图注释，可以看到：这是一个后再角色，和终端用户无关
+
+![image-20210126214004989](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126214004989.png)
+
+上面第二张图的倒数第二句，发现它是个接口方法，通过调试工具可得：发现这个registry其实它的实现类是`AnnotationConfigApplicationContext`, 然后进入`AnnotationConfigApplicationContext`中发现里面没有对应的`registerBeanDefinition` 方法，然后找到他的父类，终于得到`registerBeanDefinition` 方法定义 如下：
+
+![image-20210126214743791](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126214743791.png)
+
+
+
+点进去看下，发现核心就2行
+
+![image-20210126214924918](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126214924918.png)
+
+**DefaultListableBeanFactory中的beanDefinitionMap，beanDefinitionNames也是相当重要**。这里仅仅是注册，可以简单的理解为把一些原料放入工厂，工厂还没有真正的去生产。
+
+那么刚才注入进去的是个啥东西呢？
+
+![image-20210126215331350](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126215331350.png)
+
+就是最后一个红框里面的东西。
+
+
+
+除了注册了**ConfigurationClassPostProcessor**，还注册了其他Bean，其他Bean也都实现了其他接口，比 如BeanPostProcessor等。 BeanPostProcessor接口也是Spring的扩展点之一。
+
+### this.scanner = new ClassPathBeanDefinitionScanner(this);
+
+由于常规使用方式是不会用到AnnotationConfigApplicationContext里面的scanner的，这里的scanner 仅仅是为了程序员可以手动调用AnnotationConfigApplicationContext对象的scan方法。所以这里就不看 scanner是如何被实例化的了。
+
+## register(componentClasses);
+
+这个commponentClasses就是配置类，一般只有一个，然后深入进入，对于里面的每一个配置类Class，都会执行下面的方法
+
+![image-20210126220903865](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126220903865.png)
+
+![image-20210126221150406](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126221150406.png)
+
+![image-20210126221248591](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126221248591.png)
+
+这个registerBeanDefinition是不是又有一种似曾相似的感觉，没错，在上面注册Spring内置的Bean的时 候，已经解析过这个方法了，这里就不重复了，此时，让我们再观察下beanDefinitionMap beanDefinitionNames两个变量，除了Spring内置的Bean，还有我们传进来的Bean，这里的Bean当然就 是我们的配置类
+
+## refresh()
+
+此时 Spring还没有进行扫描，只是实例化了一个工厂，注册了一些内置的Bean和我 们传进去的配置类
+
+点进去发现里面又很多方法，只看重要的方法
+
+### prepareBeanFactory
+
+里面主要做的事为：
+
+1. 设置了一个类加载器 
+2. 设置了bean表达式解析器 
+3.  添加了属性编辑器的支持
+4. 添加了一个后置处理器：ApplicationContextAwareProcessor，此后置处理器实现了BeanPostProcessor接口 
+5. 设置了一些忽略自动装配的接口 
+6. 设置了一些允许自动装配的接口，并且进行了赋值操作
+7. 注册默认的环境变量的单例bean
+
+### invokeBeanFactoryPostProcessors(beanFactory);
+
+![image-20210126223343674](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210126223343674.png)
+
+### 进入invokeBeanFactoryPostProcessors() 里面
+
+边看代码，边看解析：
+
+1. 定义了一个Set，装载BeanName，后面会根据这个Set，来判断后置处理器是否被执行过了。
+2. 定义了两个List，一个是regularPostProcessors，用来装载BeanFactoryPostProcessor，一个是registryProcessors用来装载 BeanDefinitionRegistryPostProcessor，其中BeanDefinitionRegistryPostProcessor扩展了BeanFactoryPostProcessor。 BeanDefinitionRegistryPostProcessor有两个方法，一个是独有的postProcessBeanDefinitionRegistry方法，一个是父类的 postProcessBeanFactory方法。
+3.  循环传进来的beanFactoryPostProcessors，上面已经解释过了，一般情况下，这里永远都是空的，只有手动add beanFactoryPostProcessor，这里才会有数据。我们假设beanFactoryPostProcessors有数据，进入循环，判断postProcessor是 不是BeanDefinitionRegistryPostProcessor，因为BeanDefinitionRegistryPostProcessor扩展了BeanFactoryPostProcessor， 所以这里先要判断是不是BeanDefinitionRegistryPostProcessor，是的话，执行postProcessBeanDefinitionRegistry方法，然后 把对象装到registryProcessors里面去，不是的话，就装到regularPostProcessors。
+4. 定义了一个临时变量：currentRegistryProcessors，用来装载BeanDefinitionRegistryPostProcessor。
+5. . getBeanNamesForType，顾名思义，是根据类型查到BeanNames，这里有一点需要注意，就是去哪里找，点开这个方法的 话，就知道是循环**beanDefinitionNames（beanName的列表）**去找，这个方法以后也会经常看到。。一般情况下，只会找到一个，就是 ·、`org.springframework.context.annotation.internalConfigurationAnnotationProcessor`，也就是 `ConfigurationAnnotationProcessor`。
+6. 循环postProcessorNames，其实也就是 org.springframework.context.annotation.internalConfigurationAnnotationProcessor，判断此后置处理器是否实现了 PriorityOrdered接口（ConfigurationAnnotationProcessor也实现了PriorityOrdered接口）， 如果实现了，把它添加到currentRegistryProcessors这个临时变量中，再放入processedBeans，代表这个后置处理已经被处理过了
+7. 进行排序，PriorityOrdered是一个排序接口，如果实现了它，就说明此后置处理器是有顺序的，所以需要排序。当然目前这里只 有一个后置处理器，就是ConfigurationClassPostProcessor。
+8. 把currentRegistryProcessors合并到registryProcessors，为什么需要合并？因为一开始spring只会执行 BeanDefinitionRegistryPostProcessor独有的方法，而不会执行BeanDefinitionRegistryPostProcessor父类的方法，即 BeanFactoryProcessor接口中的方法，所以需要把这些后置处理器放入一个集合中，后续统一执行BeanFactoryProcessor接口中 的方法。当然目前这里只有一个后置处理器，就是ConfigurationClassPostProcessor。
+9. invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);可以理解为执行currentRegistryProcessors中的ConfigurationClassPostProcessor中的postProcessBeanDefinitionRegistry 方法，这就是Spring设计思想的体现了，在这里体现的就是其中的热插拔，插件化开发的思想。
+10. 
+
+
 
