@@ -171,9 +171,184 @@ class Trie {
 }
 ```
 
+## Manacher 算法
+
+https://segmentfault.com/a/1190000008484167
+
+1975年，Manacher发明了Manacher算法（中文名：马拉车算法），是一个可以在**O(n)的复杂度**中返回字符串s中**最长回文子串长度**的算法，十分巧妙。
+
+由于回文分为偶回文（比如 bccb）和奇回文（比如 bcacb），而在处理奇偶问题上会比较繁琐，所以这里我们使用一个技巧，具体做法是：
+
+1. 在字符串首尾及每个字符间都插入一个 "#"，这样可以使得原先的奇偶回文都变为奇回文；
+2. 接着再在首尾两端各插入 "$" 和 "^"，这样中心扩展寻找回文的时候会自动退出循环，不需每次判断是否越界，可参见下面代码。
+3. 上述新插入的三个字符，即 "#"、 "$" 和 "^"，必须各异，且不可以与原字符串中的字符相同。
+
+`s="abbahopxpo"`，转换为 `s_new="$#a#b#b#a#h#o#p#x#p#o#^"`。如此，s 里起初有一个偶回文 `abba` 和一个奇回文 `opxpo`，被转换为 `#a#b#b#a#` 和 `#o#p#x#p#o#`，长度都转换成了奇数。
+
+定义一个辅助数组 `int p[]`，其中 `p[i]` 表示以 i 为中心的最长回文的半径，例如：
+
+![image-20210215101602918](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210215101602918.png)
+
+可以看出，`p[i] - 1` 正好是**原字符串中最长回文串的长度**。
+
+接下来的重点就是求解 p 数组，如下图：
+
+![image-20210215101653275](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210215101653275.png)
+
+设置两个变量，mx 和 id 。mx 代表以 id 为中心的最长回文的右边界，也就是 `mx = id + p[id]`。
+
+假设：id到i之间的距离为x，j为i关于id的对称点，则 i - id = x, 2 * id - i = 2 * id - id -x = id - x。而id-x正是j的下标。
+
+所以
+
+```java
+if (i < mx)  
+    p[i] = min(p[2 * id - i], mx - i);
+```
+
+`2 * id - i` 为 i 关于 id 的对称点，即上图的 j 点，而 **`p[j]`表示以 j 为中心的最长回文半径**，因此我们可以利用 `p[j]` 来加快查找。
+
+代码如下：
+
+```java
+public class Manacher {
+	char[] init(String s) {
+		char[] charSet = new char[s.length() * 2 + 3];
+		charSet[0] = '$';
+		charSet[1] = '#';
+		int j = 2;
+		for (int i = 0; i < s.length(); i++) {
+			charSet[j++] = s.charAt(i);
+			charSet[j ++ ] = '#';
+		}
+		charSet[j] = '^';
+		return charSet;
+	}
+
+	int getMaxLen(String s) {
+		char[] charSet = init(s);
+		int[] p = new int[charSet.length];
+		int res = -1;
+		int mx = 0;
+		int id = 0;
+		for (int i = 1; i < charSet.length - 1; i++) {
+			if (i < mx) {
+				p[i] = Math.min(p[2 * id - i], mx - i);
+			} else {
+				p[i] = 1;
+			}
+			while (charSet[i - p[i]] == charSet[i + p[i]]){
+				p[i] ++;
+			}
+
+			// 我们每走一步 i，都要和 mx 比较，我们希望 mx 尽可能的远，
+			// 这样才能更有机会执行 if (i < mx)这句代码，从而提高效率
+
+			if(mx < i + p[i]){
+				id = i;
+				mx = i +  p[i];
+			}
+			res = Math.max(res, p[i] - 1);
+		}
+		return res;
+	}
+
+	@Test
+	public void test(){
+		System.out.println(getMaxLen("abbahopxpo"));// 5
+		System.out.println(getMaxLen("a"));// 1
+		System.out.println(getMaxLen("aa"));// 2
+		System.out.println(getMaxLen("abax"));// 3
+	}
+}
+```
+
+其实求最长回文串的做法还有，中心扩展，动态规划，`dp[i][j] = true , if dp[i + 1][j - 1] = true && s[i] == s[j]`。
 
 
 
+## 位运算
+
+### 补码
+
+在[计算机](https://baike.baidu.com/item/计算机/140338)系统中，数值一律用**补码**来表示和存储。原因在于，使用补码，可以将符号位和数值域统一处理；同时，加法和减法也可以统一处理。
+
+“模”实质上是计量器产生“溢出”的量，它的值在计量器上表示不出来，计量器上只能表示出模的余数。任何有模的计量器，均可化减法为加法运算。表示n位的[计算机](https://baike.baidu.com/item/计算机/140338)计量范围是0~2^n -1， 那么模就是2^n，
+
+假设当前时针指向8点，而准确时间是6点，调整时间可有以下两种拨法：一种是倒拨2小时，即8-2=6；另一种是顺拨10小时，8+10=12+6=6，即8-2=8+10=8+12-2(mod 12)．在12为模的系统里，加10和减2效果是一样的，因此凡是减2运算，都可以用加10来代替。
+
+正整数的补码是其二进制表示，与[原码](https://baike.baidu.com/item/原码)相同
+
+求负整数的补码，将其原码**除符号位外**的所有位取反（0变1，1变0，符号位为1不变）后加1
+
+### 位运算
+
+位运算原理，0s 表示1串0
+
+```
+x ^ 0s = x      x & 0s = 0      x | 0s = x
+x ^ 1s = ~x     x & 1s = x      x | 1s = 1s
+x ^ x = 0       x & x = x       x | x = x
+```
+
+利用 x ^ x = 0 的特点，可以将三个数中重复的两个数去除，只留下另一个数。`1^1^2 = 2`
+
+栗子
+
+```
+只保留掩码00111100 对应的部分
+01011011 & 00111100 = 00011000
+将掩码对应部分都设置为1
+01011011 |  00111100 = 01111111
+
+n&(n-1) 去除 n 的位级表示中最低的那一位 1。
+如 4 & 3   100 & 011 = 000
+
+n&(-n) 得到 n 的位级表示中最低的那一位 1
+-n 得到 n 的反码加 1，也就是 -n=~n+1。例如对于二进制表示 10110100，-n 得到 01001100，相与得到 00000100。
+n-(n&(-n)) 则可以去除 n 的位级表示中最低的那一位 1，和 n&(n-1) 效果一样。
+
+不用额外变量交换2个数
+a = a ^ b
+b = a ^ b
+a = a ^ b
+
+
+```
+
+### **移位运算**
+
+\>\> n 为算术右移，相当于除以 2^n，例如 -7 \>\> 2 = -2
+
+\>\>\> n 为无符号右移，左边会补上 0。例如 -7 \>\>\> 2 = 1073741822。
+
+```
+11111111111111111111111111111001  >> 2  = 11111111111111111111111111111110
+11111111111111111111111111111001  >> 2  = 00111111111111111111111111111110
+```
+
+### 求mask
+
+```
+要获取 111111111，将 0 取反即可，~0。
+
+要得到只有第 i 位为 1 的 mask，将 1 向左移动 i-1 位即可，1<<(i-1) 。例如 1<<4 得到只有第 5 位为 1 的 mask ：00010000。
+
+
+要得到 1 到 i 位为 1 的 mask，(1<<i)-1 即可，例如将 (1<<4)-1 = 00010000-1 = 00001111。
+
+要得到 1 到 i 位为 0 的 mask，只需将 1 到 i 位为 1 的 mask 取反，即 ~((1<<i)-1)。
+```
+
+### java中的位操作
+
+```java
+static int Integer.bitCount();           // 统计 1 的数量
+static int Integer.highestOneBit();      // 获得最高位
+static String toBinaryString(int i);     // 转换为二进制表示的字符串
+```
+
+​	
 
 
 
@@ -5260,3 +5435,93 @@ class Solution {
 }
 ```
 
+## 使用队列实现栈
+
+```java
+class MyStack {
+    Queue<Integer> queue = new LinkedList<>();
+    /** Initialize your data structure here. */
+    public MyStack() {
+    }    
+    /** Push element x onto stack. */
+    public void push(int x) {
+        queue.add(x);
+        int cu = queue.size();
+        while(cu > 1){
+            cu --;
+            queue.add(queue.poll());
+        }
+    }    
+    /** Removes the element on top of the stack and returns that element. */
+    public int pop() {
+        return queue.poll();
+    }    
+    /** Get the top element. */
+    public int top() {
+        return queue.peek();
+    }    
+    /** Returns whether the stack is empty. */
+    public boolean empty() {
+        return queue.isEmpty();
+    }
+}
+```
+
+## 每日温度
+
+![image-20210214110454946](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214110454946.png)
+
+使用一个栈，栈里面保存着响应元素的的下标i，如果当前元素比栈顶大，则说明当前元素下标i 减去 栈顶元素j，即为第j天温度需要等待的时间，此时栈顶元素出栈，并令res[j] = i - j，然后继续判定栈顶元素，直到栈空，或者栈顶元素，大于当前元素。
+
+```java
+class Solution {
+    public int[] dailyTemperatures(int[] T) {
+        Stack<Integer> stack = new Stack<>();
+        int length = T.length;
+        int[] result = new int[length];
+
+        for (int i = 0; i < length; i++) {
+            while (!stack.isEmpty() && T[i] > T[stack.peek()]) {
+                int pre = stack.pop();
+                result[pre] = i - pre;
+            }
+            stack.add(i);
+
+        }
+        return result;
+    }
+}
+```
+
+## 回文子串
+
+![image-20210214201650682](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214201650682.png)
+
+中心扩展算法
+
+- 枚举每一个可能的回文中心，然后用两个指针分别向左右两边拓展，当两个指针指向的元素相同的时候就拓展，否则停止拓展。
+
+在实现的时候，我们需要处理一个问题，即如何有序地枚举所有可能的回文中心，我们需要考虑回文长度是奇数和回文长度是偶数的两种情况。如果回文长度是奇数，那么回文中心是一个字符；如果回文长度是偶数，那么中心是两个字符。
+
+*n*=4，我们可以把可能的回文中心列出来：
+
+![image-20210214201827105](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214201827105.png)
+
+```java
+class Solution {
+    public int countSubstrings(String s) {
+        int n = s.length(), ans = 0;
+        for (int i = 0; i < 2 * n - 1; ++i) {
+            int l = i / 2, r = i / 2 + i % 2;
+            while (l >= 0 && r < n && s.charAt(l) == s.charAt(r)) {
+                --l;
+                ++r;
+                ++ans;
+            }
+        }
+        return ans;
+    }
+}
+```
+
+## 
