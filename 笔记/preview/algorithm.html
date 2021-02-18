@@ -66,7 +66,280 @@
         <div id='readme' style='width:70%;margin-left:20%;'>
           	<article class='markdown-body'>
             	<p>[摘自算法笔记] &amp; <a href="https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA">https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA</a></p>
-<h2 id="-">全排列问题</h2>
+<h2 id="-">字典树</h2>
+<h3 id="-">字典树应用</h3>
+<p>Trie (发音为 &quot;try&quot;) 或前缀树是一种树数据结构，用于检索字符串数据集中的键。这一高效的数据结构有多种应用：</p>
+<ul>
+<li>自动补全</li>
+<li>拼写检查</li>
+<li>ip路由</li>
+<li>打字预测</li>
+</ul>
+<h3 id="-hash-">字典树和Hash表的区别</h3>
+<p>尽管哈希表可以在 O(1) 时间内寻找键值，却无法高效的完成以下操作：</p>
+<ul>
+<li>找到具有同一前缀的全部键值。</li>
+<li>按词典序枚举字符串的数据集。</li>
+</ul>
+<p>Trie 树优于哈希表的另一个理由是，随着哈希表大小增加，会出现大量的冲突，时间复杂度可能增加到 O(n），其中 n 是插入的键的数量。与哈希表相比，Trie 树在存储多个具有相同前缀的键时可以使用<strong>较少的空间</strong>。此时 Trie 树只需要 O(m)的时间复杂度，其中 m 为键长。而在平衡树中查找键值需要 O(mlog n) 时间复杂度。</p>
+<h3 id="-">字典树的数据结构</h3>
+<pre><code class="lang-java">class TrieNode {
+        boolean isEnd;//该结点是否是一个串的结束
+        TrieNode[] next = new TrieNode[26]; //字母映射表
+}
+</code></pre>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210213201613039.png" alt="image-20210213201613039"></p>
+<p>Trie 中一般都含有大量的空链接，因此在绘制一棵单词查找树时一般会忽略空链接，同时为了方便理解我们可以画成这样：</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210213201716503.png" alt="image-20210213201716503"></p>
+<h3 id="-">基本操作</h3>
+<h4 id="-">插入</h4>
+<pre><code class="lang-java">//这个操作和构建链表很像。首先从根结点的子结点开始与 word 第一个字符进行匹配，
+// 一直匹配到前缀链上没有对应的字符，这时开始不断开辟新的结点，直到插入完 word 的最后一个字符，
+// 同时还要将最后一个结点isEnd = true;，表示它是一个单词的末尾。
+void insert(String word){
+    TrieNode node = this;
+    for (int i = 0; i &lt; word.length(); i++) {
+        int index = word.charAt(i) - &#39;a&#39;;
+        if(node.next[index] == null){
+            node.next[index] = new TrieNode();
+        }
+        node = node.next[index];
+    }
+    node.isEnd = true;
+}
+</code></pre>
+<h4 id="-">查找</h4>
+<pre><code class="lang-java">// 查找
+//从根结点的子结点开始，一直向下匹配即可，如果出现结点值为空就返回 false，
+// 如果匹配到了最后一个字符，那我们只需判断 node-&gt;isEnd即可。
+boolean search(String word){
+    TrieNode node = this;
+    for (int i = 0; i &lt; word.length(); i++) {
+        node = node.next[word.charAt(i) - &#39;a&#39;];
+        if(node == null){
+            return false;
+        }
+    }
+    return node.isEnd;
+}
+</code></pre>
+<h4 id="-">前缀匹配</h4>
+<pre><code class="lang-java">// 前缀匹配
+//和 search 操作类似，只是不需要判断最后一个字符结点的isEnd，因为既然能匹配到最后一个字符，
+// 那后面一定有单词是以它为前缀的。
+boolean startsWith(String prefix){
+    TrieNode node = this;
+    for (int i = 0; i &lt; prefix.length(); i++) {
+        node = node.next[prefix.charAt(i) - &#39;a&#39;];
+        if(node == null){
+            return false;
+        }
+    }
+    return true;
+}
+</code></pre>
+<h4 id="-">完整代码</h4>
+<pre><code class="lang-java">class Trie {
+    static class TrieNode {
+        boolean isEnd;
+        TrieNode[] next = new TrieNode[26];
+
+        //这个操作和构建链表很像。首先从根结点的子结点开始与 word 第一个字符进行匹配，
+        // 一直匹配到前缀链上没有对应的字符，这时开始不断开辟新的结点，直到插入完 word 的最后一个字符，
+        // 同时还要将最后一个结点isEnd = true;，表示它是一个单词的末尾。
+        void insert(String word){
+            TrieNode node = this;
+            for (int i = 0; i &lt; word.length(); i++) {
+                int index = word.charAt(i) - &#39;a&#39;;
+                if(node.next[index] == null){
+                    node.next[index] = new TrieNode();
+                }
+                node = node.next[index];
+            }
+            node.isEnd = true;
+        }
+
+        // 查找
+        //从根结点的子结点开始，一直向下匹配即可，如果出现结点值为空就返回 false，
+        // 如果匹配到了最后一个字符，那我们只需判断 node-&gt;isEnd即可。
+        boolean search(String word){
+            TrieNode node = this;
+            for (int i = 0; i &lt; word.length(); i++) {
+                node = node.next[word.charAt(i) - &#39;a&#39;];
+                if(node == null){
+                    return false;
+                }
+            }
+            return node.isEnd;
+        }
+
+
+        // 前缀匹配
+        //和 search 操作类似，只是不需要判断最后一个字符结点的isEnd，因为既然能匹配到最后一个字符，
+        // 那后面一定有单词是以它为前缀的。
+        boolean startsWith(String prefix){
+            TrieNode node = this;
+            for (int i = 0; i &lt; prefix.length(); i++) {
+                node = node.next[prefix.charAt(i) - &#39;a&#39;];
+                if(node == null){
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    TrieNode help;
+
+    /** Initialize your data structure here. */
+    public Trie() {
+        help = new TrieNode();
+    }
+
+    /** Inserts a word into the trie. */
+    public void insert(String word) {
+        help.insert(word);
+    }
+
+    /** Returns if the word is in the trie. */
+    public boolean search(String word) {
+        return help.search(word);
+    }
+
+    /** Returns if there is any word in the trie that starts with the given prefix. */
+    public boolean startsWith(String prefix) {
+        return help.startsWith(prefix);
+    }
+}
+</code></pre>
+<h2 id="manacher-">Manacher 算法</h2>
+<p><a href="https://segmentfault.com/a/1190000008484167">https://segmentfault.com/a/1190000008484167</a></p>
+<p>1975年，Manacher发明了Manacher算法（中文名：马拉车算法），是一个可以在<strong>O(n)的复杂度</strong>中返回字符串s中<strong>最长回文子串长度</strong>的算法，十分巧妙。</p>
+<p>由于回文分为偶回文（比如 bccb）和奇回文（比如 bcacb），而在处理奇偶问题上会比较繁琐，所以这里我们使用一个技巧，具体做法是：</p>
+<ol>
+<li>在字符串首尾及每个字符间都插入一个 &quot;#&quot;，这样可以使得原先的奇偶回文都变为奇回文；</li>
+<li>接着再在首尾两端各插入 &quot;$&quot; 和 &quot;^&quot;，这样中心扩展寻找回文的时候会自动退出循环，不需每次判断是否越界，可参见下面代码。</li>
+<li>上述新插入的三个字符，即 &quot;#&quot;、 &quot;$&quot; 和 &quot;^&quot;，必须各异，且不可以与原字符串中的字符相同。</li>
+</ol>
+<p><code>s=&quot;abbahopxpo&quot;</code>，转换为 <code>s_new=&quot;$#a#b#b#a#h#o#p#x#p#o#^&quot;</code>。如此，s 里起初有一个偶回文 <code>abba</code> 和一个奇回文 <code>opxpo</code>，被转换为 <code>#a#b#b#a#</code> 和 <code>#o#p#x#p#o#</code>，长度都转换成了奇数。</p>
+<p>定义一个辅助数组 <code>int p[]</code>，其中 <code>p[i]</code> 表示以 i 为中心的最长回文的半径，例如：</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210215101602918.png" alt="image-20210215101602918"></p>
+<p>可以看出，<code>p[i] - 1</code> 正好是<strong>原字符串中最长回文串的长度</strong>。</p>
+<p>接下来的重点就是求解 p 数组，如下图：</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210215101653275.png" alt="image-20210215101653275"></p>
+<p>设置两个变量，mx 和 id 。mx 代表以 id 为中心的最长回文的右边界，也就是 <code>mx = id + p[id]</code>。</p>
+<p>假设：id到i之间的距离为x，j为i关于id的对称点，则 i - id = x, 2 <em> id - i = 2 </em> id - id -x = id - x。而id-x正是j的下标。</p>
+<p>所以</p>
+<pre><code class="lang-java">if (i &lt; mx)  
+    p[i] = min(p[2 * id - i], mx - i);
+</code></pre>
+<p><code>2 * id - i</code> 为 i 关于 id 的对称点，即上图的 j 点，而 <strong><code>p[j]</code>表示以 j 为中心的最长回文半径</strong>，因此我们可以利用 <code>p[j]</code> 来加快查找。</p>
+<p>代码如下：</p>
+<pre><code class="lang-java">public class Manacher {
+    char[] init(String s) {
+        char[] charSet = new char[s.length() * 2 + 3];
+        charSet[0] = &#39;$&#39;;
+        charSet[1] = &#39;#&#39;;
+        int j = 2;
+        for (int i = 0; i &lt; s.length(); i++) {
+            charSet[j++] = s.charAt(i);
+            charSet[j ++ ] = &#39;#&#39;;
+        }
+        charSet[j] = &#39;^&#39;;
+        return charSet;
+    }
+
+    int getMaxLen(String s) {
+        char[] charSet = init(s);
+        int[] p = new int[charSet.length];
+        int res = -1;
+        int mx = 0;
+        int id = 0;
+        for (int i = 1; i &lt; charSet.length - 1; i++) {
+            if (i &lt; mx) {
+                p[i] = Math.min(p[2 * id - i], mx - i);
+            } else {
+                p[i] = 1;
+            }
+            while (charSet[i - p[i]] == charSet[i + p[i]]){
+                p[i] ++;
+            }
+
+            // 我们每走一步 i，都要和 mx 比较，我们希望 mx 尽可能的远，
+            // 这样才能更有机会执行 if (i &lt; mx)这句代码，从而提高效率
+
+            if(mx &lt; i + p[i]){
+                id = i;
+                mx = i +  p[i];
+            }
+            res = Math.max(res, p[i] - 1);
+        }
+        return res;
+    }
+
+    @Test
+    public void test(){
+        System.out.println(getMaxLen(&quot;abbahopxpo&quot;));// 5
+        System.out.println(getMaxLen(&quot;a&quot;));// 1
+        System.out.println(getMaxLen(&quot;aa&quot;));// 2
+        System.out.println(getMaxLen(&quot;abax&quot;));// 3
+    }
+}
+</code></pre>
+<p>其实求最长回文串的做法还有，中心扩展，动态规划，<code>dp[i][j] = true , if dp[i + 1][j - 1] = true &amp;&amp; s[i] == s[j]</code>。</p>
+<h2 id="-">位运算</h2>
+<h3 id="-">补码</h3>
+<p>在<a href="https://baike.baidu.com/item/计算机/140338">计算机</a>系统中，数值一律用<strong>补码</strong>来表示和存储。原因在于，使用补码，可以将符号位和数值域统一处理；同时，加法和减法也可以统一处理。</p>
+<p>“模”实质上是计量器产生“溢出”的量，它的值在计量器上表示不出来，计量器上只能表示出模的余数。任何有模的计量器，均可化减法为加法运算。表示n位的<a href="https://baike.baidu.com/item/计算机/140338">计算机</a>计量范围是0~2^n -1， 那么模就是2^n，</p>
+<p>假设当前时针指向8点，而准确时间是6点，调整时间可有以下两种拨法：一种是倒拨2小时，即8-2=6；另一种是顺拨10小时，8+10=12+6=6，即8-2=8+10=8+12-2(mod 12)．在12为模的系统里，加10和减2效果是一样的，因此凡是减2运算，都可以用加10来代替。</p>
+<p>正整数的补码是其二进制表示，与<a href="https://baike.baidu.com/item/原码">原码</a>相同</p>
+<p>求负整数的补码，将其原码<strong>除符号位外</strong>的所有位取反（0变1，1变0，符号位为1不变）后加1</p>
+<h3 id="-">位运算</h3>
+<p>位运算原理，0s 表示1串0</p>
+<pre><code>x ^ 0s = x      x &amp; 0s = 0      x | 0s = x
+x ^ 1s = ~x     x &amp; 1s = x      x | 1s = 1s
+x ^ x = 0       x &amp; x = x       x | x = x
+</code></pre><p>利用 x ^ x = 0 的特点，可以将三个数中重复的两个数去除，只留下另一个数。<code>1^1^2 = 2</code></p>
+<p>栗子</p>
+<pre><code>只保留掩码00111100 对应的部分
+01011011 &amp; 00111100 = 00011000
+将掩码对应部分都设置为1
+01011011 |  00111100 = 01111111
+
+n&amp;(n-1) 去除 n 的位级表示中最低的那一位 1。
+如 4 &amp; 3   100 &amp; 011 = 000
+
+n&amp;(-n) 得到 n 的位级表示中最低的那一位 1
+-n 得到 n 的反码加 1，也就是 -n=~n+1。例如对于二进制表示 10110100，-n 得到 01001100，相与得到 00000100。
+n-(n&amp;(-n)) 则可以去除 n 的位级表示中最低的那一位 1，和 n&amp;(n-1) 效果一样。
+
+不用额外变量交换2个数
+a = a ^ b
+b = a ^ b
+a = a ^ b
+
+
+</code></pre><h3 id="-"><strong>移位运算</strong></h3>
+<p>>> n 为算术右移，相当于除以 2^n，例如 -7 >> 2 = -2</p>
+<p>>>> n 为无符号右移，左边会补上 0。例如 -7 >>> 2 = 1073741822。</p>
+<pre><code>11111111111111111111111111111001  &gt;&gt; 2  = 11111111111111111111111111111110
+11111111111111111111111111111001  &gt;&gt; 2  = 00111111111111111111111111111110
+</code></pre><h3 id="-mask">求mask</h3>
+<pre><code>要获取 111111111，将 0 取反即可，~0。
+
+要得到只有第 i 位为 1 的 mask，将 1 向左移动 i-1 位即可，1&lt;&lt;(i-1) 。例如 1&lt;&lt;4 得到只有第 5 位为 1 的 mask ：00010000。
+
+
+要得到 1 到 i 位为 1 的 mask，(1&lt;&lt;i)-1 即可，例如将 (1&lt;&lt;4)-1 = 00010000-1 = 00001111。
+
+要得到 1 到 i 位为 0 的 mask，只需将 1 到 i 位为 1 的 mask 取反，即 ~((1&lt;&lt;i)-1)。
+</code></pre><h3 id="java-">java中的位操作</h3>
+<pre><code class="lang-java">static int Integer.bitCount();           // 统计 1 的数量
+static int Integer.highestOneBit();      // 获得最高位
+static String toBinaryString(int i);     // 转换为二进制表示的字符串
+</code></pre>
+<p>​    </p>
+<h2 id="-">全排列问题（回溯）</h2>
 <p>求 1- n的全排列</p>
 <p>generateP(int index)； 假设当前已经填好了p[1]~p[index - 1],正准备向p[index]位置填入数字。显然需要枚举1~n填入，但是需要当前数字x不在p[1] ~ p[index-1]中，所以就需要通过hashTable[x]==false来判断。如果可以填入，则p[index]=x，并将hashTable[x]=true;  然后通过递归处理index+1位。递归结果后需要设置hashTable[x]=false。</p>
 <p>递归边界：index == n + 1 表示前面 1~ index 已经填好数据。</p>
@@ -183,6 +456,48 @@ public class LeetCode51 {
 <h3 id="n-2-leetcode-52-">n皇后问题2（leetcode 52）</h3>
 <p>给定一个整数 <em>n</em>，返回 <em>n</em> 皇后不同的解决方案的数量。</p>
 <p>同上。</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210208141605812.png" alt="image-20210208141605812"></p>
+<p>解题思路
+使用generate(int index, int cap)，代表递归的函数，其中index表示我当当前递归到了数组nums中的第几个数，cap表示 我们还需要几个数。
+对于当前的第index数，有2中选法：选或者不选。如果选，我们调用 generate(index + 1, cap - 1), 不选则调用generate(index + 1, cap);
+每次递归开始的时候，如果cap值为0，说明我们需要找的数找够了，并将找到的数放入结果集。
+注意：每次我们选则对应的数的时候，我们就需要将其放到列表末尾，该列表保存了我们需要的所有数。进行不选调用的时候需要将刚刚才加入的数删掉。
+以上是标准的回溯算法，但是题目 给的数据有重复值，不能直接使用，例如：nums=【2，2】的时候，会得到2个 {2}。
+<strong>于是我们可以把相同的数放到一起处理，如果数x出现了y次，那么在递归时一次性处理他们，即对x分别选择1...y次。</strong>
+具体细节见代码：</p>
+<p>代码</p>
+<pre><code class="lang-java">class Solution {
+    static class Frequency{
+        int num;
+        int frequency;
+        Frequency(int _num, int _frequency){
+            num = _num;
+            frequency = _frequency;
+        }
+    }
+    List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+    List&lt;Integer&gt; temp = new ArrayList&lt;&gt;();
+    List&lt;Frequency&gt; arr = new ArrayList&lt;&gt;();
+    public List&lt;List&lt;Integer&gt;&gt; subsetsWithDup(int[] nums) {
+        res.add(new ArrayList&lt;&gt;());
+        Arrays.sort(nums);
+        arr.add(new Frequency(nums[0], 1));
+        for (int i = 1; i &lt; nums.length; i++) {
+            Frequency fr = arr.get(arr.size() - 1);
+            if(fr == null || fr.num != nums[i]){
+                fr = new Frequency(nums[i],0);
+                arr.add(fr);
+            }
+            fr.frequency ++;
+        }
+
+    for (int i = 1; i &lt;= nums.length; i++) {
+            generate(0, i);
+        }
+
+        return res;
+    }
+</code></pre>
 <h2 id="-">二分查找</h2>
 <pre><code class="lang-java">package perday;
 import org.junit.Test;
@@ -316,6 +631,61 @@ public class MyTest {
 }
 </code></pre>
 <h2 id="-">排序</h2>
+<h3 id="-">插入排序</h3>
+<p><strong>插入排序对于小规模数据或者基本有序的数据排序非常十分高效</strong></p>
+<pre><code class="lang-java">void insertSort(int[] arr){
+    //插入排序
+    for (int i = 1; i &lt; n; i++) {
+        int temp = arr[i];
+        int j = i;
+        while (j  - 1 &gt;= 0 &amp;&amp; arr[j - 1] &gt; temp) {
+            arr[j] = arr[j - 1];
+            j--;
+        }
+        arr[j] = temp;
+    }
+}
+</code></pre>
+<h3 id="-">希尔排序</h3>
+<p><a href="https://blog.csdn.net/qq_39207948/article/details/80006224">https://blog.csdn.net/qq_39207948/article/details/80006224</a></p>
+<p>首先它把较大的数据集合分割成若干个小组（逻辑上分组），然后对每一个小组分别进行插入排序，此时，插入排序所作用的数据量比较小（每一个小组），插入的效率比较高</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210120134702726.png" alt="image-20210120134702726"></p>
+<p>每个分组进行插入排序后，各个分组就变成了有序的了（整体不一定有序）</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210120134746524.png" alt="image-20210120134746524"></p>
+<p>然后缩小增量为上个增量的一半:2，继续划分分组，此时，每个分组元素个数多了，但是，数组变的部分有序了，插入排序效率同样比高</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210120134831360.png" alt="image-20210120134831360"></p>
+<p>....直到增量为1，此时数组已经基本有序，然后一趟插入排序就可以了</p>
+<pre><code class="lang-java">public class 希尔排序测试 {
+
+    static void shellSort(int[] arr) {
+        int n = arr.length;
+        for (int gap = n / 2; gap &gt; 0; gap /= 2) {
+            for (int i = gap; i &lt; n; i ++ ) {
+                insertI(arr, gap, i);
+            }
+        }
+    }
+    /**
+     * 将arr[i]插入到所在分组正确的位置上，arr[i]所在的 分组为：
+     * ... arr[i-2*gap]  arr[i-gap] arr[i] arr[i + gap]...
+     */
+    private static void insertI(int[] arr, int gap, int i) {
+        int temp = arr[i];
+        int j = i;
+        while (j - gap &gt;= 0  &amp;&amp; arr[j - gap] &gt; temp) {
+            arr[j] = arr[j - gap];
+            j -= gap;
+        }
+        arr[j] = temp;
+    }
+
+    public static void main(String[] args) {
+        int[] a = new int[]{1,5,2,6,9,8,7,3};
+        shellSort(a);
+        System.out.println(Arrays.toString(a));
+    }
+}
+</code></pre>
 <h3 id="-">归并排序</h3>
 <p>将序列两两分组，组内单独排序，然后再将这些组合并</p>
 <p>首先是两个有序区间的合并</p>
@@ -1410,7 +1780,7 @@ import org.junit.Test;
 public class Heap {
     int maxn = 100;
     int[] heap = new int[maxn];
-    int n;//堆种元素的个数
+    int n;//堆中元素的个数
 
     //1，建立大顶堆，
     //建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆
@@ -3812,6 +4182,460 @@ int getsum(int x, int y){
     }
 }
 </code></pre>
+<h1 id="-">超级经典的题</h1>
+<p>不舍得忘记</p>
+<p><a href="https://leetcode-cn.com/problems/path-with-minimum-effort/">https://leetcode-cn.com/problems/path-with-minimum-effort/</a></p>
+<h2 id="-">反转二叉树</h2>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210209200012273.png" alt="image-20210209200012273"></p>
+<pre><code class="lang-java">class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        if(root == null){
+            return null;
+        }
+        //使用BFS进行反转
+        Queue&lt;TreeNode&gt; q = new LinkedList&lt;&gt;();
+        q.offer(root);
+        while (!q.isEmpty()){
+            TreeNode p = q.poll();
+            //反转p的左右子树
+            TreeNode tmp = p.left;
+            p.left = p.right;
+            p.right = tmp;
+            if(p.left != null){
+                q.offer(p.left);
+            }
+            if(p.right != null){
+                q.offer(p.right);
+            }
+        }
+        return root;
+
+    }
+}
+</code></pre>
+<p>方法二：</p>
+<pre><code class="lang-java">class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        return reverse(root);
+    }
+    TreeNode reverse(TreeNode root){
+        if(root == null){
+            return null;
+        }
+        TreeNode l = reverse(root.left);
+        TreeNode r = reverse(root.right);
+        root.left =  r;
+        root.right = l;
+        return root;
+    }
+}
+</code></pre>
+<h2 id="-">链表反转</h2>
+<h3 id="-">方法一：使用栈</h3>
+<p>链表的反转是老生常谈的一个问题了，同时也是面试中常考的一道题。最简单的一种方式就是使用<strong>栈</strong>，因为<strong>栈是先进后出</strong>的。实现原理就是把链表节点一个个入栈，当全部入栈完之后再一个个出栈，出栈的时候在把出栈的结点串成一个新的链表。原理如下</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104114757346.png" alt="image-20210104114757346"></p>
+<pre><code class="lang-java">//反转链表的3种方式
+//使用栈的方式 
+public ListNode reverseList(ListNode head){
+    Stack&lt;ListNode&gt; stack = new Stack&lt;&gt;();
+    //把链表节点全部摘掉放到栈中
+    while (head != null){
+        stack.push(head);
+        head = head.next;
+    }
+    ListNode res = stack.pop(), p = res;
+    //栈中的结点全部出栈，然后重新连成一个新的链表
+    while (!stack.isEmpty()){
+        p.next = stack.pop();
+        p = p.next;
+    }
+    //最后一个结点就是反转前的头结点，一定要让他的next
+    //等于空，否则会构成环
+    p.next = null;
+    return res;
+}
+</code></pre>
+<h3 id="-">方法二：双链表</h3>
+<p>时间复杂度O(n)，空间复杂度O(1)</p>
+<p>双链表求解是把原链表的结点一个个摘掉，每次摘掉的链表都让他成为新的链表的头结点，然后更新新链表。下面以链表1→2→3→4为例画个图来看下。</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104123159168.png" alt="image-20210104123159168"></p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104123224899.png" alt="image-20210104123224899"></p>
+<pre><code class="lang-java">ListNode reverseList(ListNode head){
+    //新的链表
+    ListNode newHead = null;
+    while (head != null){
+        //先保存访问的节点的下一个节点，保存起来
+        //留着下一步访问的
+        ListNode temp = head.next;
+        //每次访问的原链表头节点都会成为新链表的头结点，
+        head.next = newHead;
+        //更新新链表
+        newHead = head;
+        //重新赋值，继续访问
+        head = temp;
+    }
+    return newHead;
+}
+</code></pre>
+<h3 id="-">方法三：使用递归</h3>
+<pre><code class="lang-java">ListNode reverseList3(ListNode head){
+   if(head == null || head.next == null){
+      return head;
+   }
+   //保存当前节点的下一个结点
+   ListNode next = head.next;
+   //从当前节点的下一个结点开始递归调用
+   ListNode reverse = reverseList(next);
+   //reverse是反转之后的链表，因为函数reverseList
+   // 表示的是对链表的反转，所以反转完之后next肯定
+   // 是链表reverse的尾结点，然后我们再把当前节点
+   //head挂到next节点的后面就完成了链表的反转。
+   next.next = head;
+   //这里head相当于变成了尾结点，尾结点都是为空的，否则会构成环
+   head.next = null;
+   return reverse;
+}
+</code></pre>
+<h2 id="-">倒着打印链表</h2>
+<pre><code class="lang-java">//反向打印链表
+void printReverse(ListNode head){
+    if(head != null){
+        printReverse(head.next);
+        System.out.print(head.val + &quot; &quot;);
+    }else {
+        //这句话会首先打印
+        System.out.print(&quot;反转链表为：&quot;);
+    }
+}
+</code></pre>
+<h2 id="-">回文链表</h2>
+<h3 id="-">方法一：使用双指针和反转链表</h3>
+<p><a href="https://leetcode-cn.com/problems/palindrome-linked-list-lcci/solution/di-gui-zhan-deng-3chong-jie-jue-fang-shi-zui-hao-2/">https://leetcode-cn.com/problems/palindrome-linked-list-lcci/solution/di-gui-zhan-deng-3chong-jie-jue-fang-shi-zui-hao-2/</a></p>
+<p>这题是让判断链表是否是回文链表，所谓的回文链表就是以链表中间为中心点两边对称。我们常见的有判断一个字符串是否是回文字符串，这个比较简单，可以使用两个指针，一个最左边一个最右边，两个指针同时往中间靠，判断所指的字符是否相等。</p>
+<p>但这题判断的是链表，因为这里是单向链表，只能从前往后访问，不能从后往前访问，所以使用判断字符串的那种方式是行不通的。<strong>但我们可以通过找到链表的中间节（或者偏右一点）点然后把链表后半部分反转，最后再用后半部分反转的链表和前半部分一个个比较即可。这里以示例2为例画个图看一下。</strong></p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104133852466.png" alt="image-20210104133852466"></p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104133918392.png" alt="image-20210104133918392"></p>
+<pre><code class="lang-java">public boolean isPalindrome(ListNode head) {
+    //首先找到链表的中间，或者中间靠右的那个节点
+    //这个可以使用快慢指针来实现
+    ListNode fast = head, low = head;
+    while (fast != null &amp;&amp; fast.next != null){
+        fast = fast.next.next;
+        low = low.next;
+    }
+    //fast 不是null,说明节点为奇数个
+    if(fast != null){
+        low = low.next;
+    }
+    //low指向的节点开始反转
+    low = reverse(low);
+    fast = head;
+    //
+    while (low != null){
+        if(low.val != fast.val){
+            return false;
+        }
+        low = low.next;
+        fast = fast.next;
+    }
+    return true;
+}
+
+ListNode reverse(ListNode head){
+    ListNode newNode = null;
+    while (head != null){
+        ListNode temp = head.next;
+        head.next = newNode;
+        newNode = head;
+        head = temp;
+    }
+    return newNode;
+}
+</code></pre>
+<h3 id="-">方法二：使用栈</h3>
+<p>可以将链表一个一个放到栈中，这样在访问就是倒序了。稍微优化一点的做法就是，入栈的时候记录链表长度，这样判断回文的时候，就不需要遍历整个链表了。</p>
+<h3 id="-">方法三：使用递归--逆序打印列表</h3>
+<pre><code class="lang-java">ListNode temp;
+
+public boolean isPalindrome(ListNode head) {
+    temp = head;
+    return check(head);
+}
+
+private boolean check(ListNode head) {
+    if (head == null)
+        return true;
+    boolean res = check(head.next) &amp;&amp; (temp.val == head.val);
+    temp = temp.next;
+    return res;
+}
+</code></pre>
+<h2 id="-">树形态的动态规划</h2>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210210163546707.png" alt="image-20210210163546707"></p>
+<p>使用f(o)表示选择o节点时，以o为根节点子树上的最大值。g(o) 表示不选择o节点时，以o为根节点能选择的最大权值。</p>
+<p>对于o节点，</p>
+<p>如果选择o节点：则 <code>f(o) = o.val +  g(o.left) + g(o.right)</code> // 选择o之后 o的直接子节点都不能选了</p>
+<p>如果不选则o节点，则 o的左右孩子都是可以选，也可以不选所以  <code>g(o) = Math.max(f(o.left), g(o.left)) +  Math.max(f(o.right), g(o.right))</code>。</p>
+<p>可以使用</p>
+<pre><code>Map&lt;TreeNode, Integer&gt; f = new HashMap&lt;TreeNode, Integer&gt;();
+Map&lt;TreeNode, Integer&gt; g = new HashMap&lt;TreeNode, Integer&gt;();
+</code></pre><p>来记录f, 和g。最终答案就是<code>Math.max(f.getOrDefault(root, 0), g.getOrDefault(root, 0));</code></p>
+<p><strong>注意，由于求o节点时，需要直到o子节点的，f,g所以需要使用后序遍历，这样可以保障求o时，其子节点已经求过了。</strong></p>
+<pre><code class="lang-java">HashMap&lt;TreeNode, Integer&gt; f = new HashMap&lt;&gt;(), g = new HashMap&lt;&gt;();
+
+    public int rob(TreeNode root) {
+        traverse(root);
+        return Math.max(f.getOrDefault(root, 0), g.getOrDefault(root, 0));
+    }
+    void traverse(TreeNode root){
+        if(root != null){
+            traverse(root.left);
+            traverse(root.right);
+            // f(root) = root.val +  g(root.left) + g(root.right)
+            f.put(root, root.val +  g.getOrDefault(root.left, 0) + g.getOrDefault(root.right, 0));
+//            g(root) = Math.max(f(root.left), g(root.left)) +  Math.max(f(root.right), g(root.right)
+            g.put(root, Math.max(f.getOrDefault(root.left, 0), g.getOrDefault(root.left, 0)) + Math.max(f.getOrDefault(root.right, 0), g.getOrDefault(root.right, 0)));
+        }
+    }
+</code></pre>
+<p>// 经过分析可以发现，o的状态，只与其孩子节点的状态有关，所以</p>
+<pre><code class="lang-java">class Solution {
+    static class Status {
+        int selected, notSelected;
+    }
+    public int rob(TreeNode root) {
+        Status rootS = traverse(root);
+        return Math.max(rootS.selected, rootS.notSelected);
+    }
+    Status traverse(TreeNode root){
+        Status now = new Status();
+        if(root != null){
+            Status l = traverse(root.left);
+            Status r =traverse(root.right);
+            // f(root) =root.val +  g(root.left) + g(root.right)
+            now.selected = root.val +  l.notSelected + r.notSelected;
+            now.notSelected = Math.max(l.selected, l.notSelected) + Math.max(r.selected, r.notSelected);
+        }
+        return now;
+    }
+}
+</code></pre>
+<h2 id="-">非递归遍历树</h2>
+<h3 id="-">前序</h3>
+<pre><code class="lang-java">public List&lt;Integer&gt; preorderTraversal(TreeNode root) {
+        if(root == null){
+            return new ArrayList&lt;&gt;();
+        }
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;();
+        Stack&lt;TreeNode&gt; stack = new Stack&lt;&gt;();
+        stack.add(root);
+        while (!stack.isEmpty()){
+            TreeNode p = stack.pop();
+            res.add(p.val);
+            if(p.right != null){
+                stack.add(p.right);
+            }
+            if(p.left != null){
+                stack.add(p.left);
+            }
+        }
+        return res;
+    }
+</code></pre>
+<h3 id="-">中序</h3>
+<pre><code class="lang-java">public List&lt;Integer&gt; inorderTraversal(TreeNode root) {
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;();
+        if(root == null){
+            return res;
+        }
+        Stack&lt;TreeNode&gt; stack = new Stack&lt;&gt;();
+        TreeNode cur = root;
+        while ( cur != null || !stack.isEmpty()){
+            while (cur != null){
+                stack.push(cur);
+                cur = cur.left;
+            }
+            TreeNode p = stack.pop();
+            res.add(p.val);
+            cur = p.right;
+        }
+        return res;
+    }
+</code></pre>
+<p>中序遍历的Morris  算法</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210211162807280.png" alt="image-20210211162807280"></p>
+<p>其实整个过程我们就多做一步：假设当前遍历到的节点为 xx，将 xx 的左子树中最右边的节点的右孩子指向 xx，这样在左子树遍历完成后我们通过这个指向走回了 xx，且能通过这个指向知晓我们已经遍历完成了左子树，而不用再通过栈来维护，省去了栈的空间复杂度。</p>
+<pre><code class="lang-java">class Solution {
+    public List&lt;Integer&gt; inorderTraversal(TreeNode root) {
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;();
+        if(root == null){
+            return res;
+        }
+        TreeNode predecessor = null;
+        while (root != null){
+            if(root.left != null){
+                //先找到，root 左子树上最右边的节点, 即访问root之前应该访问的节点
+                predecessor = root.left;
+                while (predecessor.right != null &amp;&amp; predecessor.right != root){
+                    predecessor = predecessor.right;
+                }
+
+                //如果predecessor.right 为空，则让predecessor.right 指向 root,
+                if(predecessor.right == null){
+                    predecessor.right = root;
+                    root = root.left; //此时root可以放心大胆的访问root的左子树了
+                }else { //此时 说明root的左子树已经访问完，
+                    //此时把root 的值放入res，然后接着访问右子树
+                    // root = predecessor.right;
+                    res.add(root.val);
+                    root = root.right;
+                    //断链，不改变树的原结构
+                    predecessor.right = null;
+                }
+            }else {
+                //左子树为空，那么直接访问当前节点，然后访问后续节点
+                res.add(root.val);
+                root = root.right;
+            }
+        }
+        return res;
+    }
+}
+</code></pre>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210211164043701.png" alt="image-20210211164043701"></p>
+<h3 id="-">后序</h3>
+<pre><code class="lang-java">class Solution {
+    public List&lt;Integer&gt; postorderTraversal(TreeNode root) {
+        List&lt;Integer&gt; res = new ArrayList&lt;Integer&gt;();
+        if (root == null) {
+            return res;
+        }
+
+        Deque&lt;TreeNode&gt; stack = new LinkedList&lt;TreeNode&gt;();
+        TreeNode prev = null; //prev 记录上次访问那个节点
+        while (root != null || !stack.isEmpty()) {
+            while (root != null) {
+                stack.push(root);
+                root = root.left;
+            }
+            root = stack.pop();
+            // 如果 右子树为空 或者右子树 已经遍历完了，此时可以把root 的值放进结果集合了
+            // 如果上次访问的节点是当前节点的右孩子的话，说明右子树已经遍历完了
+            if (root.right == null || root.right == prev) {
+                res.add(root.val);
+                prev = root;
+                root = null;
+            } else { //右子树没有遍历完，需要root重新入栈，然后去遍历右子树
+                stack.push(root);
+                root = root.right;
+            }
+        }
+        return res;
+    }
+}
+</code></pre>
+<h2 id="-">有序列表转换成二叉搜索树</h2>
+<pre><code class="lang-java">class Solution {
+    public TreeNode sortedListToBST(ListNode head) {
+        return build(head, null);
+    }
+
+    TreeNode build(ListNode start, ListNode end){
+        if(start == null || start == end){
+            return null;
+        }
+        ListNode mid = getMid(start, end);
+        TreeNode root = new TreeNode(mid.val);
+        root.left = build(start, mid);
+        root.right = build(mid.next, end);
+        return root;
+    }
+    //获得中间的那个节点
+    ListNode getMid(ListNode start, ListNode end){
+        ListNode fast = start, low = start;
+        while (fast != end &amp;&amp; fast.next != end){
+            fast = fast.next.next;
+            low = low.next;
+        }
+        return low;
+    }
+}
+</code></pre>
+<h2 id="-">使用队列实现栈</h2>
+<pre><code class="lang-java">class MyStack {
+    Queue&lt;Integer&gt; queue = new LinkedList&lt;&gt;();
+    /** Initialize your data structure here. */
+    public MyStack() {
+    }    
+    /** Push element x onto stack. */
+    public void push(int x) {
+        queue.add(x);
+        int cu = queue.size();
+        while(cu &gt; 1){
+            cu --;
+            queue.add(queue.poll());
+        }
+    }    
+    /** Removes the element on top of the stack and returns that element. */
+    public int pop() {
+        return queue.poll();
+    }    
+    /** Get the top element. */
+    public int top() {
+        return queue.peek();
+    }    
+    /** Returns whether the stack is empty. */
+    public boolean empty() {
+        return queue.isEmpty();
+    }
+}
+</code></pre>
+<h2 id="-">每日温度</h2>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214110454946.png" alt="image-20210214110454946"></p>
+<p>使用一个栈，栈里面保存着响应元素的的下标i，如果当前元素比栈顶大，则说明当前元素下标i 减去 栈顶元素j，即为第j天温度需要等待的时间，此时栈顶元素出栈，并令res[j] = i - j，然后继续判定栈顶元素，直到栈空，或者栈顶元素，大于当前元素。</p>
+<pre><code class="lang-java">class Solution {
+    public int[] dailyTemperatures(int[] T) {
+        Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+        int length = T.length;
+        int[] result = new int[length];
+
+        for (int i = 0; i &lt; length; i++) {
+            while (!stack.isEmpty() &amp;&amp; T[i] &gt; T[stack.peek()]) {
+                int pre = stack.pop();
+                result[pre] = i - pre;
+            }
+            stack.add(i);
+
+        }
+        return result;
+    }
+}
+</code></pre>
+<h2 id="-">回文子串</h2>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214201650682.png" alt="image-20210214201650682"></p>
+<p>中心扩展算法</p>
+<ul>
+<li>枚举每一个可能的回文中心，然后用两个指针分别向左右两边拓展，当两个指针指向的元素相同的时候就拓展，否则停止拓展。</li>
+</ul>
+<p>在实现的时候，我们需要处理一个问题，即如何有序地枚举所有可能的回文中心，我们需要考虑回文长度是奇数和回文长度是偶数的两种情况。如果回文长度是奇数，那么回文中心是一个字符；如果回文长度是偶数，那么中心是两个字符。</p>
+<p><em>n</em>=4，我们可以把可能的回文中心列出来：</p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214201827105.png" alt="image-20210214201827105"></p>
+<pre><code class="lang-java">class Solution {
+    public int countSubstrings(String s) {
+        int n = s.length(), ans = 0;
+        for (int i = 0; i &lt; 2 * n - 1; ++i) {
+            int l = i / 2, r = i / 2 + i % 2;
+            while (l &gt;= 0 &amp;&amp; r &lt; n &amp;&amp; s.charAt(l) == s.charAt(r)) {
+                --l;
+                ++r;
+                ++ans;
+            }
+        }
+        return ans;
+    }
+}
+</code></pre>
+<p>## </p>
 
           	</article>
         </div>
