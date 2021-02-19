@@ -1,1 +1,1 @@
-i5ting_toc -f sample.md -o
+c
