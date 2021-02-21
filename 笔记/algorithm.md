@@ -994,18 +994,12 @@ class Fraction {
 规则：
 
 - down为非负数。如果down为负数，那么令up为负数。
-- 如果改分数为0，规定其分子为0，分母为1。
+- 如果分数为0，规定其分子为0，分母为1。
 - 分子和分母没有除了1以外的公约数。
 
-分时的化简，以及四则运算：
+分数的化简，以及四则运算：
 
 ```java
-package perday;
-
-/**
- * @author TylerChen
- * @date 2020/12/13 - 14:31
- */
 public class Fraction {
 	int up, down;
 	Fraction(int up, int down){
@@ -1102,7 +1096,7 @@ Eratosthenes筛选法，时间复杂度O(nloglogn)
 public class MyTest {
 	//寻找1 ~ n的素数表
 	List<Integer> findPrime(int n){
-		//flag[index] = false,代表index是宿舍，假设初始全都是素数
+		//flag[index] = false,代表index是素数，假设初始全都是素数
 		//默认2是素数
 		boolean[] flag = new boolean[n + 1];
 		List<Integer> res = new ArrayList<>();
@@ -1872,7 +1866,7 @@ https://leetcode-cn.com/problems/friend-circles/
 
 班上有 N 名学生。其中有些人是朋友，有些则不是。他们的友谊具有是传递性。如果已知 A 是 B 的朋友，B 是 C 的朋友，那么我们可以认为 A 也是 C 的朋友。所谓的朋友圈，是指所有朋友的集合。
 
-给定一个 N * N 的矩阵 M，表示班级中学生之间的朋友关系。如果M[i][j] = 1，表示已知第 i 个和 j 个学生互为朋友关系，否则为不知道。你必须输出所有学生中的已知的朋友圈总数。
+给定一个 N * N 的矩阵 M，表示班级中学生之间的朋友关系。如果`M[i][j] = 1`，表示已知第 i 个和 j 个学生互为朋友关系。你必须输出所有学生中的已知的朋友圈总数。
 
 ```
 示例 1：
