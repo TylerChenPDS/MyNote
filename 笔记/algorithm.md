@@ -5067,7 +5067,7 @@ ListNode reverseList(ListNode head){
     while (head != null){
         //先保存访问的节点的下一个节点，保存起来
         //留着下一步访问的
-        ListNode temp = head.next;
+        ListNode temp= head.next;
         //每次访问的原链表头节点都会成为新链表的头结点，
         head.next = newHead;
         //更新新链表
@@ -5082,7 +5082,7 @@ ListNode reverseList(ListNode head){
 ### 方法三：使用递归
 
 ```java
-ListNode reverseList3(ListNode head){
+ListNode reverseList(ListNode head){
    if(head == null || head.next == null){
       return head;
    }
@@ -5465,7 +5465,7 @@ class MyStack {
 
 ![image-20210214110454946](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214110454946.png)
 
-使用一个栈，栈里面保存着响应元素的的下标i，如果当前元素比栈顶大，则说明当前元素下标i 减去 栈顶元素j，即为第j天温度需要等待的时间，此时栈顶元素出栈，并令res[j] = i - j，然后继续判定栈顶元素，直到栈空，或者栈顶元素，大于当前元素。
+使用一个栈，栈里面保存着相应元素的的下标i，如果当前元素比栈顶大，则说明当前元素下标i 减去 栈顶元素j，即为第j天温度需要等待的时间，此时栈顶元素出栈，并令res[j] = i - j，然后继续判定栈顶元素，直到栈空，或者栈顶元素，大于当前元素。
 
 ```java
 class Solution {
