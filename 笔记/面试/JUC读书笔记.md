@@ -1,118 +1,3 @@
-```java
-public class Main {
-	//线程交替输出奇偶数
-	Lock lock = new ReentrantLock();
-	Condition condition1 = lock.newCondition();
-	Condition condition2 = lock.newCondition();
-	int i = 0;
-
-	//输出奇数
-	void loopA(){
-		while (i <= 100){
-			lock.lock();
-			try{
-				if(i % 2 != 0){
-					condition1.await();
-				}
-				//输出奇数
-				System.out.println(i ++);
-				condition2.signal();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}finally {
-				lock.unlock();
-			}
-		}
-
-	}
-	//输出偶数
-	void loopB(){
-		while (i <= 100){
-			lock.lock();
-			try{
-				if(i % 2 == 0){
-					condition2.await();
-				}
-				//输出奇数
-				System.out.println(i ++);
-				condition1.signal();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}finally {
-				lock.unlock();
-			}
-		}
-	}
-
-	public static void main(String[] args) {
-		Main a = new Main();
-		new Thread(a::loopA).start();
-		new Thread(a::loopB).start();
-	}
-}
-```
-
-
-
-//信号量实现，生产者消费者问题：
-
-```java
-public class Main {
-	//生产者消费者问题，生产者消费者共享一个初始为空、大小为n的缓冲区
-	//只有缓冲区不满，生产者才能把产品放入缓冲区，否则必须等待
-	//缓冲区不空。消费者才能从中取处产品，
-	//缓冲区是临界资源，各线程必须互斥的访问
-	public static void main(String[] args) {
-		int n = 10;// 缓冲区的大小
-		Queue<String> queue = new LinkedBlockingQueue<>();
-		//实现对缓冲区的互斥访问
-		Semaphore mutex = new Semaphore(1);
-		Semaphore empty = new Semaphore(n); //表示缓冲区空闲缓冲区的数量
-		Semaphore full = new Semaphore(0);//表示产品的数量
-		Thread producer = new Thread(() -> {
-			try {
-				while (true) {
-					// 生产产品
-					Thread.sleep(100);//模拟生产
-					empty.acquire();
-					mutex.acquire();
-					// 把产品放进缓冲区
-					System.out.println("把产品放进缓冲区");
-					queue.add("产品");
-					mutex.release();
-					full.release();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		});
-
-		Thread consumer = new Thread(() -> {
-			try {
-				while (true) {
-					full.acquire();
-					mutex.acquire();
-					// 把产品放进缓冲区
-					String ele = queue.poll();
-					System.out.println("把产品取出");
-					mutex.release();
-					empty.release();
-					//消费一个产品
-					Thread.sleep(1000);//模拟消费
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		});
-		consumer.start();
-		producer.start();
-	}
-}
-
-```
-
-
-
 # 基础知识
 
 ## 什么是线程
@@ -381,7 +266,7 @@ setDaemon(true)
 public void set(T value) {
     //(1)获取当前线程（调用者线程）
     Thread t = Thread.currentThread();
-    //(2)以当前线程作为key值，去查找对应的线程变量，找到对应的map
+    //(2)获取当前线程的threadLocals变量
     ThreadLocalMap map = getMap(t);
     //(3)如果map不为null，就直接添加本地变量，key为当前线程，值为添加的本地变量值
     if (map != null)
@@ -481,7 +366,7 @@ InheritableThreadLocals代码：
 
 ![image-20210223170209659](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210223170209659.png)
 
-可以发现，创建子线程的时候，会把父线程的InheritableThreadLocals复制到子线程中去。（注意，是深拷贝，之后，父子线程里面的本地变量就不想关了）
+可以发现，创建子线程的时候，会把父线程的InheritableThreadLocals复制到子线程中去。（注意，是深拷贝，之后，父子线程里面的本地变量就不相关了）
 
 ```java
 public class Main {
@@ -1186,3 +1071,51 @@ lock()
 ![image-20210224181247133](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210224181247133.png)
 
 ![image-20210224181254337](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210224181254337.png)
+
+## StampedLock
+
+![image-20210225095039941](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225095039941.png)
+
+![image-20210225095051637](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225095051637.png)
+
+![image-20210225095103832](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225095103832.png)
+
+
+
+![image-20210225103824110](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225103824110.png)
+
+
+
+
+
+# 线程池
+
+![image-20210225105805864](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225105805864.png)
+
+![image-20210225105840088](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225105840088.png)
+
+![image-20210225110103740](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110103740.png)
+
+
+
+![image-20210225110214036](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110214036.png)
+
+![image-20210225110308284](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110308284.png)
+
+
+
+## 线程池核心参数
+
+![image-20210225110559539](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110559539.png)
+
+## 线程池类型
+
+![image-20210225110650116](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110650116.png)
+
+![image-20210225110730016](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110730016.png)
+
+![image-20210225110857941](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110857941.png)
+
+![image-20210225111210269](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225111210269.png)
+
+![image-20210225111222017](C:%5CUsers%5C19699%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20210225111222017.png)
