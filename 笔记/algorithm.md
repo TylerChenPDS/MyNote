@@ -5518,4 +5518,60 @@ class Solution {
 }
 ```
 
-## 
+## 猜灯谜
+
+![image-20210227084302759](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210227084302759.png)
+
+![image-20210227084331420](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210227084331420.png)
+
+```java
+class Solution {
+    public List<Integer> findNumOfValidWords(String[] words, String[] puzzles) {
+		// 小写字母a-z总共有26位，所以可以使用int 前26 位代表puzzle中出现的数，如果a出现，则代表第一位为1，没出现则代表为0
+		//因为压缩后，会有很多数是重复的，所以用HashMap
+		HashMap<Integer,Integer> wordHash = new HashMap<>();
+
+		for (int i = 0; i < words.length; i++) {
+			int m = 0;
+			for (int j = 0; j < words[i].length(); j++) {
+				m = m  | (1 << (words[i].charAt(j) - 'a'));
+			}
+			if(Integer.bitCount(m) <= 7){
+				wordHash.put(m, wordHash.getOrDefault(m, 0) + 1);
+			}
+
+		}
+		int hash = 0;
+		Set<Map.Entry<Integer, Integer>> entries = wordHash.entrySet();
+		List<Integer> res = new ArrayList<>(puzzles.length);
+		for (int i = 0; i < puzzles.length; i++) {
+			hash = 0;
+			for (int j = 0; j < puzzles[i].length(); j++) {
+				hash = hash | (1 << (puzzles[i].charAt(j) - 'a'));
+			}
+			int num = 0;
+
+
+		
+			int sub = hash;
+			while (sub != 0){
+				if (((1 << (puzzles[i].charAt(0) - 'a')) & sub) != 0){
+					num += wordHash.getOrDefault(sub, 0);
+				}
+				sub = (sub - 1) & hash;
+			}           
+
+
+//			for (Map.Entry<Integer,Integer> entry : entries){
+//				if((entry.getKey() & (1 << (puzzles[i].charAt(0) - 'a'))) != 0
+//						&& entry.getKey() - (entry.getKey() & hash) == 0){
+//					num += entry.getValue();
+//				}
+//			}
+			res.add(num);
+		}
+		return res;
+	}
+}
+```
+
