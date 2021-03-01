@@ -8,7 +8,7 @@
 
 ![image-20210223134928943](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210223134928943.png)
 
-一个进程中有多个线程，多个线程共享JVM进程的堆和方法去资源，每个线程里面有自己的程序计数器和虚拟机栈。程序计数器记录了当前线程让出CPU时（可能时时间片到了），线程的执行位置。
+一个进程中有多个线程，多个线程共享JVM进程的堆和方法区资源，每个线程里面有自己的程序计数器和虚拟机栈。程序计数器记录了当前线程让出CPU时（可能时时间片到了），线程的执行位置。
 
 ## 线程创建
 
@@ -400,7 +400,7 @@ java内存模型规定：所有的变量都存放在主内存中，当线程使�
 
 ![image-20210223173356308](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210223173356308.png)
 
-A把共享变量X, L1,L2没有命中，于是把X=0加载到L2, L1。A然后修改X=1,并将其写到L1,L2,和主内存。
+A想修改共享变量X, L1,L2没有命中，于是把X=0加载到L2, L1。A然后修改X=1,并将其写到L1,L2,和主内存。
 
 B获取X, L1没有命中，L2命中，于是把X=1 加载到B 的L1。然后B修改X=2,并将其写到L1,L2,和主内存。
 
@@ -640,7 +640,7 @@ cell的构造：
 
 如果cell为空，则尝试使用cas操作修改base值。
 
-如果cell不为c空，或者修改base失败，则进入下面的逻辑：
+如果cell不为空，或者修改base失败，则进入下面的逻辑：
 
 getProbe()&m确定了应该访问数组的哪一个Cell，getProbe()是获取当前线程中变量threadLocalRandomProbe的值。as.length 一般是2^n ，所以m的值其实就是 000001111之类的，getProbe()&m 其实就是随机获取了一个cell。
 
@@ -1118,4 +1118,4 @@ lock()
 
 ![image-20210225111210269](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225111210269.png)
 
-![image-20210225111222017](C:%5CUsers%5C19699%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20210225111222017.png)
+![image-20210301173043089](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210301173043089.png)
