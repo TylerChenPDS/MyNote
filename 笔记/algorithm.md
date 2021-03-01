@@ -5575,3 +5575,111 @@ class Solution {
 }
 ```
 
+## LRU
+
+![image-20210301181957674](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210301181957674.png)
+
+```java
+class LRUCache {
+	int capacity;
+	Map<Integer, Node> map;
+	DoubleList list;
+
+	
+	public LRUCache(int capacity) {
+		this.capacity = capacity;
+		map = new HashMap<>();
+		list = new DoubleList();
+	}
+
+	public int get(int key) {
+		Node node = map.get(key);
+		if(node == null){
+			return -1;
+		}else {
+			list.remove(node);
+			list.addLast(node);
+			return node.val;
+		}
+	}
+
+	public void put(int key, int value) {
+		if(map.containsKey(key)){
+			Node node = map.get(key);
+			list.remove(node);
+			list.addLast(node);
+			node.val = value;
+		}else {
+			//添加的时候，容量可能会不够
+			if(list.getSize() == capacity){//此时已满
+				Node node = list.removeFirst();
+				map.remove(node.key);
+			}
+			Node newNode = new Node(key,value);
+			list.addLast(newNode);
+			map.put(key, newNode);
+		}
+	}
+
+
+	static class Node {
+		int val;
+		int key;
+		Node prev, next;
+		Node(int key,int value){
+			this.key = key;
+			val = value;
+		}
+	}
+
+
+	//实现双链表
+	static class DoubleList{
+		//头指针，尾指针
+		Node head, tail;
+		//链表中元素的个数
+		int size;
+
+		DoubleList(){
+			head = new Node(0,0);
+			tail = new Node(0,0);
+			//带空头和空尾的双链表
+			head.next = tail;
+			tail.prev = head;
+			size = 0;
+		}
+
+		//向末尾添加一个元素
+		void addLast(Node x){
+			x.prev = tail.prev;
+			x.next = tail;
+			tail.prev.next = x;
+			tail.prev = x;
+			size ++;
+		}
+
+		//删除链表中的一个元素
+		void remove(Node x){
+			x.prev.next = x.next;
+			x.next.prev = x.prev;
+			size --;
+		}
+
+		//删除链表中的第一个元素
+		Node removeFirst(){
+			if(head.next == tail){//此时链表为空
+				return null;
+			}
+			Node first = head.next;
+			head.next = first.next;
+			first.next.prev = head;
+			size --;
+			return first;
+		}
+		int getSize(){
+			return size;
+		}
+	}	
+}
+```
+
