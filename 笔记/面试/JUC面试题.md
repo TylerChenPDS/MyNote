@@ -115,13 +115,13 @@ tryReleaseShared(int)//共享方式。尝试释放资源，成功则返回true�
 ```
 
 - AQS 在 内 部 定 义 了 一 个 volatile int state 变 量 ， 表 示 同 步 状 态 。以 ReentrantLock 为例，state 初始化为 0，表示未锁定状态。A 线程 lock()时，会调用 tryAcquire()独占该锁并将 state+1。此后，其他线程再 tryAcquire()时就会失败，直到 A 线程 unlock()到 state=0（即释放锁）为止，其它线程才有机会获取该锁。当然，释放锁之前，A 线程自己是可以重复获取此锁的（state 会累加），这就是可重入的概念。但要注意，获取多少次就要释放多么次，这样才能保证 state 是能回到零态的。
-
 - AQS 通 过 Node 内 部 类 构 成 的 一 个 双 向 链 表 结 构 的 同 步 队 列 ， 来 完 成 线 程 获 取 锁 的 排 队 工 作 ， 当 有 线 程 获 取 锁 失 败 后 ， 就 被 添 加 到 队 列 末 尾 。
-
 - Node 类 是 对 要 访 问 同 步 代 码 的 线 程 的 封 装 ， 包 含 了 线 程 本 身 及 其 状 态 叫 waitStatus（ 有 五 种 不 同 取 值 ， 分 别 表 示 是 否 被 阻 塞 ， 是 否 等 待 唤 醒 ， 是 否 已 经 被 取 消 等 ） ， 每 个 Node 结 点 关 联 其 prev 结 点 和 next 结 点 ， 方 便 线 程 释 放 锁 后 快 速 唤 醒 下 一 个 在 等 待 的 线 程 ， 是 一 个 FIFO 的 过 程 。 
 - Node 类 有 两 个 常 量 ， SHARED 和 EXCLUSIVE， 分 别 代 表 共 享 模 式 和 独 占 模 式 。 所 谓 共 享 模 式 是 一 个 锁 允 许 多 条 线 程 同 时 操 作 （ 信 号 量 Semaphore 就 是 基 于 AQS 的 共 享 模 式 实 现 的 ） ， 独 占 模 式 是 同 一 个 时 间 段 只 能 有 一 个 线 程 对 共 享 资 源 进 行 操 作 ， 多 余 的 请 求 线 程 需 要 排 队 等 待 （ 如 ReentranLock） 
 - AQS 通 过 内 部 类 ConditionObject 构 建 等 待 队 列 （ 可 有 多 个 ） ， 当 Condition 调 用 wait() 方 法 后 ， 线 程 将 会 加 入 等 待 队 列 中 ， 而 当Condition 调 用 signal() 方 法 后 ， 线 程 将 从 等 待 队 列 转 移 动 同 步 队 列 中 进 行 锁 竞 争 。
 - AQS 和 Condition 各 自 维 护 了 不 同 的 队 列 ， 在 使 用 Lock 和Condition 的 时 候 ， 其 实 就 是 两 个 队 列 的 互 相 移 动 。
+
+![image-20210224133852610](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210224133852610.png)
 
 ## 请 尽 可 能 详 尽 地 对 比 下 Synchronized 和 ReentrantLock 的 异 同 ？
 
@@ -147,9 +147,7 @@ ReentrantLock 内 部 自 定 义 了 同 步 器 Sync（ Sync 既 实 现 了 A
 
 ##  除 了 ReetrantLock， 你 还 接 触 过 JUC 中 的 哪 些 并 发 工 具 ？
 
-通 常 所 说 的 并 发 包 （ JUC） 也 就 是 java.util.concurrent 及 其 子 包 ， 集 
-
-中 了 Java 并 发 的 各 种 基 础 工 具 类 ， 具 体 主 要 包 括 几 个 方 面 ： 
+通 常 所 说 的 并 发 包 （ JUC） 也 就 是 java.util.concurrent 及 其 子 包 ， 集 中 了 Java 并 发 的 各 种 基 础 工 具 类 ， 具 体 主 要 包 括 几 个 方 面 ： 
 
 提 供 了 CountDownLatch、 CyclicBarrier、 Semaphore 等 ， 比 Synchronized 更 加 高 级 ， 可 以 实 现 更 加 丰 富 多 线 程 操 作 的 同 步 结 构 。
 
@@ -289,6 +287,12 @@ maximumPoolSize： 线 程 池 允 许 的 最 大 线 程 数 。
 keepAliveTime： 超 过 核 心 线 程 数 时 闲 置 线 程 的 存 活 时 间 。 
 
 workQueue： 任 务 执 行 前 保 存 任 务 的 队 列 ， 保 存 由 execute 方 法 提 交 的 Runnable 任 务 。
+
+
+
+![image-20210225110559539](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110559539.png)
+
+
 
 
 

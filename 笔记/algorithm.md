@@ -1,5 +1,48 @@
 [摘自算法笔记] & https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA
 
+## 快速幂
+
+求a^b 快速做法
+
+1. 如果b是奇数则有a^b = a * a^(b-1)
+2. 如果b是偶数则有a^b = a ^(b/2) * a ^(b/2)
+
+```java
+long binaryPow(long a, long b) {
+    if (b == 0) {
+        return 1;
+    }
+    if ((b & 1) == 1) { //如果b是奇数
+        return b * binaryPow(a, b - 1);
+    }
+    long muti = binaryPow(a, b / 2);
+    return muti * muti;
+}
+```
+
+
+
+```java
+// 比个栗子，
+	// 如求a^13  13的二进制位1101 
+	// a ^ 13 = (a ^ 1) * (a ^ 4) * (a ^ 8)
+	long binaryPow(long a, long b) {
+		long res = 1;
+		while (b > 0){
+			if((b & 1) == 1){
+				res = res * a;
+			}
+			a = a * a;
+			b >>= 1;
+		}
+		return res;
+	}
+```
+
+
+
+
+
 ## 字典树
 
 ### 字典树应用
