@@ -367,7 +367,7 @@ a = a ^ b
 
 ```
 11111111111111111111111111111001  >> 2  = 11111111111111111111111111111110
-11111111111111111111111111111001  >> 2  = 00111111111111111111111111111110
+11111111111111111111111111111001  >>> 2  = 00111111111111111111111111111110
 ```
 
 ### 求mask
@@ -438,6 +438,59 @@ public class MyTest {
 }
 
 ```
+
+
+
+### 消除重复的全排列
+
+![image-20210305200654560](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210305200654560.png)
+
+注意这个用例
+
+![image-20210305200750147](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210305200750147.png)
+
+```java
+class Solution {
+    boolean[] vis;
+    int n;
+    char[] temp;
+    List<String> res;
+    String target;
+    public String[] permutation(String s) {
+        n = s.length();
+        vis = new boolean[n];
+        temp = new char[n];
+        res = new ArrayList<>();
+        target = s;
+        generate(0);
+        return res.toArray(new String[0]);
+    }
+    //temp的第index位置该放哪个字符？
+    void generate(int index){
+        if(index == n){
+            res.add(new String(temp));
+            return;
+        }
+        HashSet<Character> set = new HashSet<>();
+        for(int i = 0;i < n; i ++){
+            //如果当前位置，以经放过位于i的字符，则不用再放了
+            if(set.contains(target.charAt(i))){
+                continue;
+            }
+            if(!vis[i]){
+                vis[i] = true;
+                set.add(target.charAt(i));
+                temp[index] = target.charAt(i);
+                generate(index + 1);java
+                vis[i] = false;
+            }
+        }
+
+    }
+}
+```
+
+
 
 
 
@@ -544,7 +597,7 @@ public class LeetCode51 {
 
 
 解题思路
-使用generate(int index, int cap)，代表递归的函数，其中index表示我当当前递归到了数组nums中的第几个数，cap表示 我们还需要几个数。
+使用generate(int index, int cap)，代表递归的函数，其中index表示我当前递归到了数组nums中的第几个数，cap表示 我们还需要几个数。
 对于当前的第index数，有2中选法：选或者不选。如果选，我们调用 generate(index + 1, cap - 1), 不选则调用generate(index + 1, cap);
 每次递归开始的时候，如果cap值为0，说明我们需要找的数找够了，并将找到的数放入结果集。
 注意：每次我们选则对应的数的时候，我们就需要将其放到列表末尾，该列表保存了我们需要的所有数。进行不选调用的时候需要将刚刚才加入的数删掉。
@@ -580,12 +633,45 @@ class Solution {
 			fr.frequency ++;
 		}
 
-    for (int i = 1; i <= nums.length; i++) {
-            generate(0, i);
+        for (int i = 1; i <= nums.length; i++) {
+                generate(0, i);
+            }
+
+            return res;
         }
 
-        return res;
-    }
+	/**
+	 *
+	 * @param index 当前选到了第几个
+	 * @param cap 还能选则的个数
+	 */
+	void generate(int index, int cap){
+		if(cap == 0){
+			// 当前已经选够了
+			res.add(new ArrayList<>(temp));
+            return;
+		}
+		if(index == arr.size()){
+			return;
+		}
+
+		//选择当前这个
+		// 当前这个可以选择 1次-frequency次
+		Frequency item = arr.get(index);
+		for (int i = 1; i <= item.frequency && i <=  cap ; i++) {
+			// 选择i次
+			for (int j = 0; j < i; j++) {
+				temp.add(item.num);
+			}
+			generate(index + 1, cap - i);
+			for (int j = 0; j < i; j++) {
+				temp.remove(temp.size() - 1);
+			}
+		}
+		//不选择当前不选择当前这个
+		generate(index + 1, cap);
+	}
+}
 ```
 
 
@@ -3149,7 +3235,7 @@ Bellman-Ford算法也可以解决单源最短路径的问题，但是可以处�
 
 ![image-20201220135923016](https://gitee.com/CTLQAQ/picgo/raw/master/image-20201220135923016.png)
 
-显然：**零环和正环不会影响最短路径的求解，因为0环的存在不能使得最短路径变得更短**。如果负环无法从源点出发到达，则最短路径的求解不会收到影响。
+显然：**零环和正环不会影响最短路径的求解，因为0环的存在不能使得最短路径变得更短**。如果负环无法从源点出发到达，则最短路径的求解不会受到影响。
 
 BF算法返回一个bool值，如果存在从源点可达的负环，那么函数将返回false；**否则将返回true，此时数组d中存放的就是从源点到达各顶点的最短距离**。
 
@@ -3358,7 +3444,7 @@ bool SPFA(int s){
                     q.push(v);
                     inq[v] = true;
                     num[v] ++;
-                    if(v >= n){
+                    if(nums[v] >= n){
                         return false;
                     }
                 }
@@ -5000,8 +5086,6 @@ public class LC567 {
 
 # 超级经典的题
 
-不舍得忘记
-
 https://leetcode-cn.com/problems/path-with-minimum-effort/
 
 
@@ -5408,8 +5492,6 @@ class Solution {
 
 ### 后序
 
-
-
 ```java
 class Solution {
     public List<Integer> postorderTraversal(TreeNode root) {
@@ -5431,6 +5513,7 @@ class Solution {
             if (root.right == null || root.right == prev) {
                 res.add(root.val);
                 prev = root;
+                //此时需要让栈在弹出一个数据，而不是把当前root的左子树节点放进去，所以设置为null
                 root = null;
             } else { //右子树没有遍历完，需要root重新入栈，然后去遍历右子树
                 stack.push(root);
@@ -5723,6 +5806,196 @@ class LRUCache {
 			return size;
 		}
 	}	
+}
+```
+
+
+
+
+
+## 链表环路检测
+
+https://leetcode-cn.com/problems/linked-list-cycle-lcci/
+
+![image-20210104154117106](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210104154117106.png)
+
+假设c为快慢指针相遇的点，那么在c点时，快指针移动的距离是慢指针的2倍，那么可得等式`(m+y)*2 = m + xn +y` (x表示快指针走了n圈) 。变形后可得`m = xn-y = n-y+(x-1)*n`。
+
+**此时令快指针重新回到a**，并且令快指针每步走一个单位距离。当快指针走`m= n-y+(x-1)*n`  个单位时, 慢指针走了 `n-y+(x-1)*n` 步，走`(x-1)*n`x相当于没走，然后走`n-y`步，刚好到达b点，所以此时快慢指针又相遇了。
+
+```java
+public ListNode detectCycle(ListNode head) {
+    if(head == null || head.next == null){
+        return null;
+    }
+    ListNode fast = head, low = head;
+    while (fast != null && fast.next != null){
+        fast = fast.next.next;
+        low = low.next;
+        if(fast == low){
+            break;
+        }
+    }
+    //说明单链表能遍历完，链表没环
+    if(fast != low){
+        return null;
+    }
+
+    fast = head;
+    while (fast != low){
+        fast = fast.next;
+        low = low.next;
+    }
+    return fast;
+}
+```
+
+
+
+## 中缀表达式转后缀表达式 并计算
+
+https://leetcode-cn.com/problems/basic-calculator/submissions/
+
+```java
+class Solution {
+    public int calculate(String s) {
+		//删除第一个 - 或者 +
+        
+        //以下代码为了应对："- (3 + (4 + 5))"
+		int signal = 1;
+		int i = 0;
+		while (i < s.length()){
+			if(s.charAt(i) == '-'){
+				
+				for (int j = i + 1; j < s.length(); j++) {
+					if(s.charAt(j) >= '0' && s.charAt(j) <= '9'){
+						i = 0;
+						break;
+					}
+					if(s.charAt(j) == '('){
+                        signal = -1;
+                        i = j;
+						break;
+					}
+				}
+				break;
+			}else if(s.charAt(i) == '(' || s.charAt(i) >= '0' && s.charAt(i) <= '9'){
+				break;
+			}
+			i ++;
+		}
+        
+		return signal * toValue( transToPostFix(s.substring(i)));
+
+	}
+
+
+	// 将中缀表达式转为后缀表达式， ( 优先级最高，* /次之 + -最低，同级运算符从左到右进行
+	// 算法：从左到右扫描字符串，遇到数字直接直接输出，遇到+ - * / 则：
+	// 也就是： * / 可以放到+ - 的上面， （ 则可以直接入栈，+ - 只能放到栈底或者 （上面。如果是同级，则先出栈在入栈。
+	//遇到 ） 则将距离栈顶最近 (上面的元素全部出栈
+	List<Object> transToPostFix(String str) {
+		Stack<Character> stack = new Stack<>();
+		List<Object> res = new ArrayList<>();
+		int i = 0;
+		//为了应对 -2 + 1这种情况：  如果把括号去掉，那么操作数肯定被2个数包裹
+		boolean lastOpIsNum = false;//上次操作是否是数
+		int signal = 1;
+		while (i < str.length()) {
+			char ch = str.charAt(i);
+			switch (ch) {
+				case '+':
+				case '-':
+					if(!lastOpIsNum){ // 如果上次操作拿到的是符号，则返回，并把符号记录下
+						if(ch == '-'){
+							signal = -1;
+						}
+						i ++;
+						break;
+					}
+					while (!stack.isEmpty() && !(stack.peek() == '(')) {
+						res.add(stack.pop());
+					}
+					stack.push(ch);
+					i++;
+					break;
+				case '*':
+				case '/':
+					//对于* / 需要把同级的弹出
+					while (!stack.isEmpty() && (stack.peek() == '*' || stack.peek() == '/')) {
+						res.add(stack.pop());
+					}
+					stack.push(ch);
+					i++;
+					break;
+				case '(':
+					stack.push(ch);
+					i++;
+					break;
+				case ')':
+					while (!stack.isEmpty()) {
+						char c = stack.pop();
+						if (c == '(') {
+							break;
+						}
+						res.add(c);
+					}
+					i++;
+					break;
+				case ' ':
+					i++;
+					break; //如果是空格直接忽略
+				default: //其他情况，就是数字
+					int num = 0;
+					while (i < str.length() && ch >= '0' && ch <= '9') {
+						num = (num * 10) + ch - '0';
+						i++;
+						if (i < str.length()) {
+							ch = str.charAt(i);
+						}
+					}
+					res.add(num * signal);
+					lastOpIsNum = true;
+					//把signal 重置
+					signal = 1;
+			}
+		}
+		while (!stack.isEmpty()) {
+			res.add(stack.pop());
+		}
+		return res;
+	}
+
+	//后缀表达式计算值
+	// 遇到数直接入栈，遇到+ - * / 则取出2个数进行操作，然后入栈
+	int toValue(List<Object> postfix) {
+		Stack<Integer> stack = new Stack<>();
+		int value = 0;
+		for (Object op : postfix) {
+			if (op instanceof Integer) {
+				stack.push((Integer) op);
+			} else {
+				char ch = (char) op;
+				int y = stack.pop(), x = stack.pop();
+				switch (ch) {
+					case '+':
+						value = x + y;
+						break;
+					case '-':
+						value = x - y;
+						break;
+					case '*':
+						value = x * y;
+						break;
+					case '/':
+						value = x / y;
+						break;
+				}
+				stack.push(value);
+			}
+		}
+		return stack.pop();
+	}
 }
 ```
 

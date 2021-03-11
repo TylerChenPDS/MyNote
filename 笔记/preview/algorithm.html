@@ -66,6 +66,38 @@
         <div id='readme' style='width:70%;margin-left:20%;'>
           	<article class='markdown-body'>
             	<p>[摘自算法笔记] &amp; <a href="https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA">https://mp.weixin.qq.com/s/AWsL7G89RtaHyHjRPNJENA</a></p>
+<h2 id="-">快速幂</h2>
+<p>求a^b 快速做法</p>
+<ol>
+<li>如果b是奇数则有a^b = a * a^(b-1)</li>
+<li>如果b是偶数则有a^b = a ^(b/2) * a ^(b/2)</li>
+</ol>
+<pre><code class="lang-java">long binaryPow(long a, long b) {
+    if (b == 0) {
+        return 1;
+    }
+    if ((b &amp; 1) == 1) { //如果b是奇数
+        return b * binaryPow(a, b - 1);
+    }
+    long muti = binaryPow(a, b / 2);
+    return muti * muti;
+}
+</code></pre>
+<pre><code class="lang-java">// 比个栗子，
+    // 如求a^13  13的二进制位1101 
+    // a ^ 13 = (a ^ 1) * (a ^ 4) * (a ^ 8)
+    long binaryPow(long a, long b) {
+        long res = 1;
+        while (b &gt; 0){
+            if((b &amp; 1) == 1){
+                res = res * a;
+            }
+            a = a * a;
+            b &gt;&gt;= 1;
+        }
+        return res;
+    }
+</code></pre>
 <h2 id="-">字典树</h2>
 <h3 id="-">字典树应用</h3>
 <p>Trie (发音为 &quot;try&quot;) 或前缀树是一种树数据结构，用于检索字符串数据集中的键。这一高效的数据结构有多种应用：</p>
@@ -4629,7 +4661,162 @@ Map&lt;TreeNode, Integer&gt; g = new HashMap&lt;TreeNode, Integer&gt;();
     }
 }
 </code></pre>
-<p>## </p>
+<h2 id="-">猜灯谜</h2>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210227084302759.png" alt="image-20210227084302759"></p>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210227084331420.png" alt="image-20210227084331420"></p>
+<pre><code class="lang-java">class Solution {
+    public List&lt;Integer&gt; findNumOfValidWords(String[] words, String[] puzzles) {
+        // 小写字母a-z总共有26位，所以可以使用int 前26 位代表puzzle中出现的数，如果a出现，则代表第一位为1，没出现则代表为0
+        //因为压缩后，会有很多数是重复的，所以用HashMap
+        HashMap&lt;Integer,Integer&gt; wordHash = new HashMap&lt;&gt;();
+
+        for (int i = 0; i &lt; words.length; i++) {
+            int m = 0;
+            for (int j = 0; j &lt; words[i].length(); j++) {
+                m = m  | (1 &lt;&lt; (words[i].charAt(j) - &#39;a&#39;));
+            }
+            if(Integer.bitCount(m) &lt;= 7){
+                wordHash.put(m, wordHash.getOrDefault(m, 0) + 1);
+            }
+
+        }
+        int hash = 0;
+        Set&lt;Map.Entry&lt;Integer, Integer&gt;&gt; entries = wordHash.entrySet();
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;(puzzles.length);
+        for (int i = 0; i &lt; puzzles.length; i++) {
+            hash = 0;
+            for (int j = 0; j &lt; puzzles[i].length(); j++) {
+                hash = hash | (1 &lt;&lt; (puzzles[i].charAt(j) - &#39;a&#39;));
+            }
+            int num = 0;
+
+
+
+            int sub = hash;
+            while (sub != 0){
+                if (((1 &lt;&lt; (puzzles[i].charAt(0) - &#39;a&#39;)) &amp; sub) != 0){
+                    num += wordHash.getOrDefault(sub, 0);
+                }
+                sub = (sub - 1) &amp; hash;
+            }           
+
+
+//            for (Map.Entry&lt;Integer,Integer&gt; entry : entries){
+//                if((entry.getKey() &amp; (1 &lt;&lt; (puzzles[i].charAt(0) - &#39;a&#39;))) != 0
+//                        &amp;&amp; entry.getKey() - (entry.getKey() &amp; hash) == 0){
+//                    num += entry.getValue();
+//                }
+//            }
+            res.add(num);
+        }
+        return res;
+    }
+}
+</code></pre>
+<h2 id="lru">LRU</h2>
+<p><img src="https://gitee.com/CTLQAQ/picgo/raw/master/image-20210301181957674.png" alt="image-20210301181957674"></p>
+<pre><code class="lang-java">class LRUCache {
+    int capacity;
+    Map&lt;Integer, Node&gt; map;
+    DoubleList list;
+
+
+    public LRUCache(int capacity) {
+        this.capacity = capacity;
+        map = new HashMap&lt;&gt;();
+        list = new DoubleList();
+    }
+
+    public int get(int key) {
+        Node node = map.get(key);
+        if(node == null){
+            return -1;
+        }else {
+            list.remove(node);
+            list.addLast(node);
+            return node.val;
+        }
+    }
+
+    public void put(int key, int value) {
+        if(map.containsKey(key)){
+            Node node = map.get(key);
+            list.remove(node);
+            list.addLast(node);
+            node.val = value;
+        }else {
+            //添加的时候，容量可能会不够
+            if(list.getSize() == capacity){//此时已满
+                Node node = list.removeFirst();
+                map.remove(node.key);
+            }
+            Node newNode = new Node(key,value);
+            list.addLast(newNode);
+            map.put(key, newNode);
+        }
+    }
+
+
+    static class Node {
+        int val;
+        int key;
+        Node prev, next;
+        Node(int key,int value){
+            this.key = key;
+            val = value;
+        }
+    }
+
+
+    //实现双链表
+    static class DoubleList{
+        //头指针，尾指针
+        Node head, tail;
+        //链表中元素的个数
+        int size;
+
+        DoubleList(){
+            head = new Node(0,0);
+            tail = new Node(0,0);
+            //带空头和空尾的双链表
+            head.next = tail;
+            tail.prev = head;
+            size = 0;
+        }
+
+        //向末尾添加一个元素
+        void addLast(Node x){
+            x.prev = tail.prev;
+            x.next = tail;
+            tail.prev.next = x;
+            tail.prev = x;
+            size ++;
+        }
+
+        //删除链表中的一个元素
+        void remove(Node x){
+            x.prev.next = x.next;
+            x.next.prev = x.prev;
+            size --;
+        }
+
+        //删除链表中的第一个元素
+        Node removeFirst(){
+            if(head.next == tail){//此时链表为空
+                return null;
+            }
+            Node first = head.next;
+            head.next = first.next;
+            first.next.prev = head;
+            size --;
+            return first;
+        }
+        int getSize(){
+            return size;
+        }
+    }    
+}
+</code></pre>
 
           	</article>
         </div>
