@@ -1,7 +1,3 @@
-java语言细节：改
-
-
-
 ## 语言细节
 
 ### 按值传递和按引用传递的区别
@@ -284,6 +280,20 @@ put
 4. 如果当前位置的 `hashcode == MOVED == -1`,则需要进行扩容。
 5. 如果都不满足，则利用 synchronized 锁写入数据。
 6. 如果数量大于 `TREEIFY_THRESHOLD` 则要转换为红黑树。
+
+### ArrayList
+
+以无参构造方法创建ArrayList时，实际上初始化赋值的是一个空数组。当真正对数组进行添加元素操作时，才真正分配容量。即向数组中添加第一个元素时，数组容量扩为 10（默认容量）。
+
+add()
+
+添加元素的时候首先会调用ensureCapacityInternal(size + 1), 这个方法，他首先让size + 1和 默认容量DEFAULT_CAPACITY进行比较，然后取其较大值作为minCapacity ，然后调用 ensureExplicitCapacity()。这个方法会让minCapacity和 elementData长度进行比较，如果大于数组长度，则需要扩容，调用grow(minCapacity)方法。这个方法首先会`int newCapacity = oldCapacity + (oldCapacity >> 1);` 计算新的容量（原容量的1.5倍），然后判断新容量是否大于minCapacity ，如果不大于，则令新容量等于最小容量。然后判断新容量是否大于最大容量，如果大于最大容量，则令其等于Integer.maxValue。最后调用Arrays.copyOf()。把原数组里面的值拷贝到新数组里面
+
+
+
+
+
+
 
 ## NIO/BIO/AIO
 
@@ -589,3 +599,13 @@ poll本质上和select没有区别，它将用户传入的数组拷贝到内核�
 (3)epoll==>时间复杂度O(1)
 
 **epoll可以理解为event poll**，不同于忙轮询和无差别轮询，epoll会把哪个流发生了怎样的I/O事件通知我们。所以我们说epoll实际上是**事件驱动（每个事件关联上fd）**的，此时我们对这些流的操作都是有意义的。
+
+
+
+
+
+# 参考
+
+https://www.cnblogs.com/aspirant/p/9166944.html
+
+https://snailclimb.gitee.io/javaguide/

@@ -156,6 +156,10 @@ tryReleaseShared(int)//共享方式。尝试释放资源，成功则返回true�
 
 ![image-20210224133852610](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210224133852610.png)
 
+
+
+
+
 ##  Synchronized 和 ReentrantLock 的 异 同 ？
 
 锁 的 实 现 原 理 基 本 是 为 了 达 到 一 个 目 的 ： 让 所 有 的 线 程 都 能 看 到 某 种 标 记 。 Synchronized 通 过 在 对 象 头 中 设 置 标 记 实 现 了这 一 目 的 ， 是 一 种 JVM 原 生 的 锁 实 现 方 式 ， 而 ReentrantLock 以 及 所 有 的 基 于 Lock 接 口 的 实 现 类 ， 都 是 通 过 用 一 个 volitile 修 饰 的 int 型 变 量 ， 并 保 证 每 个 线 程 都 能 拥 有 对 该 int 的 可 见 性 和 原 子 修 改 ， 其 本 质 是 基 于 所 谓 的 AQS 框 架 。
@@ -326,6 +330,8 @@ keepAliveTime： 超 过 核 心 线 程 数 时 闲 置 线 程 的 存 活 时
 workQueue： 任 务 执 行 前 保 存 任 务 的 队 列 ， 保 存 由 execute 方 法 提 交 的 Runnable 任 务 。
 
 
+
+## 拒绝策略
 
 ![image-20210225110559539](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210225110559539.png)
 
@@ -503,6 +509,30 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 使 用 ThreadLocal 要 注 意 remove！ ThreadLocal 的 实 现 是 基 于 一 个 所 谓 的 ThreadLocalMap， 在 ThreadLocalMap 中 ， 它 的 key 是 一 个 弱 引 用 。 通 常 弱 引 用 都 会 和 引 用 队 列 配 合 清 理 机 制 使 用 ， 但 是 ThreadLocal 是 个 例 外 ， 它 并 没 有 这 么 做 。  
 
 这 意 味 着 ， 废 弃 项 目 的 回 收 依 赖 于 显 式 地 触 发 ， 否 则 就 要 等 待 线 程 结 束 ， 进 而 回 收 相 应 ThreadLocalMap！ 这 就 是 很 多 OOM 的 来 源 ， 所 以 通 常 都 会 建 议 ， 应 用 一 定 要 自 己 负 责 remove， 并 且 不 要 和 线 程 池 配 
+
+
+
+# ReentrantLock 原理分析
+
+ReentrantLock 是一个可重入的独占锁，同时只能有一个线程获得该锁，其他获取该锁的线程会被阻塞而被放入该锁的AQS阻塞队列里面的。
+
+它继承了lock接口，里面有一个内部类Sync（抽象类） 继承了 AQS， Sync有2个实现类 NonfairSync 和FariSync。在这里AQS的state状态值被实现为线程获取该锁的可重入次数，state=0的时候表示改锁没有被任何线程持有。
+
+源码分析：
+
+lock()
+
+lock() 会委任给sync.lock()。NonfairSync 的lock是这样实现的：使用CAS设置state为1，state期望值是0，如果设置成功，则调用setExclusiveOwnerThread方法， 将exclusiveOwnerThread这个变量设置为当前线程。如果没有设置成功，则调用acquire(1) 这个方法是AQS里面实现好的方法，他会首先调用tryAcquire(arg)尝试获取锁，如果尝试失败则调用addWaiter 使用cas + 自选把当前线程包装成节点放置AQS队尾。tryAcquire(arg)在NonfairSync 是这样做的：调用父类的nonfairTryAcquire() 方法，这个方法会再次判断state的状态，如果还是不是0，则判断当前线程是不是锁的拥有者，如果是的话，设置当前state + 1 这里使用的是普通的方法，因为别的线程不可能执行到这一步。
+
+如果是公平锁的话tryAcquire(arg) 在state=0的时候，会调用`!hasQueuedPredecessors()`这个方法会在AQS队列为空（head==tail），或者是队列种第一个元素为当前线程的时候返回false。如果满足条件，这是用cas设置值
+
+unlock()
+
+回调用sync的release。如果当前线程持有锁，则会让状态-1，当状态为0的时候，会设置exclusiveOwnerThread变量为null。
+
+
+
+
 
 
 
