@@ -584,6 +584,53 @@ public class LeetCode51 {
 
 
 
+
+
+
+
+```java
+public class N皇后问题 {
+	public int totalNQueens(int n) {
+		helper((1 << n) - 1, 0, 0, 0);
+		return count;
+	}
+	// limit 表示是n皇后问题，例如如果是4皇后那么limit = 0000...0001111
+	// colLim 表示当前已经摆放皇后的列数，例如4皇后问题，第一列和第4列摆放上了皇后 则colLim = 000...0001001
+	// leftDiaLim 左斜线限制，如果上一层皇后摆放位置为0010，那么当前层的leftDiaLim=0100，
+	//      因为上一层皇后摆放到了第三列，如果当前摆到第二列的话就会在斜线上冲突。假设当前层摆放之后colLim = 1011，那么下一层leftDiaLim
+	//      是0110（其实就是左移1位）
+	// rightDiaLim 右斜线限制，和左斜线限制类似
+	int count = 0;
+
+	void helper(int limit, int colLim, int leftDiaLim, int rightDiaLim) {
+		//此时所有位置都已经摆上了皇后
+		if (colLim == limit) {
+			count++;
+			return;
+		}
+		//colLim | leftDiaLim | rightDiaLim 结果位1的位置都是不能摆放皇后的位置，
+		// 取反之后为1的位置就是可以摆放的位置
+		int pos = limit & ~(colLim | leftDiaLim | rightDiaLim);
+		while (pos != 0){
+			//取出最后个1，就是当前应该放皇后的位置
+			int mostRightOne = pos & (-pos);
+//			等价于int mostRightOne = pos & (~pos + 1);
+			//去掉最右边的1
+			pos = pos & (pos - 1);
+//			等价于pos = pos - mostRightOne;
+			helper(limit,
+					colLim | mostRightOne,
+					(leftDiaLim | mostRightOne) << 1,
+					(rightDiaLim | mostRightOne) >> 1);
+
+		}
+	}
+}
+
+```
+
+
+
 ### n皇后问题2（leetcode 52）
 
 给定一个整数 *n*，返回 *n* 皇后不同的解决方案的数量。
@@ -5996,6 +6043,172 @@ class Solution {
 		}
 		return stack.pop();
 	}
+}
+```
+
+## 从暴力到动态规划
+
+主要是先使用递归暴力做法，然后看是否有重叠子问题，如果有可以使用记忆化搜索，如果还不通过，则将其改造成动态规划，画图以优化。
+
+![image-20210317192848353](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210317192848353.png)
+
+```java
+public class 凑硬币 {
+	//首先使用暴力递归的做法
+	public int waysToChange(int n) {
+		return dfs(new int[]{1, 5, 10, 25}, 0, n);
+	}
+
+	/**
+	 * @param index 当选选到index号硬币
+	 * @param rest  还需要凑的钱数
+	 * @return
+	 */
+	int dfs(int[] arr, int index, int rest) {
+		if (rest == 0) {
+			return 1;
+		}
+		//此时没有硬币可以选了，但是rest > 0
+		if (index == arr.length) {
+			return 0;
+		}
+		// 当前硬币可以选0 ,1,2,...次
+		int num = 0;
+		for(int i = 0; i * arr[index] <= rest; i ++){
+			num += dfs(arr, index + 1, rest - i * arr[index]);
+		}
+		return num;
+	}
+}
+```
+
+
+
+```java
+public class 凑硬币_记忆化搜索 {
+	// 假设n= 10
+	// 选择5次1分硬币，和选择1次5分硬币都可以走到递归dfs(arr,2,5) 这就出现了重复的子问题，而且随着n的增大，这样的问题会越来越多
+	// 所以可以使用记忆化搜索的方法
+	public int waysToChange(int n) {
+		//可以看到index 的变化范围是0-arr.length，rest 也是 0-n
+		// 所以定义二维数组dp[arr.length + 1][n + 1]
+		int[][] dp = new int[n + 1][n + 1];
+		for (int i = 0; i < n + 1; i++) {
+			Arrays.fill(dp[i], -1);
+		}
+		return dfs(new int[]{1, 5, 10, 25}, 0, n,dp);
+	}
+
+	/**
+	 * 改造，在每一个return处进行改造
+	 * @param index 当选选到index号硬币
+	 * @param rest  还需要凑的钱数
+	 */
+	int dfs(int[] arr, int index, int rest,int[][] dp) {
+		if(dp[index][rest] != -1){
+			return dp[index][rest];
+		}
+		if (rest == 0) {
+			dp[index][rest] = 1;
+			return dp[index][rest];
+		}
+		//此时没有硬币可以选了，但是rest > 0
+		if (index == arr.length) {
+			dp[index][rest] = 0;
+			return dp[index][rest];
+		}
+		// 当前硬币可以选0 ,1,2,...次
+		int num = 0;
+		for(int i = 0; i * arr[index] <= rest; i ++){
+			num += dfs(arr, index + 1, rest - i * arr[index],dp);
+		}
+		dp[index][rest] = num;
+		return num;
+	}
+}
+```
+
+```java
+public class 凑硬币_记忆化搜索改成_动态规划 {
+	//首先使用暴力递归的做法
+	public int waysToChange(int n) {
+		int[] arr = new int[]{1,5,10,25};
+		int[][] dp = new int[arr.length + 1][n + 1];
+		//确定初始值，dp[n][i] 都是0, dp[i][0] 都是1, 但是由下面的遍历顺序可以知道，每次都是从下往上，从左到右
+//		for (int i = 0; i <= arr.length; i++) {
+//			dp[i][0] = 1;
+//		}等价于
+		dp[arr.length][0] = 1;
+
+		//确定遍历顺序，f(index, rest) 可由 f(index, rest - i * arr[i])得到，
+		// 所以遍历顺序为从下到上，从左到右
+		for (int i = arr.length - 1; i >= 0; i--) {
+			for (int rest = 0; rest <= n; rest++) {
+				int num = 0;
+				for (int k = 0; k * arr[i] <= rest; k++) {
+					num += dp[i + 1][rest - k * arr[i]];
+				}
+				dp[i][rest] = num;
+			}
+		}
+		// 需要的最终状态为dp[0][n]
+//		return dfs(new int[]{1, 5, 10, 25}, 0, n);
+		return dp[0][n];
+	}
+
+	/**
+	 * @param index 当选选到index号硬币
+	 * @param rest  还需要凑的钱数
+	 * @return
+	 */
+	int dfs(int[] arr, int index, int rest) {
+		if (rest == 0) {
+			return 1;
+		}
+		//此时没有硬币可以选了，但是rest > 0
+		if (index == arr.length) {
+			return 0;
+		}
+		// 当前硬币可以选0 ,1,2,...次
+		int num = 0;
+		for (int i = 0; i * arr[index] <= rest; i++) {
+			num += dfs(arr, index + 1, rest - i * arr[index]);
+		}
+		return num;
+	}
+}
+
+```
+
+```java
+public class 凑硬币_动态规划_优化 {
+	//首先使用暴力递归的做法
+	public int waysToChange(int n) {
+		int[] arr = new int[]{1,5,10,25};
+		long[][] dp = new long[arr.length + 1][n + 1];
+		dp[arr.length][0] = 1;
+
+
+		for (int i = arr.length - 1; i >= 0; i--) {
+			for (int rest = 0; rest <= n; rest++) {
+				// 在图上画出状态转移过成可得，dp[i][rest] 其实其实等于dp[index+1][rest] + dp[index][rest-arr[i]]，
+				// 对于这种，暴力递归中的枚举问题，一般都可以优化
+//				int num = 0;
+//				for (int k = 0; k * arr[i] <= rest; k++) {
+//					num += dp[i + 1][rest - k * arr[i]];
+//				}
+//				dp[i][rest] = num;
+				//改为
+				dp[i][rest] = dp[i + 1][rest];
+				if(rest - arr[i] >= 0){
+					dp[i][rest] += dp[i][rest - arr[i]];
+				}
+			}
+		}
+		// 需要的最终状态为dp[0][n]
+		return (int)dp[0][n] % 1000000007;
+	}
+
 }
 ```
 

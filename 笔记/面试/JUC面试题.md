@@ -168,9 +168,11 @@ tryReleaseShared(int)//共享方式。尝试释放资源，成功则返回true�
 
 ReentrantLock 有很多Synchronized 没有的功能。如
 
+ReentrantLock 实现了tryLock() 这样的非阻塞方式。
+
 等 待 可 中 断 ： 当 持 有 锁 的 线 程 长 期 不 释 放 锁 的 时 候 ， 正 在 等 待 的 线 程 可 以 选 择 放 弃 等 待 ， 对 处 理 执 行 时 间 非 常 长 的 同 步 块 很 有 用 。
 
-带 超 时 的 获 取 锁 尝 试 ： 在 指 定 的 时 间 范 围 内 获 取 锁 ， 如 果 时 间 到 了 仍 然 无 法 获 取 则 返 回 。 可 以 判 断 是 否 有 线 程 在 排 队 等 待 获 取 锁 。
+带 超 时 的 获 取 锁 尝 试，如tryLock(long timeout, TimeUnit unit) ： 在 指 定 的 时 间 范 围 内 获 取 锁 ， 如 果 时 间 到 了 仍 然 无 法 获 取 则 返 回 。 可 以 判 断 是 否 有 线 程 在 排 队 等 待 获 取 锁 。
 
 可 以 实 现 公 平 锁 。 从 锁 释 放 角 度 ， Synchronized 在 JVM 层 面 上 实 现 的 ， 不 但 可 以 通 过 一 些 监 控 工 具 监 控 Synchronized 的 锁 定 ， 而 且 在 代 码 执 行 出 现 异 常 时 ， JVM 会 自 动 释 放 锁 定 ； 但 是 使 用 Lock 则 不 行 ， Lock 是 通 过 代码 实 现 的 ， 要 保 证 锁 定 一 定 会 被 释 放 ， 就 必 须 将 unLock() 放 到 finally{} 中 。 
 
@@ -198,11 +200,19 @@ ReentrantLock 内 部 自 定 义 了 同 步 器 Sync（ Sync 既 实 现 了 A
 
 
 
-## 请 谈 谈 ReadWriteLock 和 StampedLock
+## StampedLock
 
-读 写 锁 基 于 的 原 理 是 多 个 读 操 作 不 需 要 互 斥 ， 如 果 读 锁 试 图 锁 定 时 ， 写 锁 是 被 某 个 线 程 持 有 ， 读 锁 将 无 法 获 得 ， 而 只 好 等 待 对 方 操 作 结 束 ， 这 样 就 可 以 自 动 保 证 不 会 读 取 到 有 争 议 的 数 据 。 ReadWriteLock 代 表 了 一 对 锁 ， 下 面 是 一 个 基 于 读 写 锁 实 现 的 数 据 结 构 ， 当 数 据 量 较 大 ， 并 发 读 多 、 并 发 写 少 的 时 候 ， 能 够 比 纯 同 步 版 本 凸 显 出 优 势 。
+StampedLock是JDK8版本里面新增的锁，当获取锁的时候，会返回一个long的变量。这个戳记代表锁的状态。
 
-所 以 ， JDK 在 后 期 引 入 了 StampedLock， 在 提 供 类 似 读 写 锁 的 同 时 ， 还 支 持 优 化 读 模 式 。 优 化 读 基 于 假 设 ， 大 多 数 情 况 下 读 操 作 并 不 会 和 写 操 作 冲 突 ， 其 逻 辑 是 先 试 着 修 改 ， 然 后 通 过 validate 方 法 确 认 是 否 进 入 了 写 模 式 ， 如 果 没 有 进 入 ， 就 成 功 避 免 了 开 销 ； 如 果 进 入 ， 则 尝 试 获 取 读 锁 。
+它提供了三种读写控制：
+
+- 写锁。是一个排他锁，但是是一个不可重入的写锁。
+- 悲观读锁。也是一个不可重入的读锁。
+- 乐观读锁：没有使用cas设置锁的状态，仅仅通过位运算测试，如果没有线程获取写锁，则简单返回一个非0的stamp。由于没有使用真正的锁，所以效率很高，但是需要赋值一份变量到方法栈，因为操作数据的时候可能其他线程已经修改了变量，所以方法栈里面的数据可能是一个快照。
+
+使用乐观读锁要按照以下步骤
+
+![image-20210313213059392](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210313213059392.png)
 
 
 
@@ -308,6 +318,16 @@ CountDownLatch 是 不 可 以 重 置 的 ， 所 以 无 法 重 用 ， Cycli
 CyclicBarrier 的 基 本 操 作 组 合 就 是 await， 当 所 有 的 伙 伴 都 调 用 了 await， 才 会 继 续 进 行 任 务 ， 并 自 动 进 行 重 置 。
 
 CountDownLatch 目 的 是 让 一 个 线 程 等 待 其 他 N 个 线 程 达 到 某 个 条 件 后 ， 自 己 再 去 做 某 个 事 （ 通 过 CyclicBarrier 的 第 二 个 构 造 方 法 public CyclicBarrier(int parties, Runnable barrierAction)， 在 新 线 程 里 做 事 可 以 达 到 同 样 的 效 果 ） 。 而 CyclicBarrier 的 目 的 是 让 N 多 线 程 互 相 等 待 直 到 所 有 的 都 达 到 某 个 状 态 ， 然 后 这 N 个 线 程 再 继 续 执 行 各 自 后 续 （ 通 过 CountDownLatch 在 某 些 场 合 也 能 完 成 类 似 的 效 果 ） 。
+
+## 并发包的队列了解哪些？
+
+按照实现可以分为阻塞队列和非阻塞队列，前者使用锁实现后者使用cas非阻塞算法
+
+ConcurrentLinkedQueue 是一个非阻塞队列，计算size的时候需要遍历整个数组（因为使用cas操作无法保证入队和出队的整体原子性，cas只能保证队一个变量操作的原子性）
+
+LinkedBlockingQueue 是一个阻塞队列，里面有2个ReentrantLock的实例，分别控制元素入队和出堆的原子性，里面还有两个条件变量notEmpty 和notFull，用来存放进队或者出队时被阻塞的线程。 offer和put，offer添加元素失败会返回false，put（如果队列满了，则一直会等），而且put还可以对中断进行响应（因为它加锁时调用的时lockInterruptibily），与之对应的操作还有poll() 和take() 操作。
+
+ArrayBlockingQueue 是一个阻塞队列，底层使用数组实现，但是里面只有一个ReentrantLock的实例，锁的粒度比较大。
 
 # 线程池相关
 
@@ -479,9 +499,11 @@ B获取X, L1没有命中，L2命中，于是把X=1 加载到B 的L1。然后B修
 
 
 
-# ThreadLocal 
+# 源码分析
 
-## ThreadLocal 原理
+## ThreadLocal 
+
+### ThreadLocal 原理
 
 Thread 类中定义了2个变量，threadLocals 和 InheritableThreadLocals，它们都是ThreadLocalMap 变量，初始值都为null。
 
@@ -491,7 +513,7 @@ InheritableThreadLocals的一个特性就是让子线程可以访问父线程中
 
 实现子线程访问父线程ThreadLocalMap的值呢？创建子线程的时候，会把父线程的InheritableThreadLocals复制到子线程中去。（注意，是深拷贝，之后，父子线程里面的本地变量就不相关了）
 
-## ThreadLocal 内存泄漏问题
+### ThreadLocal 内存泄漏问题
 
 ```java
 static class Entry extends WeakReference<ThreadLocal<?>> {
@@ -512,7 +534,7 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 
 
 
-# ReentrantLock 原理分析
+## ReentrantLock 原理分析
 
 ReentrantLock 是一个可重入的独占锁，同时只能有一个线程获得该锁，其他获取该锁的线程会被阻塞而被放入该锁的AQS阻塞队列里面的。
 
@@ -522,13 +544,31 @@ ReentrantLock 是一个可重入的独占锁，同时只能有一个线程获得
 
 lock()
 
-lock() 会委任给sync.lock()。NonfairSync 的lock是这样实现的：使用CAS设置state为1，state期望值是0，如果设置成功，则调用setExclusiveOwnerThread方法， 将exclusiveOwnerThread这个变量设置为当前线程。如果没有设置成功，则调用acquire(1) 这个方法是AQS里面实现好的方法，他会首先调用tryAcquire(arg)尝试获取锁，如果尝试失败则调用addWaiter 使用cas + 自选把当前线程包装成节点放置AQS队尾。tryAcquire(arg)在NonfairSync 是这样做的：调用父类的nonfairTryAcquire() 方法，这个方法会再次判断state的状态，如果还是不是0，则判断当前线程是不是锁的拥有者，如果是的话，设置当前state + 1 这里使用的是普通的方法，因为别的线程不可能执行到这一步。
+lock() 会委任给sync.lock()。NonfairSync 的lock是这样实现的：使用CAS设置state为1，state期望值是0，如果设置成功，则调用setExclusiveOwnerThread方法， 将exclusiveOwnerThread这个变量设置为当前线程。如果没有设置成功，则调用acquire(1) 这个方法是AQS里面实现好的方法，他会首先调用tryAcquire(arg)尝试获取锁，如果尝试失败则调用addWaiter 使用cas + 自选把当前线程包装成节点放置AQS队尾。**tryAcquire(arg)**在NonfairSync 是这样做的：调用父类的nonfairTryAcquire() 方法，这个方法会再次判断state的状态，如果还是不是0，则判断当前线程是不是锁的拥有者，如果是的话，设置当前state + 1 这里使用的是普通的方法，因为别的线程不可能执行到这一步。
 
 如果是公平锁的话tryAcquire(arg) 在state=0的时候，会调用`!hasQueuedPredecessors()`这个方法会在AQS队列为空（head==tail），或者是队列种第一个元素为当前线程的时候返回false。如果满足条件，这是用cas设置值
 
 unlock()
 
-回调用sync的release。如果当前线程持有锁，则会让状态-1，当状态为0的时候，会设置exclusiveOwnerThread变量为null。
+会调用sync的release。如果当前线程持有锁，则会让状态-1，当状态为0的时候，会设置exclusiveOwnerThread变量为null。
+
+tryLock(long timeout, TimeUnit unit)
+
+调用  tryAcquire(arg) ||    doAcquireNanos(arg, nanosTimeout);doAcquireNanos,首先会把当前线程封装成Node.EXCLUSIVE节点，并将其放到队尾，然后在指定时间内不断执行尝试获取锁（调用tryAcquire）。
+
+
+
+
+
+## ReentrantReadWriteLock原理分析
+
+ReentrantReadWriteLock里面维护了一个ReadLock 和一个 WriteLock，里面一个Sync继承了AQS，并且提供了公平和非公平的实现。ReentrantReadWriteLock 使用一个state表示读和 写2种状态，高16位表示获取读锁的次数，低16位表示获取到写锁线程的可重入次数。
+
+写锁的lock, 也是委托给sync，调用sync的tryAcquire()， 如果获取失败则进入阻塞队列。
+
+读锁的lock, 委托给sync，调用tryAcqureShared方法，首先判断是否有别的线程获取写锁。如果没有的话，判断阻塞队列第一个元素是否在尝试获取写锁，如果是的话，则使用自选操作与其竞争。如果不是的话，则获取读锁修改状态。
+
+注意：读锁的unlock需要使用自旋操作，因为可能有多个线程同时调用unlock释放读锁。
 
 
 
@@ -691,3 +731,8 @@ public class Main {
 }
 ```
 
+
+
+# 参考
+
+java并发变成之美
