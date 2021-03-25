@@ -69,6 +69,7 @@ Trie 树优于哈希表的另一个理由是，随着哈希表大小增加，会
 class TrieNode {
 		boolean isEnd;//该结点是否是一个串的结束
 		TrieNode[] next = new TrieNode[26]; //字母映射表
+    	（int pass;(经过的次数) int end;）
 }
 ```
 
@@ -143,21 +144,25 @@ boolean startsWith(String prefix){
 class Trie {
     static class TrieNode {
 		boolean isEnd;
-		TrieNode[] next = new TrieNode[26];
+		TrieNode[] next = new TrieNode[26];// HashMap<Char, TriNode> next
+        int pass, end;
 
 		//这个操作和构建链表很像。首先从根结点的子结点开始与 word 第一个字符进行匹配，
 		// 一直匹配到前缀链上没有对应的字符，这时开始不断开辟新的结点，直到插入完 word 的最后一个字符，
 		// 同时还要将最后一个结点isEnd = true;，表示它是一个单词的末尾。
 		void insert(String word){
 			TrieNode node = this;
+            node.pass ++;
 			for (int i = 0; i < word.length(); i++) {
 				int index = word.charAt(i) - 'a';
 				if(node.next[index] == null){
 					node.next[index] = new TrieNode();
 				}
 				node = node.next[index];
+                node.pass ++;
 			}
 			node.isEnd = true;
+            node.end ++;
 		}
 
 		// 查找
@@ -186,9 +191,29 @@ class Trie {
 					return false;
 				}
 			}
+            //node.pass是以prefix结尾的
 			return true;
 		}
+        
+        public void delete(String word) {
+			if (search(word)) {
+				char[] chs = word.toCharArray();
+				TrieNode node = this;
+				int index = 0;
+				for (int i = 0; i < chs.length; i++) {
+					index = chs[i] - 'a';
+					if (--node.nexts[index].pass == 0) {
+						node.nexts[index] = null;
+						return;
+					}
+					node = node.nexts[index];
+				}
+				node.end--;
+			}
+		}
 	}
+    
+    
 
     TrieNode help;
 
@@ -481,7 +506,7 @@ class Solution {
                 vis[i] = true;
                 set.add(target.charAt(i));
                 temp[index] = target.charAt(i);
-                generate(index + 1);java
+                generate(index + 1);
                 vis[i] = false;
             }
         }
@@ -1081,6 +1106,10 @@ void mergeSort(int[] a) {
 	}
 ```
 
+
+
+
+
 ### 快速排序
 
 第一轮，a[] , left = 0, right = a.length - 1
@@ -1163,7 +1192,91 @@ public class MyTest {
 }
 ```
 
+### 桶排序/基数排序
 
+首先创建10个桶（可以是队列），将按照个位将数扔到各个桶中，然后将数按照桶的顺序将数在倒出
+
+```
+29 13 14 15 26 34  排序
+按照个位数依此入桶
+13 14 15 26 29
+   34
+出桶
+13 14 34 15 26 29
+按照十位数依此入桶
+13 26 34
+14 29
+15
+出桶
+13 14 15 26 29 34
+
+```
+
+
+
+```java
+public class 基数排序 {
+
+	public static void radixSort(int[] arr) {
+		if (arr == null || arr.length < 2) {
+			return;
+		}
+		radixSort(arr, 0, arr.length - 1, maxbits(arr));
+	}
+
+	//求一个数组中最大值有多少位，O(N)
+	public static int maxbits(int[] arr) {
+		int max = Integer.MIN_VALUE;
+		for (int i = 0; i < arr.length; i++) {
+			max = Math.max(max, arr[i]);
+		}
+		int res = 0;
+		while (max != 0) {
+			res++;
+			max /= 10;
+		}
+		return res;
+	}
+
+	//digit 表示最大数的位数
+	public static void radixSort(int[] arr, int begin, int end, int digit) {
+		final int radix = 10;
+		int i = 0, j = 0;
+		//临时数组的长度
+		int[] bucket = new int[end - begin + 1];
+		//总共入桶触出桶需要digit次
+		for (int d = 1; d <= digit; d++) {
+			//count代表 d 位数（d=1表示个位，2表示十位），出现的次数
+			// count[i] 表示（d=1时）个位数位i的数有多少个
+			int[] count = new int[radix];
+			for (i = begin; i <= end; i++) {
+				j = getDigit(arr[i], d);
+				count[j]++;
+			}
+			//将其处理成前缀和
+			// count[i] 表示个数小于等于i的个数
+			for (i = 1; i < radix; i++) {
+				count[i] = count[i] + count[i - 1];
+			}
+            //从后往前是要保障数组的顺序
+			for (i = end; i >= begin; i--) {
+				j = getDigit(arr[i], d);
+				bucket[count[j] - 1] = arr[i];
+				count[j]--;
+			}
+			for (i = begin, j = 0; i <= end; i++, j++) {
+				arr[i] = bucket[j];
+			}
+		}
+	}
+
+	//获取x的倒数第d为数，
+	public static int getDigit(int x, int d) {
+		return ((x / ((int) Math.pow(10, d - 1))) % 10);
+	}
+}
+
+```
 
 
 
@@ -2276,7 +2389,7 @@ public class Heap {
 	int[] heap = new int[maxn];
 	int n;//堆中元素的个数
 
-	//1，建立大顶堆，
+	//1，建立大顶堆， O(N)
 	//建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆
 	void createHeap(int[] a) {
 		n = a.length;
@@ -2706,7 +2819,7 @@ void dijkstra() {
     d[C1] = 0;   
     for (int i = 0; i < N; ++i) {
         int u = -1, min = INF;
-        //寻找从起点开始到达点的最小值
+        //寻找从起点开始到达点的最小值，这个地方可以使用小跟堆改进，时间复杂度为O(NlogN)
         for (int j = 0; j < N; ++j) {
             if (visited[j] == false && d[j] < min) {
                 u = j;
@@ -3745,7 +3858,7 @@ int kruskal(int m){//m为边的个数
 
 ## 拓扑排序
 
-**拓扑排序的很重要的一个应用是判断一个给定的图是否是有向无环图。**
+**拓扑排序的很重要的一个应用是判断一个给定的图是否是有向无环图。** 时间复杂度O(N+E)
 
 DAG(Directed Acyclic Graph, DAG): 有向无环图。
 
@@ -5615,6 +5728,39 @@ class Solution {
     }
 }
 ```
+
+
+
+### 后序2
+
+还可以使用2个栈来遍历，第一个栈和先序的栈作用是一样的，不过进去的顺序是先左在右，然后从第一个栈出去的顺序就是 头右左，然后出去的时候放到第二个栈里面，然后再出去，就变成了左右头。
+
+```java
+public static void posOrderUnRecur1(Node head) {
+    System.out.print("pos-order: ");
+    if (head != null) {
+        Stack<Node> s1 = new Stack<Node>();
+        Stack<Node> s2 = new Stack<Node>();
+        s1.push(head);
+        while (!s1.isEmpty()) {
+            head = s1.pop();
+            s2.push(head);
+            if (head.left != null) {
+                s1.push(head.left);
+            }
+            if (head.right != null) {
+                s1.push(head.right);
+            }
+        }
+        while (!s2.isEmpty()) {
+            System.out.print(s2.pop().value + " ");
+        }
+    }
+    System.out.println();
+}
+```
+
+
 
 ## 有序列表转换成二叉搜索树
 
