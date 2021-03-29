@@ -476,13 +476,25 @@ JDK7之后，原本存放在永久代的字符串常量池被移动至java堆中
 
 这时候进行内存分配的仅包括类变量（static）
 
-1. 这里所设置的初始值"通常情况"下是数据类型默认的零值（如0、0L、null、false等），比如我们定义了`public static int value=111` ，那么 value 变量在准备阶段的初始值就是 0 而不是111（初始化阶段才会赋值）。特殊情况：比如给 value 变量加上了 fianl 关键字`public static final int value=111` ，那么准备阶段 value 的值就被赋值为 111。
+1. 这里所设置的初始值"通常情况"下是数据类型默认的零值（如0、0L、null、false等），比如我们定义了`public static int value=111` ，那么 value 变量在准备阶段的初始值就是 0 而不是111（初始化阶段才会赋值）。
+
+   
+
+   
+
+2. 特殊情况：比如给 value 变量加上了 fianl 关键字`public static final int value=111` ，那么准备阶段 value 的值就被赋值为 111。
 
 **初始化**
 
-初始化是类加载的最后一步，也是真正执行类中定义的 Java 程序代码(字节码)，初始化阶段是执行初始化方法 `<clinit> ()`方法的过程。
+- 初始化是类加载的最后一步，也是真正执行类中定义的 Java 程序代码(字节码)，初始化阶段是执行初始化方法 `<clinit> ()`方法的过程。
 
-对于`<clinit>（）` 方法的调用，虚拟机会自己确保其在多线程环境中的安全性。因为 `<clinit>（）` 方法是带锁线程安全，所以在多线程环境下进行类初始化的话可能会引起死锁，并且这种死锁很难被发现。
+- `<clinit>()`方法是由编译器自动收集类中的所有类变量的赋值动作和静态语句块（static{}块） 中的语句合并产生的， 编译器收集的顺序是由语句在源文件中出现的顺序决定的， 静态语句块中只能访问到定义在静态语句块之前的变量， 定义在它之后的变量， 在前面的静态语句块可以赋值， 但是不能访问  。
+- Java虚拟机会保证在子类的`<clinit>()`方法执行前， 父类的`<clinit>()`方法已经执行完毕  
+- `<clinit>()`方法对于类或接口来说并不是必需的， 如果一个类中没有静态语句块， 也没有对变量的赋值操作， 那么编译器可以不为这个类生成`<clinit>()`方法  .
+- 行接口的`<clinit>()`方法不需要先执行父接口的`<clinit>()`方法，因为只有当父接口中定义的变量被使用时， 父接口才会被初始化。 此外， 接口的实现类在初始化时也一样不会执行接口的`<clinit>()`方法。  
+
+- 对于`<clinit>（）` 方法的调用，虚拟机会自己确保其在多线程环境中的安全性。因为 `<clinit>（）` 方法是带锁线程安全，所以在多线程环境下进行类初始化的话可能会引起死锁，并且这种死锁很难被发现。
+
 
 
 
@@ -492,17 +504,42 @@ JDK7之后，原本存放在永久代的字符串常量池被移动至java堆中
 
 - 使用new实例化对象时，读取和设置类的静态变量、静态非字面值常量（静态字面值常量除外）时，调用静态方法时。
 - 对类进行反射调用时。
-- 当初始化一个类时，如果父类没有进行初始化，需要先初始化父类。
+- 当初始化一个类时，如果父类没有进行初始化，需要先初始化父类。**但是一个接口初始化时，并不要求其父接口全部完成初始化，只有在真正使用到父接口的时候（如引用父接口中定义的变量）才会初始化**
 - 启动程序所使用的main方法所在类
 - 当使用1.7的动态语音支持时。
+- 当一个接口中定义了JDK 8新加入的默认方法（ 被default关键字修饰的接口方法） 时， 如果有这个接口的实现类发生了初始化， 那该接口要在其之前被初始化。  
 
 被动引用
 
-- 通过子类引用父类的静态字段，只会触发父类的初始化，而不会触发子类的初始化。
+- 对于静态字段，只有直接定义这个字段的类才会被初始化， 因此通过其子类来引用父类中定义的静态字段， 只会触发父类的初始化而不会触发子类的初始化。 至于是否要触发子类的加载和验证阶段， 在《Java虚拟机规范》 中并未明确规定， 所以这点取决于虚拟机的具体实现。   
 - 定义对象数组和集合，不会触发该类的初始化
 - 类A引用类B的static final常量不会导致类B初始化（注意静态常量必须是字面值常量，否则还是会触发B的初始化）
 
+栗子
 
+```java
+/**
+* 被动使用类字段演示三：
+* 常量在编译阶段会存入调用类的常量池中， 本质上没有直接引用到定义常量的类， 因此不会触发定义常量的
+类的初始化
+**/
+public class ConstClass {
+    static {
+    	System.out.println("ConstClass init!");
+    } 
+    public static final String HELLOWORLD = "hello world";
+} 
+/**
+* 非主动使用类字段演示
+**/
+public class NotInitialization {
+    public static void main(String[] args) {
+        System.out.println(ConstClass.HELLOWORLD);
+     }
+}
+```
+
+ConstClass类的常量HELLOWORLD， 但其实在编译阶段通过常量传播优化， 已经将此常量的值“helloworld”直接存储在NotInitialization类的常量池中， 以后NotInitialization对常量ConstClass.HELLOWORLD的引用， 实际都被转化为NotInitialization类对自身常量池的引用了。  
 
 ## 类加载器
 
@@ -528,7 +565,7 @@ JDK7之后，原本存放在永久代的字符串常量池被移动至java堆中
 
 如果不想用双亲委托机制
 
-**自定义加载器的话，需要继承 `ClassLoader` 。如果我们不想打破双亲委派模型，就重写 `ClassLoader` 类中的 `findClass()` 方法即可，无法被父类加载器加载的类最终会通过这个方法被加载。但是，如果想打破双亲委派模型则需要重写 `loadClass()` 方法**
+**自定义加载器的话，需要继承 `ClassLoader` 。如果我们不想打破双亲委派模型，就重写 `ClassLoader` 类中的 `findClass()` 方法即可，无法被父类加载器加载的类最终会通过这个方法被加载。但是，如果想打破 双亲委派模型则需要重写 `loadClass()` 方法**
 
 
 
@@ -706,6 +743,60 @@ ZGC的运作过程
   许， 那会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小， 如果大
   于， 将尝试进行一次Minor GC， 尽管这次Minor GC是有风险的； 如果小于， 或者-XX：
   HandlePromotionFailure设置不允许冒险， 那这时就要改为进行一次Full GC。  
+
+## 第四章
+
+### 常用工具
+
+#### jps
+
+jps [ options ] [ hostid ]  
+
+jps（ JVM Process Status Tool）  可以列出正在运行的虚拟机进程， 并显示虚拟机执行主类（ Main Class， main()函数所在的类） 名称以及这些进程的本地虚拟机唯一ID（ LVMID， Local Virtual Machine Identifier）
+
+![image-20210327202836376](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210327202836376.png)   
+
+#### jstat
+
+jstat（ JVM Statistics Monitoring Tool） 是用于监视虚拟机各种运行状态信息的命令行工具。 它可以显示本地或者远程虚拟机进程中的类加载、 内存、 垃圾收集、 即时编译等运行时数据， 在没有GUI图形界面、 只提供了纯文本控制台环境的服务器上， 它将是运行期定位虚拟机性能问题的常用工具。  
+
+jstat [ option vmid [interval[s|ms] [count]] ]  
+
+jstat -gc 2764 250 20  需要每250毫秒查询一次进程2764垃圾收集状况， 一共查询20次  
+
+#### jinfo
+
+（ Configuration Info for Java） 的作用是实时查看和调整虚拟机各项参数。  使用jps命令的-v参数可以查看虚拟机启动时显式指定的参数列表， 但如果想知道未被显式指定的参数的系统默认值， 除了去找资料外， 就只能使用jinfo的-flag选项进行查询了（ 如果只限于JDK 6或以上版本的话， 使用javaXX： +PrintFlagsFinal查看参数默认值也是一个很好的选择）  
+
+jinfo [ option ] pid  
+
+#### jmap
+
+（ Memory Map for Java） 命令用于生成堆转储快照（ 一般称为heapdump或dump文件） 。   
+
+jmap [ option ] vmid  
+
+![image-20210328091049774](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210328091049774.png)
+
+#### jstack  
+
+jstack（ Stack Trace for Java） 命令用于生成虚拟机当前时刻的线程快照  
+
+jstack [ option ] vmid  
+
+![image-20210328091756030](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210328091756030.png)
+
+### 可视化工具
+
+jconsole 
+
+jvisualvm
+
+
+
+
+
+
 
 # 参考
 

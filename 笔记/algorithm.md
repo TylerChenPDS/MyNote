@@ -247,11 +247,9 @@ https://segmentfault.com/a/1190000008484167
 
 由于回文分为偶回文（比如 bccb）和奇回文（比如 bcacb），而在处理奇偶问题上会比较繁琐，所以这里我们使用一个技巧，具体做法是：
 
-1. 在字符串首尾及每个字符间都插入一个 "#"，这样可以使得原先的奇偶回文都变为奇回文；
-2. 接着再在首尾两端各插入 "$" 和 "^"，这样中心扩展寻找回文的时候会自动退出循环，不需每次判断是否越界，可参见下面代码。
-3. 上述新插入的三个字符，即 "#"、 "$" 和 "^"，必须各异，且不可以与原字符串中的字符相同。
+1. 在字符串首尾及每个字符间都插入一个 "#（加什么字符都行）"，这样可以使得原先的奇偶回文都变为奇回文；
 
-`s="abbahopxpo"`，转换为 `s_new="$#a#b#b#a#h#o#p#x#p#o#^"`。如此，s 里起初有一个偶回文 `abba` 和一个奇回文 `opxpo`，被转换为 `#a#b#b#a#` 和 `#o#p#x#p#o#`，长度都转换成了奇数。
+`s="abbahopxpo"`，转换为 `s_new="#a#b#b#a#h#o#p#x#p#o#"`。如此，s 里起初有一个偶回文 `abba` 和一个奇回文 `opxpo`，被转换为 `#a#b#b#a#` 和 `#o#p#x#p#o#`，长度都转换成了奇数。
 
 定义一个辅助数组 `int p[]`，其中 `p[i]` 表示以 i 为中心的最长回文的半径，例如：
 
@@ -259,19 +257,28 @@ https://segmentfault.com/a/1190000008484167
 
 可以看出，`p[i] - 1` 正好是**原字符串中最长回文串的长度**。
 
+Manacher 算法关键点：
+
+- p[] 数组
+- 中心点c（c <= i & R 是最大的），中心点的右边界R
+
+ 
+
+
+
 接下来的重点就是求解 p 数组，如下图：
 
-![image-20210215101653275](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210215101653275.png)
+设置两个变量，R 和 C 。R 代表以C 为中心的最长回文的右边界，也就是 `R = C + p[C]`。
 
-设置两个变量，mx 和 id 。mx 代表以 id 为中心的最长回文的右边界，也就是 `mx = id + p[id]`。
+假设：i到C之间的距离为x，i'为i关于C的对称点，则`i' = C - x = C - (i-C) = 2C - i`。
 
-假设：id到i之间的距离为x，j为i关于id的对称点，则 i - id = x, 2 * id - i = 2 * id - id -x = id - x。而id-x正是j的下标。
+![image-20210329140320097](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210329140320097.png)
 
 所以
 
 ```java
-if (i < mx)  
-    p[i] = min(p[2 * id - i], mx - i);
+if (i < R)  
+    p[i] = min(p[2 * C - i], R - i);
 ```
 
 `2 * id - i` 为 i 关于 id 的对称点，即上图的 j 点，而 **`p[j]`表示以 j 为中心的最长回文半径**，因此我们可以利用 `p[j]` 来加快查找。
@@ -280,58 +287,282 @@ if (i < mx)
 
 ```java
 public class Manacher {
-	char[] init(String s) {
-		char[] charSet = new char[s.length() * 2 + 3];
-		charSet[0] = '$';
-		charSet[1] = '#';
-		int j = 2;
-		for (int i = 0; i < s.length(); i++) {
-			charSet[j++] = s.charAt(i);
-			charSet[j ++ ] = '#';
-		}
-		charSet[j] = '^';
-		return charSet;
-	}
 
-	int getMaxLen(String s) {
-		char[] charSet = init(s);
-		int[] p = new int[charSet.length];
-		int res = -1;
-		int mx = 0;
-		int id = 0;
-		for (int i = 1; i < charSet.length - 1; i++) {
-			if (i < mx) {
-				p[i] = Math.min(p[2 * id - i], mx - i);
-			} else {
-				p[i] = 1;
-			}
-			while (charSet[i - p[i]] == charSet[i + p[i]]){
-				p[i] ++;
-			}
-
-			// 我们每走一步 i，都要和 mx 比较，我们希望 mx 尽可能的远，
-			// 这样才能更有机会执行 if (i < mx)这句代码，从而提高效率
-
-			if(mx < i + p[i]){
-				id = i;
-				mx = i +  p[i];
-			}
-			res = Math.max(res, p[i] - 1);
+	//将字符前后都加上#， 加什么符号都无所谓，因为我们加的字符咋manager过程中是不会与原来的字符进行比较的
+	//如abc 变成#a#b#c
+	private char[] init(String str) {
+		char[] res = new char[str.length() * 2 + 1];
+		int index = 0;
+		for (int i = 0; i < res.length; i++) {
+			//偶数位加 #
+			res[i] = (i & 1) == 0 ? '#' : str.charAt(index++);
 		}
 		return res;
 	}
 
+	int manacher(String str) {
+		char[] charArr = init(str);
+		int[] p = new int[charArr.length];
+		int C = -1; //中心点
+		int R = -1; //以中心点为回文的右边界的下一个坐标
+		int max = Integer.MIN_VALUE;
+		for (int i = 0; i < charArr.length; i++) {
+			//先求出不需要判断即可确定的回文半径长度
+			p[i] = i < R ? Math.min(R - i, p[2 * C - i]) : 1;
+			//看看能否扩充
+			while (i - p[i] >= 0 && i + p[i] < charArr.length
+					&& charArr[i - p[i]] == charArr[i + p[i]]) {
+				p[i]++;
+			}
+			if (i + p[i] > R) {
+				R = i + p[i];
+				C = i;
+			}
+			max = Math.max(p[i], max);
+		}
+		return max - 1;
+	}
+
 	@Test
-	public void test(){
-		System.out.println(getMaxLen("abbahopxpo"));// 5
-		System.out.println(getMaxLen("a"));// 1
-		System.out.println(getMaxLen("aa"));// 2
-		System.out.println(getMaxLen("abax"));// 3
+	public void test() {
+		System.out.println(manacher("abbahopxpo"));// 5
+		System.out.println(manacher("a"));// 1
+		System.out.println(manacher("aa"));// 2
+		System.out.println(manacher("abax"));// 3
 	}
 }
 ```
 
 其实求最长回文串的做法还有，中心扩展，动态规划，`dp[i][j] = true , if dp[i + 1][j - 1] = true && s[i] == s[j]`。
+
+## Morris  遍历二叉树
+
+使用了线索二叉树的思路，使用Morris 算法遍历二叉树的方式， 时间复杂度O(N)， 额外空间复杂度O(1)  
+
+假设来到当前节点cur， 开始时cur来到头节点位置  
+
+- 如果cur没有左孩子， cur向右移动(cur = cur.right)  
+- 如果cur有左孩子 , 找到左子树的最右节点mostRight (**其实就是中序遍历下cur的前驱节点啦**)
+  - 如果mostRight.right==null, 则mostRight=cur, cur = cur.left
+  - 如果mostRight.right!=null，则mostRight=null, cur=cur.right
+
+
+
+```java
+public class Morris {
+	public static class Node {
+		public int value;
+		Node left;
+		Node right;
+
+		public Node(int data) {
+			this.value = data;
+		}
+	}
+
+	static void morris(Node head) {
+		if (head == null) {
+			return;
+		}
+		Node cur = head;
+		Node mostRight = null;
+		while (cur != null) {
+			System.out.print(cur.value + " ");
+			mostRight = cur.left;
+			//有左子树
+			if (mostRight != null) {
+				//找到左子树的最右节点
+				while (mostRight.right != null && mostRight.right != cur) {
+					mostRight = mostRight.right;
+				}
+				// 左子树最右节点的没有右孩子
+				if (mostRight.right == null) {
+					mostRight.right = cur;
+					cur = cur.left;
+					continue;
+				} else { //左子树最右节点的没有右孩子，指向当前节点
+					mostRight.right = null;
+				}
+			}
+			cur = cur.right;
+		}
+		System.out.println();
+	}
+
+	//先序遍历
+	// morris遍历，有的节点会被遍历2次，遍历2次的节点，打印第一次，则为先序遍历
+	static void morrisPre(Node head) {
+		if (head == null) {
+			return;
+		}
+		Node cur = head;
+		Node mostRight = null;
+		while (cur != null) {
+			mostRight = cur.left;
+			if (mostRight != null) {
+				while (mostRight.right != null && mostRight.right != cur) {
+					mostRight = mostRight.right;
+				}
+				//第一次来到cur
+				if (mostRight.right == null) {
+					System.out.print(cur.value + " ");
+					mostRight.right = cur;
+					cur = cur.left;
+					continue;
+				} else {//第二次来到cur
+					mostRight.right = null;
+				}
+			} else {
+				//能走到这一步的cur，都是只能来一次的
+				System.out.print(cur.value + " ");
+			}
+			cur = cur.right;
+		}
+		System.out.println();
+	}
+
+	//中序遍历
+	// morris遍历，有的节点会被遍历2次，遍历2次的节点，打印第二次，则为先序遍历
+	static void morrisIn(Node head) {
+		if (head == null) {
+			return;
+		}
+		Node cur = head;
+		Node mostRight = null;
+		while (cur != null) {
+			mostRight = cur.left;
+			if (mostRight != null) {
+				while (mostRight.right != null && mostRight.right != cur) {
+					mostRight = mostRight.right;
+				}
+				//第一次来到cur
+				if (mostRight.right == null) {
+
+					mostRight.right = cur;
+					cur = cur.left;
+					continue;
+				} else {//第二次来到cur
+					System.out.print(cur.value + " ");
+					mostRight.right = null;
+				}
+			} else {
+				//能走到这一步的cur，都是只能来一次的
+				System.out.print(cur.value + " ");
+			}
+			cur = cur.right;
+		}
+		System.out.println();
+	}
+
+	//后序遍历
+	// 第二次遍历到cur的时候（此时cur必有右树）， 逆序打印cur左子树的右边界
+	static void morrisPos(Node head) {
+		if (head == null) {
+			return;
+		}
+		Node cur = head;
+		Node mostRight = null;
+		while (cur != null) {
+			mostRight = cur.left;
+			if (mostRight != null) {
+				while (mostRight.right != null && mostRight.right != cur) {
+					mostRight = mostRight.right;
+				}
+				//第一次来到cur
+				if (mostRight.right == null) {
+					mostRight.right = cur;
+					cur = cur.left;
+					continue;
+				} else {//第二次来到cur
+					//这两个顺序不能写反了
+					mostRight.right = null;
+					printRightBound(cur.left);
+				}
+			}
+			cur = cur.right;
+		}
+		//这句别忘了
+		printRightBound(head);
+		System.out.println();
+	}
+
+	//打印一课树的右边界
+	static void printRightBound(Node head) {
+		//反转右边界
+		Node tail = reverseRightBound(head);
+		Node orgin = tail;
+
+		//打印
+		while (tail != null) {
+			System.out.print(tail.value + " ");
+			tail = tail.right;
+		}
+		reverseRightBound(orgin);
+	}
+
+	private static Node reverseRightBound(Node head) {
+		Node newNode = null;
+		while (head != null) {
+			Node next = head.right;
+			head.right = newNode;
+			newNode = head;
+			head = next;
+		}
+		return newNode;
+	}
+
+	public static void main(String[] args) {
+		Node head = new Node(4);
+		head.left = new Node(2);
+		head.right = new Node(6);
+		head.left.left = new Node(1);
+		head.left.right = new Node(3);
+		head.right.left = new Node(5);
+		head.right.right = new Node(7);
+		printTree(head);
+//		morris(head);
+//		morrisPre(head);
+//		morrisIn(head);
+		morrisPos(head);
+		morrisPos(head);
+//		morris(head);
+	}
+
+
+	// for test -- print tree
+	public static void printTree(Node head) {
+		System.out.println("Binary Tree:");
+		printInOrder(head, 0, "H", 17);
+		System.out.println();
+	}
+
+	public static void printInOrder(Node head, int height, String to, int len) {
+		if (head == null) {
+			return;
+		}
+		printInOrder(head.right, height + 1, "v", len);
+		String val = to + head.value + to;
+		int lenM = val.length();
+		int lenL = (len - lenM) / 2;
+		int lenR = len - lenM - lenL;
+		val = getSpace(lenL) + val + getSpace(lenR);
+		System.out.println(getSpace(height * len) + val);
+		printInOrder(head.left, height + 1, "^", len);
+	}
+	public static String getSpace(int num) {
+		String space = " ";
+		StringBuffer buf = new StringBuffer("");
+		for (int i = 0; i < num; i++) {
+			buf.append(space);
+		}
+		return buf.toString();
+	}
+}
+```
+
+
+
+
 
 
 
@@ -4610,7 +4841,7 @@ docker run -d \
 
 ## KMP算法
 
-使用kmp算法的时间复杂度可以降低为O(nm);
+使用kmp算法的时间复杂度可以降低为O(n+m);
 
 ### next数组求法
 
@@ -4720,6 +4951,126 @@ int kmpGetPatternNum(char text[], char pattern[]){
     return ans;
 }
 ```
+
+
+
+## kmp算法 (更好理解版本)
+
+### next数组
+
+首先next数组长度必须和match字符串长度相等，next[i]表示match[0...i-1]，最长前后缀的**长度**（🐖：**前后缀不能是子串本身**）
+
+首先定义next[0] = -1，因为 match[0..-1] 是空串
+
+例如：match="aaaab"  
+
+match[0..0] = 'a', 没有最长相等前后缀，所以next[1] = 0,
+
+match[0..1] = 'aa', 最长相等前后缀为'a'，所以next[2] = 1,
+
+match[0..2] = 'aaa', 最长相等前后缀为'aa'，所以next[3] = 2,
+
+match[0..3] = 'aaaa', 最长相等前后缀为'aaa'，所以next[4] = 3,
+
+match[0..4] = 'aaaab', 没有最长相等前后缀，所以next[5] = 0。
+
+### 使用next数组进行匹配
+
+假设已经求好了next数组，怎么用它进行匹配呢？
+
+![image-20210327162154199](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210327162154199.png)
+
+如图，假设str[i...Y-1] 与match[0...X-1] 位置匹配成功，但是str[Y] != match[Y],  那么下次从哪里匹配呢？先说结论，是下次应该匹配的是str的Y位置，与match的next[X] 位置。
+
+![image-20210327162729496](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210327162729496.png)
+
+如图，由于str[i...Y-1] 与match[0...X-1] 匹配成功，所以str[j..k] = matth[0..k-1] 其中k = next[X]，所以下一次应该str的Y位置，应该与match的k位置比较（match之前的这次不用看）。
+
+此时j 之前的任何位置都不能完整的匹配出match。为什么？可以使用反证法
+
+假设从i之后j之前的某个位置w开始可以完成的匹配出match，则看下图，蓝色区域为相等区域，而且蓝色区域的长度大于next[X]的长度，这说明之前求的next[X]不是最长的前后缀的长度，与我们定义的next 数组矛盾。
+
+![image-20210327163403873](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210327163403873.png)
+
+先看代码：
+
+```java
+public static int getIndexOf(String s, String m) {
+    if (s == null || m == null || m.length() < 1 || s.length() < m.length()) {
+        return -1;
+    }
+    char[] str1 = s.toCharArray();
+    char[] str2 = m.toCharArray();
+    int i1 = 0;
+    int i2 = 0;
+    int[] next = getNextArray(str2);
+    while (i1 < str1.length && i2 < str2.length) {
+        if (str1[i1] == str2[i2]) {
+            i1++;
+            i2++;
+        } else if (next[i2] == -1) { //这个条件也可以换成i2 == 0，表明i2跳不动了此时i1 已经与match的0位置匹配过，并且s[i1] != m[0]，所以i1需要到下一个位置
+            i1++;
+        } else {
+            //否则，i2 往前跳，调到上面分析的哪个k位置，然后进行匹配
+            i2 = next[i2];
+        }
+    }
+    return i2 == str2.length ? i1 - i2 : -1;
+}
+```
+
+如何求时间复杂度？
+
+i1 变化范围为0 - m, i1 - i2变化范围为0—m
+
+看里面三个分支，
+
+第一个会使i1 增大， i1-i2 不变
+
+第二个会使i1 增大， i1-i2 增大
+
+第三个会使i1不变， i1-i2 增大
+
+所以不管走哪个分支，i1 和i1-i2总是增大的，而且每次至少是1，增长到边界最多增长了2m次，所以时间复杂度为O(m)。
+
+同理下面next数组的时间复杂度也可以这样求。
+
+**如何求next数组呢？**
+
+首先next[0] = -1;next[1] = 0; 是必然的
+
+如图：假设要求next[i]， 如果next[i-1] = k && m[k] == m[i-1] 的话，则next[i] = k + 1，否则接着调next
+
+![image-20210327165058173](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210327165058173.png)
+
+```java
+public static int[] getNextArray(char[] ms) {
+    if (ms.length == 1) {
+        return new int[] { -1 };
+    }
+    int[] next = new int[ms.length];
+    next[0] = -1;
+    next[1] = 0;
+    int i = 2;
+    // cn表示next[i-1]的最长相等前后缀
+    int cn = 0;
+    while (i < next.length) {
+        if (ms[i - 1] == ms[cn]) {
+            next[i++] = ++cn;
+        } else if (cn > 0) {
+            cn = next[cn];
+        } else {
+            //nex[i++] = cn;
+            next[i++] = 0;
+        }
+    }
+    return next;
+}
+```
+
+
+
+
 
 
 
