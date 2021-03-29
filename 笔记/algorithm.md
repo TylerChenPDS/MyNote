@@ -562,6 +562,78 @@ public class Morris {
 
 
 
+## 树形dp
+
+- 以某个节点X为头节点的子树中， 分析答案有哪些可能性， 并且这种分析是以X的左子树、 X的右子树和X整棵树的角度来考虑可能性的  
+- 根据第一步的可能性分析， 列出所有需要的信息  
+- 合并第二步的信息， 对左树和右树提出同样的要求， 并写出信息结构  
+- 设计递归函数， 递归函数是处理以X为头节点的情况下的答案。包括设计递归的basecase， 默认直接得到左树和右树的所有信息， 以及把可能性做整合， 并且要返回第三步的信息结构这四个小步骤  
+
+![image-20210329200753766](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210329200753766.png)
+
+```java
+public class 派对的最大快乐值 {
+	class Employee {
+		public int happy; // 这名员工可以带来的快乐值
+		List<Employee> subordinates = new ArrayList<>(); // 这名员工有哪些直接下级
+
+		Employee(int ha) {
+			happy = ha;
+		}
+	}
+
+	@Test
+	public void test() {
+		Employee boss = new Employee(1);
+
+		Employee _2 = new Employee(2);
+		Employee _21 = new Employee(3);
+		Employee _22 = new Employee(4);
+		_2.subordinates.addAll(Arrays.asList(new Employee(5),new Employee(6),new Employee(7)));
+		boss.subordinates.addAll(Arrays.asList(_2,_21,_22));
+		System.out.println(getMax(boss));//25
+	}
+
+	//假设当要获得以x为节点的整个树的最大快乐值，那么分2种情况
+	//x 来
+	// 那么x来的最大快乐值为，所有直接下属不来的最大快乐值之和
+	// x不来
+	// 那么最大快乐值为，所有直接下属来货不来的最大快乐值之和
+	int getMax(Employee boss) {
+		Info bossInfo = processed(boss);
+		return Math.max(bossInfo.absence, bossInfo.attendance);
+	}
+
+	static class Info {
+		int attendance;
+		int absence;
+
+		Info(int attendance, int absence) {
+			this.absence = absence;
+			this.attendance = attendance;
+		}
+	}
+
+	Info processed(Employee boss) {
+		if (boss == null) {
+			return new Info(0, 0);
+		}
+		int attendance = boss.happy;
+		int absence = 0;
+		for (Employee employee : boss.subordinates) {
+			Info info = processed(employee);
+			//boss出席
+			attendance += info.absence;
+			//boss 缺席, 下属员工可以来也可以不来
+			absence += Math.max(info.absence, info.attendance);
+		}
+		return new Info(attendance, absence);
+	}
+}
+```
+
+
+
 
 
 
@@ -5639,6 +5711,8 @@ public class LC567 {
 }
 ```
 
+
+
 # 超级经典的题
 
 https://leetcode-cn.com/problems/path-with-minimum-effort/
@@ -5995,55 +6069,6 @@ public List<Integer> inorderTraversal(TreeNode root) {
 		return res;
 	}
 ```
-
-中序遍历的Morris  算法
-
-![image-20210211162807280](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210211162807280.png)
-
-其实整个过程我们就多做一步：假设当前遍历到的节点为 xx，将 xx 的左子树中最右边的节点的右孩子指向 xx，这样在左子树遍历完成后我们通过这个指向走回了 xx，且能通过这个指向知晓我们已经遍历完成了左子树，而不用再通过栈来维护，省去了栈的空间复杂度。
-
-```java
-class Solution {
-    public List<Integer> inorderTraversal(TreeNode root) {
-		List<Integer> res = new ArrayList<>();
-		if(root == null){
-			return res;
-		}
-		TreeNode predecessor = null;
-		while (root != null){
-			if(root.left != null){
-				//先找到，root 左子树上最右边的节点, 即访问root之前应该访问的节点
-				predecessor = root.left;
-				while (predecessor.right != null && predecessor.right != root){
-					predecessor = predecessor.right;
-				}
-
-				//如果predecessor.right 为空，则让predecessor.right 指向 root,
-				if(predecessor.right == null){
-					predecessor.right = root;
-					root = root.left; //此时root可以放心大胆的访问root的左子树了
-				}else { //此时 说明root的左子树已经访问完，
-					//此时把root 的值放入res，然后接着访问右子树
-					// root = predecessor.right;
-					res.add(root.val);
-					root = root.right;
-					//断链，不改变树的原结构
-					predecessor.right = null;
-				}
-			}else {
-				//左子树为空，那么直接访问当前节点，然后访问后续节点
-				res.add(root.val);
-				root = root.right;
-			}
-		}
-		return res;
-	}
-}
-```
-
-![image-20210211164043701](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210211164043701.png)
-
-
 
 ### 后序
 
@@ -6752,4 +6777,8 @@ public class 凑硬币_动态规划_优化 {
 
 }
 ```
+
+
+
+
 
