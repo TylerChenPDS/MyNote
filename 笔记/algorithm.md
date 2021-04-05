@@ -1066,8 +1066,6 @@ class Solution {
 ## 二分查找
 
 ```java
-package perday;
-import org.junit.Test;
 public class MyTest {
 
 	//返回x对应的下标
@@ -1106,16 +1104,6 @@ public class MyTest {
 在A中找到第一个大于等于x的位置
 
 ```java
-package perday;
-
-import org.junit.Test;
-
-import java.util.Hashtable;
-
-/**
- * @author TylerChen
- * @date 2020/12/12 - 12:19
- */
 public class MyTest {
 	int lowerBound(int[] a, int left, int right, int x){
 		int mid;
@@ -3377,357 +3365,6 @@ void getALLShortest(int s, int v){ //v为当前访问的点
 
 注意：通过这种做法也可以求最短路径的个数，可以开一个全局变量，每当到达叶子结点的时候令这个全局变量加1即可。
 
-
-
-### 例题
-
-[题目详情 (pintia.cn)](https://pintia.cn/problem-sets/994805342720868352/problems/994805523835109376)
-
-#### **1003** **Emergency** (25分)
-
-As an emergency rescue team leader of a city, you are given a special map of your country. The map shows several scattered cities connected by some roads. Amount of rescue teams in each city and the length of each road between any pair of cities are marked on the map. When there is an emergency call to you from some other city, your job is to lead your men to the place as quickly as possible, and at the mean time, call up as many hands on the way as possible.
-
-##### Input Specification:
-
-Each input file contains one test case. For each test case, the first line contains 4 positive integers: *N* (≤500) - the number of cities (and the cities are numbered from 0 to *N*−1), *M* - the number of roads, *C*1 and *C*2 - the cities that you are currently in and that you must save, respectively. The next line contains *N* integers, where the *i*-th integer is the number of rescue teams in the *i*-th city. Then *M* lines follow, each describes a road with three integers *c*1, *c*2 and *L*, which are the pair of cities connected by a road and the length of that road, respectively. It is guaranteed that there exists at least one path from *C*1 to *C*2.
-
-##### Output Specification:
-
-For each test case, print in one line two numbers: the number of different shortest paths between *C*1 and *C*2, and the maximum amount of rescue teams you can possibly gather. All the numbers in a line must be separated by exactly one space, and there is no extra space allowed at the end of a line.
-
-##### Sample Input:
-
-```
-5 6 0 2
-1 2 1 5 3
-0 1 1
-0 2 2
-0 3 1
-1 2 1
-2 4 1
-3 4 1
-```
-
-##### Sample Output:
-
-```
-2 4
-```
-
-##### 解答1 一次Dijkstra
-
-```c++
-#include <cstdio>
-#include <cstring>
-#include <algorithm>
-#include <vector>
-using namespace std;
-const int maxv = 510; //最大点的个数
-const int INF = 0x3fffffff;
-struct Node {
-    int v; //node的目标点
-    int d;// 到达目标点的距离
-};
-vector<Node> G[maxv]; //图
-int weight[maxv];  //点权,每个地方可以用的人手
-int d[maxv];//最短路径，
-int nums[maxv];//到达某个点的路径个数
-int c[maxv];//到达某个点可用人手的最多数量
-bool visited[maxv] = {false};
-
-int N, M, C1, C2;//城市的个数，路的个数，C1，起点，C2，终点
-
-
-void dijkstra() {
-    //使用dijkstra算法求最短路径
-    fill(d, d + maxv, INF);
-    c[C1] = weight[C1]; //
-    d[C1] = 0;
-    nums[C1] = 1;//到达起点的路径个数设为1
-    for (int i = 0; i < N; ++i) {
-        int u = -1, min = INF;
-        //寻找从起点开始到达点的最小值
-        for (int j = 0; j < N; ++j) {
-            if (visited[j] == false && d[j] < min) {
-                u = j;
-                min = d[u];
-            }
-        }
-        if (u == -1) { //找不到对应点了
-            return;
-        }
-        visited[u] = true;//将这个点放到已访问集合中
-
-        for (int v = 0; v < G[u].size(); v++) {
-            Node node = G[u][v];
-            if (visited[node.v] == false) {
-                if (node.d + d[u] < d[node.v]) {
-                    c[node.v] = c[u] + weight[node.v];
-                    d[node.v] = node.d + d[u];
-                    nums[node.v] = nums[u];
-                }else if(d[u] + node.d == d[node.v]){
-                    if(c[u] + weight[node.v] > c[node.v]){
-                        c[node.v] =  c[u] + weight[node.v];
-                    }
-                    nums[node.v] += nums[u];
-                }
-            }
-        }
-
-
-    }
-}
-
-
-int main() {
-    scanf("%d%d%d%d", &N, &M, &C1, &C2);
-    for (int i = 0; i < N; ++i) {
-        scanf("%d", weight + i);
-    }
-    int a, b, w;
-    for (int i = 0; i < M; ++i) {
-        scanf("%d%d%d", &a, &b, &w);
-        Node n;
-        n.v = b;
-        n.d = w;
-        G[a].push_back(n);
-    }
-    dijkstra();
-    printf("%d %d",nums[C2], c[C2]);
-    return 0;
-}
-
-
-```
-
-##### 解答2  Dijkstra + DFS
-
-```C++
-#include <cstdio>
-#include <cstring>
-#include <algorithm>
-#include <vector>
-
-using namespace std;
-const int maxn = 510;//最大的结点个数
-const int INF = 0x3fffffff;
-
-int N, M, C1, C2;//城市的个数，路径的个数，当前所在的城市（起点），需要救援的城市（终点）
-
-struct Node {
-    int target; //目的城市
-    int dis; //到达目的城市的距离
-};
-vector<Node> G[maxn]; //邻接表
-vector<int> pre[maxn]; //存放前驱结点
-int weight[maxn]; //存放每个城市的人手个数，（点权）
-int d[maxn];//到达某个顶点的最短路径
-bool vis[maxn] = {false};//判断某个顶点是否被访问过了
-
-void dijkstra(){
-    fill(d, d + maxn, INF);
-    d[C1] = 0;
-    for (int i = 0; i < N; ++i) {
-        int u = -1, min = INF;
-        for (int j = 0; j < N; ++j) {
-            if(vis[j] == false &&  d[j] < min){
-                min = d[j];
-                u = j;
-            }
-        }
-        if(u == -1){
-            return;
-        }
-        vis[u] = true;
-        for(int k = 0;k < G[u].size(); k ++){
-            Node next = G[u][k];
-            if(vis[next.target] == false){
-                if(next.dis + d[u] < d[next.target]){
-                    d[next.target] = next.dis + d[u];
-                    pre[next.target].clear();
-                    pre[next.target].push_back(u);
-                }else if(next.dis + d[u] == d[next.target]){
-                    pre[next.target].push_back(u);
-                }
-            }
-        }
-    }
-}
-
-int maxNums = -1;//最短路径下的最多人手初始设置为-1
-int nums = 0;//最短路径的个数
-vector<int> temp;//保存这临时最短路径
-void DFS(int s, int v){
-    if(s == v){
-        nums ++;
-        temp.push_back(s);
-        int value = 0;
-        for (int i = 0; i < temp.size(); ++i) {
-            value += weight[temp[i]];
-        }
-        maxNums = max(maxNums, value);
-        temp.pop_back();
-        return;
-    }
-    temp.push_back(v);
-    for (int i = 0; i < pre[v].size(); ++i) {
-        DFS(s, pre[v][i]);
-    }
-    temp.pop_back();
-}
-
-int main() {
-    scanf("%d%d%d%d", &N, &M, &C1, &C2);
-    for (int i = 0; i < N; ++i) {
-        scanf("%d", i + weight);
-    }
-    int a, b, c;
-    for (int i = 0; i < M; ++i) {
-        scanf("%d%d%d", &a, &b, &c);
-        Node node;
-        node.target = b;
-        node.dis = c;
-        G[a].push_back(node);
-    }
-    dijkstra();
-    DFS(C1, C2);
-    printf("%d %d", nums, maxNums);
-}
-```
-
-#### 1030 Travel Plan(30分)
-
-https://pintia.cn/problem-sets/994805342720868352/problems/994805464397627392
-
-旅行者得地图上面有2个城市之间的距离和花费，给定起点和终点，求他们之间最小路径，可能不止一条，求其中花费最小一条。
-
-输入规格：
-
-第一行4个数：N,M,S,D。分别为城市个数 <= 500, M 公路条数<= 500 ,(城市的编号是0-N-1)，起点，终点。
-
-后面是M行：
-
-```
-City1 City2 Distance Cost
-```
-
-sample input
-
-```
-4 5 0 3
-0 1 1 20
-1 3 2 30
-0 3 4 10
-0 2 2 20
-2 3 1 20
-```
-
-输出规格：
-
-输出从起点到终点的最优路径，最优路径的长度，和花费
-
-sample output
-
-```out
-0 2 3 3 40
-```
-
-##### 解答：Dijkstra + DFS
-
-```c++
-#include <cstdio>
-#include <algorithm>
-#include <vector>
-
-using namespace std;
-
-const int maxv = 510; //最大点的个数
-const int INF = 0x3fffffff;
-
-int d[maxv];//最短路径
-bool vis[maxv];
-int N, M, S, D;//城市的个数，高速公路的个数，起点，目的地址
-int G[maxv][maxv];
-int cost[maxv][maxv];
-vector<int> pre[maxv];//前驱结点
-
-
-void dijkstra() {
-    fill(d, d + maxv, INF);
-    d[S] = 0;
-    for (int i = 0; i < N; ++i) {
-        int u = -1, min = INF;
-        for (int j = 0; j < N; ++j) {
-            if (vis[j] == false && d[j] < min) {
-                u = j;
-                min = d[j];
-            }
-        }
-        if (u == -1) {
-            return;
-        }
-        vis[u] = true;
-        for (int j = 0; j < N; ++j) {
-            //如果u->j可达 && j没有被访问过
-            if (G[u][j] != INF && vis[j] == false) {
-                if (d[u] + G[u][j] < d[j]) {
-                    d[j] = d[u] + G[u][j];
-                    pre[j].clear();
-                    pre[j].push_back(u);
-                } else if (d[u] + G[u][j] == d[j]) {
-                    pre[j].push_back(u);
-                }
-            }
-        }
-    }
-}
-
-vector<int> path, temp;//最优路径，临时路径
-int minCost = INF;
-
-void DFS(int s, int v) {
-    if (s == v) {
-        temp.push_back(s);
-        int value = 0;
-        for (int i = temp.size() - 1; i > 0; --i) {
-            value += cost[temp[i]][temp[i - 1]];
-        }
-        if (value < minCost) {
-            minCost = value;
-            path = temp;
-        }
-        temp.pop_back();
-        return;
-    }
-    temp.push_back(v);
-    for (int i = 0; i < pre[v].size(); ++i) {
-        DFS(s, pre[v][i]);
-    }
-    temp.pop_back();
-}
-
-
-int main() {
-    fill(G[0], G[0] + maxv * maxv, INF);
-    scanf("%d%d%d%d", &N, &M, &S, &D);
-    int a, b, c, d1;
-    for (int i = 0; i < M; ++i) {
-        scanf("%d%d%d%d", &a, &b, &c, &d1);
-        G[a][b] = c;
-        G[b][a] = c;
-        cost[a][b] = d1;
-        cost[b][a] = d1;
-    }
-    dijkstra();
-    DFS(S, D);
-    for (int i = path.size() - 1; i >= 0; --i) {
-        printf("%d ", path[i]);
-    }
-    printf("%d %d", d[D], minCost);
-    return 0;
-}
-```
-
 ## Bellman-Ford算法和SPFA算法
 
 ### Bellman-Ford 算法
@@ -5206,148 +4843,6 @@ void pop() {
 }
 ```
 
-
-
-## 例题
-
-对栈来说，PeekMedian操作是指查看栈中中间大的那个数，假设栈中有n个数字，如果n为偶数，则输出第n/2 大的数，如果为奇数，输出(N+1)/2大的数。
-
-**输入**
-
-第一行，是操作的个数N, N不大于10^5，接下来N行是3中操作中的一个：
-
-```
-Push key
-Pop
-PeekMedian
-```
-
-key也不大于10^5。
-
-**输出**
-
-如果push，则把push进栈，如果是操作pop，则将栈顶元素输出，并出栈，如果是PeekMedian，则查看中间大的那个数。如果栈为空，操作为pop,或PeekMedian 输出Invalid。每个输出占一行。
-
-**Sample Input**
-
-```
-17
-Pop
-PeekMedian
-Push 3
-PeekMedian
-Push 2
-PeekMedian
-Push 1
-PeekMedian
-Pop
-Pop
-Push 5
-Push 4
-PeekMedian
-Pop
-Pop
-Pop
-Pop
-```
-
-**sample output**
-
-```
-Invalid
-Invalid
-3
-2
-2
-1
-2
-4
-4
-5
-3
-Invalid
-```
-
-
-
-```c++
-#include <stack>
-#include <cstdio>
-#include <cstring>
-
-using namespace std;
-const int maxn = 100010;
-const int sqrN = 316; //sqrt(100010)线下取证，表示块内元素
-stack<int> st;
-int block[sqrN];//记录每一个块中的元素个数
-int table[maxn]; //hash数组，hash[i]记录元素在当前序列中存在的个数
-
-//找到现存数列中第K大的数
-void peekMedian(int K) {
-    int sum = 0; //sum存放当前累计存在的个数
-    int idx = 0; //块号
-    while (sum + block[idx] < K) {
-        sum += block[idx++];
-    }
-    //此时 第K大的数一定在idx块号中
-    int num = idx * sqrN;//idx 号块中的第一个元素
-    while (sum + table[num] < K) {
-        sum += table[num++];
-    }
-    //此时 sum < K , 但是 sum + num的个数 > K, 说明num就是第K大的数
-    printf("%d\n", num);
-}
-
-//向序列--栈中加入x 这个数
-void push(int x) {
-    st.push(x);
-    //x所在的块 里面元素个数++
-    block[x / sqrN]++;
-    table[x]++; //x的个数加一
-}
-
-void pop() {
-    int x = st.top();
-    st.pop();
-    block[x / sqrN]--;//x所在块的元素减一
-    table[x]--;
-    printf("%d\n", x);
-}
-
-int main() {
-    int x, query;
-    memset(block, 0, sizeof(block));
-    memset(table, 0, sizeof(table));
-    char cmd[20];// 命令
-    scanf("%d", &query);
-    for (int i = 0; i < query; ++i) {
-        scanf("%s", cmd);
-        if (cmd[1] == 'u') { //push
-            scanf("%d", &x);
-            push(x);
-        } else if (cmd[1] == 'o') {//pop
-            if (st.empty()) {
-                printf("Invalid\n");//站空
-            } else {
-                pop();
-            }
-        }else{ //peekMedian
-            if(st.empty()){
-                printf("Invalid\n");//站空
-            }else {
-                int K = st.size();
-                if(K % 2 == 0){ //偶数
-                    K /= 2;
-                }else {
-                    K = (K + 1) / 2;
-                }
-                peekMedian(K);
-            }
-        }
-    }
-}
-```
-
 # 树状数组
 
 ## lowbit运算
@@ -5647,69 +5142,9 @@ int getsum(int x, int y){
 
  
 
-# 滑动窗口问题--解决子串匹配的一种方案
-
-## 从一个问题出发
-
-https://leetcode-cn.com/problems/permutation-in-string/
-
-https://labuladong.gitee.io/algo/%E7%AE%97%E6%B3%95%E6%80%9D%E7%BB%B4%E7%B3%BB%E5%88%97/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%8A%80%E5%B7%A7%E8%BF%9B%E9%98%B6.html
-
-![image-20210106210600627](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210106210600627.png)
 
 
 
-### 思路：
-
-1. 先不断地增加 `right` 指针扩大窗口 `[left, right)`，直到窗口中的字符串符合要求。
-2. 此时，我们停止增加 `right`，转而不断增加 `left` 指针缩小窗口 `[left, right)`，直到窗口中的字符串不再符合要求。同时，每次增加 `left`，我们都要更新一轮结果。
-3. 重复第 2 和第 3 步，直到 `right` 到达字符串 `S` 的尽头。
-
-```java
-public class LC567 {
-	public boolean checkInclusion(String s1, String s2) {
-		//need为要匹配的字符串种各个字符出现的次数
-		//window为当前窗口满足条件字符出现的次数
-		Map<Character,Integer> need = new HashMap<>(), window = new HashMap<>();
-		for (int i = 0; i < s1.length(); i++) {
-			char ch = s1.charAt(i);
-			need.put(ch, need.getOrDefault(ch, 0) + 1);
-		}
-		int left = 0, right = 0;
-		int valid = 0;//valid 表示当前windows种满足条件，字符种类的个数
-		while (right < s2.length()){
-			char ch = s2.charAt(right);
-			right ++;//滑动窗口右移，使得ch被放进窗口
-			if(need.containsKey(ch)){//ch是满足条件的字符
-				window.put(ch, window.getOrDefault(ch, 0) + 1);
-				if(window.get(ch).equals(need.get(ch))){//ch这个字符(种类)满足条件的个数
-					valid ++;
-				}
-			}
-			while (valid == need.size()){//此时满足条件
-				if(right - left == s1.length()){
-					return true;
-				}
-				//d为即将移除窗口的那个字符
-				char d = s2.charAt(left);
-				left ++;//左移
-				if(need.containsKey(d)){//如果这个字符是need里面的字符
-					if(window.get(d).equals( need.get(d))){ //如果此时窗口种d的数量恰好满足条件，那么把d移出去就恰好不满足条件了
-						valid --;
-					}
-					window.put(d, window.get(d) - 1);//把d移出去
-
-				}
-			}
-		}
-		return false;
-	}
-	@Test
-	public void test(){
-	    checkInclusion("adc", "dcda");
-	}
-}
-```
 
 
 
@@ -6200,31 +5635,7 @@ class MyStack {
 }
 ```
 
-## 每日温度
-
-![image-20210214110454946](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210214110454946.png)
-
-使用一个栈，栈里面保存着相应元素的的下标i，如果当前元素比栈顶大，则说明当前元素下标i 减去 栈顶元素j，即为第j天温度需要等待的时间，此时栈顶元素出栈，并令res[j] = i - j，然后继续判定栈顶元素，直到栈空，或者栈顶元素，大于当前元素。
-
-```java
-class Solution {
-    public int[] dailyTemperatures(int[] T) {
-        Stack<Integer> stack = new Stack<>();
-        int length = T.length;
-        int[] result = new int[length];
-
-        for (int i = 0; i < length; i++) {
-            while (!stack.isEmpty() && T[i] > T[stack.peek()]) {
-                int pre = stack.pop();
-                result[pre] = i - pre;
-            }
-            stack.add(i);
-
-        }
-        return result;
-    }
-}
-```
+## 
 
 ## 回文子串
 
@@ -6746,39 +6157,69 @@ public class 凑硬币_记忆化搜索改成_动态规划 {
 
 ```
 
+
+
+
+
+## 斐波那契数列logn解法
+
+![image-20210405202210891](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210405202210891.png)
+
+总结：对于通项为 f(n)=af(n-1)+bf(n-2) + .. cf(n-k)
+
+（fn, ...fn-k+1）= （fk, .. f1）*marix^n-k，然后根据前若干项求出matrix即可求出fn，时间复杂度为O(logn)。
+
+
+
 ```java
-public class 凑硬币_动态规划_优化 {
-	//首先使用暴力递归的做法
-	public int waysToChange(int n) {
-		int[] arr = new int[]{1,5,10,25};
-		long[][] dp = new long[arr.length + 1][n + 1];
-		dp[arr.length][0] = 1;
+public class 斐波那契数列logn解法 {
+	@Test
+	public void test(){
+		System.out.println(fib(3));
+		System.out.println(fib(4));
+		System.out.println(fib(5));
+	}
+	public int fib(int n) {
+		if (n == 0 || n == 1) {
+			return n;
+		}
+		if(n == 2){
+			return 1;
+		}
+		int[][] matrix = {
+				{1, 1},
+				{1, 0}};
 
+		//matrix^N-2 初始值为单位矩阵
+		int[][] matrixN_2 = {
+				{1, 0},
+				{0, 1}};
+		n -=2;
+		while (n != 0){
+			if((n & 1) == 1){
+				matrixN_2 = multi(matrixN_2, matrix);
+			}
+			matrix = multi(matrix, matrix);
+			n >>= 1;
+		}
+		return matrixN_2[0][0] + matrixN_2[1][0];
+	}
 
-		for (int i = arr.length - 1; i >= 0; i--) {
-			for (int rest = 0; rest <= n; rest++) {
-				// 在图上画出状态转移过成可得，dp[i][rest] 其实其实等于dp[index+1][rest] + dp[index][rest-arr[i]]，
-				// 对于这种，暴力递归中的枚举问题，一般都可以优化
-//				int num = 0;
-//				for (int k = 0; k * arr[i] <= rest; k++) {
-//					num += dp[i + 1][rest - k * arr[i]];
-//				}
-//				dp[i][rest] = num;
-				//改为
-				dp[i][rest] = dp[i + 1][rest];
-				if(rest - arr[i] >= 0){
-					dp[i][rest] += dp[i][rest - arr[i]];
+	//矩阵1，和矩阵2相乘
+	int[][] multi(int[][] m1, int[][] m2) {
+		int n = m1.length;
+		int[][] res = new int[n][n];
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				//res[i][j] = m1 的第i行 * m2的第j列
+				for (int k = 0; k < n; k++) {
+					res[i][j] += m1[i][k] * m2[k][j];
 				}
 			}
 		}
-		// 需要的最终状态为dp[0][n]
-		return (int)dp[0][n] % 1000000007;
+		return res;
 	}
-
 }
+
 ```
-
-
-
-
 
