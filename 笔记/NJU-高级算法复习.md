@@ -348,7 +348,240 @@ A的平衡因子是-2，A右孩子平衡因子1，需要A右孩子右旋，A左�
 
 
 
+## 堆排序
+
+**堆是一棵完全二叉树**，树种的每个结点的值都不小于其左右孩子结点的值，那么称这样的堆为大顶堆。大顶堆堆一般用于优先队列的实现。
+
+堆使用数组来表示，heap[1]代表堆顶元素。
+
+### 创建堆
+
+1，建立堆，
+建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆，时间复杂度**O(n)**
+
+```java
+//1，建立大顶堆，
+//建立堆的过程总是从右到左从上到下 依此调整有孩子的节点成为最最大/小堆
+void createHeap(int[] a) {
+    n = a.length;
+    for (int i = 1; i <= a.length; i++) {
+        heap[i] = a[i - 1];
+    }
+    for (int i = n / 2; i >= 1; i --){
+        downAdjust(i, n);
+    }
+}
+//向下调整,范围[low,high]
+//low为预调整节点的数组下标，high一般为堆的左后一个元素的数组下标
+void downAdjust(int low, int high) {
+		int i = low, j = i * 2;
+		while (j <= high) {
+			//使j指向较大的孩子节点
+			if (j + 1 <= high && heap[j + 1] > heap[j]) {
+				j = j + 1;
+			}
+			//如果孩子的权值比要i大，则可以调整，否则调结束
+			if (heap[j] > heap[i]) {
+				int temp = heap[j];
+				heap[j] = heap[i];
+				heap[i] = temp;
+				i = j;
+				j = 2 * i;
+			} else {
+				break;
+			}
+		}
+	}
+```
+
+### 删除堆顶元素
+
+如果删除堆中的最大元素，并让其保持堆的结构，只需要让最后一个元素覆盖堆顶元素，然后只需要调整堆顶元素即可（因为此时除了堆顶元素，其他节点都已经是最大堆）。时间复杂度O(logn)
+
+```java
+/删除堆顶元素
+int deleteTop() {
+    int top = heap[1];
+    heap[1] = heap[n--];
+    downAdjust(1, n);
+    return top;
+}
+```
+
+### 添加一个元素
+
+如果要添加一个元素，可以把元素放到数组的最后面，然后不断的向上调整这个元素即可。
+
+```java
+//插入一个节点
+void insert(int x){
+    heap[++n] = x;
+    upAdjust(1, n);
+}
+//对heap数组在[low,high]范围进行向上调整
+//其中low一般设置为1，high表示欲调整的数组下标
+void upAdjust(int low, int high){
+    int i = high, j = i / 2;//j 是i 的父亲节点
+    while (j >= low){
+        //如果孩子的权值较大，则需要调整
+        if(heap[i] > heap[j]){
+            int temp = heap[j];
+            heap[j] = heap[i];
+            heap[i] = temp;
+            i = j;
+            j = i / 2;
+        }else {
+            break;
+        }
+    }
+}
+```
+
+### 堆排序
+
+- 建立最大堆可以进行升序排序
+- 最小堆可以降序排序
+
+对于一个最大堆来说，取出堆顶元素，然后将堆的最后一个元素替换至堆顶。在进行一次针对堆顶元素的向下调整。
+
+```java
+void heapSort(int[] a) {
+    createHeap(a);
+    for (int i = n; i >= 1; i--) {
+        int temp = heap[i];
+        heap[i] = heap[1];
+        heap[1] = temp;
+        downAdjust(1, i - 1);
+    }
+}
+```
+
+## 霍纳法则
+
+是一个求多项式和的一个算法，把多项式转换成如下形式
+
+![image-20210413230039331](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413230039331.png)
+
+可以使用一张二维表帮助计算，第一行表示an~a0，第二行第一列是an，其他单元格都存储中间结果。
+
+![image-20210413230452771](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413230452771.png)
+
+![image-20210413230516042](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413230516042.png)
+
+
+
+## 二进制幂
+
+### 递归做法
+
+求a^b 快速做法
+
+1. 如果b是奇数则有a^b = a * a^(b-1)
+2. 如果b是偶数则有a^b = a ^(b/2) * a ^(b/2)
+
+```java
+long binaryPow(long a, long b) {
+    if (b == 0) {
+        return 1;
+    }
+    if ((b & 1) == 1) { //如果b是奇数
+        return b * binaryPow(a, b - 1);
+    }
+    long muti = binaryPow(a, b / 2);
+    return muti * muti;
+}
+```
+
+### 迭代做法
+
+如求a^13  13的二进制位1101 
+
+![image-20210413231040640](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413231040640.png)
+
+
+
+如果使用霍纳法则（变体）求解，时间复杂度为O(b(n))。 b(n)为n的bit位数，直接看后面代码吧。
+
+![image-20210413231331155](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413231331155.png)
+
+```java
+// 比个栗子，
+	// 如求a^13  13的二进制位1101 
+	// a ^ 13 = (a ^ 1) * (a ^ 4) * (a ^ 8)
+long binaryPow(long a, long b) {
+    long res = 1;
+    while (b > 0){
+        if((b & 1) == 1){
+            res = res * a;
+        }
+        a = a * a;
+        b >>= 1;
+    }
+    return res;
+}
+```
+
+## 
+
+
+
 # 时空权衡
+
+## 计数排序
+
+### 比较次数排序
+
+对arr[n]进行排序，设置count[n]，count[i]表示列表中小于arr[i]元素的个数。然后设置新数组newArr[n]，遍历arr[n], 对于arr[i], 他在newArr中的位置是count[n]。直接上代码：
+
+```java
+int[] comparisonCountingSort(int[] arr){
+    int[] count = new int[arr.length], res = new int[arr.length];
+    for (int i = 0; i < arr.length; i++) {
+        //每个元素都和arr[i]进行比较
+        for (int j = i + 1; j < arr.length; j++) {
+            if(arr[i] > arr[j]){
+                count[i] ++;
+            }else {
+                count[j] ++;
+            }
+        }
+    }
+    for (int i = 0; i < arr.length; i++) {
+        res[count[i]] = arr[i];
+    }
+    return res;
+}
+```
+
+**这个算法时间复杂度为O(N*N)，但是可以使得键值移动的次数最少。**
+
+### 分布计数法
+
+如果元素的值是位于[l,r] （l,r差距比较小）之间的，我们可以计算l,r中每个数出现的频率，保存到数组F[0..r-l]之间。**然后对F数组求前缀和，prefix，则prefix[ i ] 表示 小于等于l+i元素的个数**。这个prefix也叫分布值,prefix[i]表明了l + i元素最后一次出现时的正确位置（减一）。
+
+所以可以从右到左遍历arr，则arr[i]的位置就是prefix[arr[i]-l]，然后我们需要prefix[arr[i]-l]--，以便下一遍历到等于arr[i]数时能得到正确的位置。
+
+上代码！
+
+```java
+int[] distributionCountingSort(int[] arr, int l, int r) {
+    int[] distribution = new int[r - l + 1], res = new int[arr.length];
+    //首先计算各个元素出现的频率
+    for (int i = 0; i < arr.length; i++) {
+        distribution[arr[i] - l] ++;
+    }
+    //前缀和，直接放到分布数组里里面
+    for (int i = 1; i < distribution.length; i++) {
+        distribution[i] += distribution[i - 1];
+    }
+    for (int i = 0; i < arr.length; i++) {
+        res[--distribution[arr[i] - l]] = arr[i];
+    }
+    return res;
+}
+```
+
+
 
 ## Horspool算法
 
@@ -419,6 +652,50 @@ public class Horspool {
 ```
 
 ## Boyer-Moore算法
+
+再遇到一个不匹配字符前，如果已经有k（0<k<m）个字符成功匹配了，这和Horspool的操作是不同的。这种情况下，BM算法会参考2个数值来确定移动的距离，第一个是文中的第一个不匹配字符c。这种情况下的移动称之为**坏符号移动**。
+
+坏符号移动主要有2种操作：
+
+如果c不在模式m中，我们把模式移动到正好跳过这个字符的位置。如下图，c=s（从右边开始第一个不匹配的字符）
+
+![image-20210413172923993](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413172923993.png)
+
+如果c再模式种，则跳到下次c出现的位置。
+
+![image-20210413173332943](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413173332943.png)
+
+**可以看出，跳的距离为：d1=t(c)-k**
+
+但是d1=t(c)-k是有可能小于0的，此时d1=1。由此可得：**d1=max{t(c)-k, 1}**
+
+**第二种移动称之为好后缀移动**
+
+k > 0个成功匹配，把这k个叫做模式串m的后缀suff(k)。如果模式种存在另外一个串等于suff(k) 并且，另外一个串的前一个字符不等于c（如果等于c会重复失败），此时我们可以把模式向右移动右数第二个suff(k)串，到suff(k)串的距离的长度。如下，如果suff(2)=4,右边第二个串中B距离右边第一个串B距离为4。如果suff(k)前面没有与之相等的串，此时suff(k) = m.length();
+
+![image-20210413220747678](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413220747678.png)
+
+但是这样移动不总是对的，如下图，suff(3)=6，移动6个，会错过一个串，原因是AB是相等前后缀，所以此时最多移动最长前后缀**相距**的长度。
+
+![image-20210413221114453](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413221114453.png)
+
+![image-20210413221403662](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413221403662.png)
+
+
+
+
+
+BM 算法过程
+
+![image-20210413221511064](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413221511064.png)
+
+
+
+## B树
+
+B树的所有数据记录都在叶子结点
+
+![image-20210413234540264](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413234540264.png)
 
 
 
