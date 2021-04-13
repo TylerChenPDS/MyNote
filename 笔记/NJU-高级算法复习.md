@@ -248,15 +248,187 @@ public class Main {
     return res
 ```
 
-## LU分解
+## LU分解法
 
 ![image-20210412222015307](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210412222015307.png)
 
 可以看出，两个矩阵L U的乘积等于A，所以解方程组Ax = b等价于解方程组 LUx=b，设y=Ux，则Ly=b。先求解Ly=b，由于L是一个下三角，所以很容易解，然后解Ux=y，由于U是一个上三角，所以也很容易解。这个解法明显优于上面那个解法，时间复杂度可以降为O(N^2)。请注意，**LU分解不需要额外空间**，可以把L下面的数据保存到U的0位置即可。
+
+## 计算矩阵的逆
+
+![image-20210412223132385](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210412223132385.png)
+
+相当于解n个方程组，最好还是用LU分解法
+
+## 计算行列式的值 & 克拉默法则
+
+![image-20210412224024966](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210412224024966.png)
+
+对于一个行列式n介行列式可以按照第i行展开转换成 (-1)^(i+j) * aij*det[去掉i行j列的方阵] 之和。如果直接求一个n阶行列式，需要求n!次乘法。所以可以利用高斯消元法，将其转换成一个上三角矩阵，**一个上三角矩阵的行列式等于其主对角线的乘积**。而初等变换，只会改变行列式的倍数（两行相减不会改变行列式的值），找个变量记录下就好。
+
+有了求行列式的方法，可以使用克拉默法则求解方程组
+
+![image-20210412224647993](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210412224647993.png)
+
+detAj 是把A 的j列用b替换后得到的行列式。
+
+## AVL树
+
+平衡二叉树是由2位前苏联数学家提出来的（G.M.Adelse-Velskil 和 E.M.Landis）所以也叫AVL树。
+
+### 定义
+
+AVL树仍然是一棵二叉查找树，只是在其基础上增加了平衡的概念：对于AVL树的任意结点来说，其左子树与右子树的高度之差的绝对值不超过1，其中左子树与右子树的高度之差称为该节点的**平衡因子**。只要能时刻满足每个结点的平衡因子绝对值不超过1，AVL的高度始终能保持在logn级别。
+
+![image-20210331141806778](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210331141806778.png)
+
+### 插入时调整
+
+只要把最靠近插入结点的失衡结点调整到正常，路径上所有结点都会平衡。失衡的情况有4种
+
+#### LL型
+
+A的平衡因子是2，A左孩子B的平衡因子是1。则需要A右旋
+
+![image-20210331142650826](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210331142650826.png)
+
+
+
+#### LR型
+
+A的平衡因子是2，A左孩子平衡因子-1，需要A左孩子左旋，A右旋
+
+![image-20210331142854369](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210331142854369.png)
+
+
+
+#### RR型
+
+A的平衡因子是-2，A右孩子平衡因子-1，需要A左旋
+
+![image-20210331143013409](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210331143013409.png)
+
+#### RL型
+
+A的平衡因子是-2，A右孩子平衡因子1，需要A右孩子右旋，A左旋
+
+![image-20210331143110026](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210331143110026.png)
+
+
+
+## 2-3树
+
+### 定义
+
+> 一棵2-3查找树为一棵空树或者由以下节点组成：
+>
+> 2-节点， 含有一个键和2条边，左边指向的2-3树中的键都小于这个键，右键指向的2-3树种的键都大于这个键。
+>
+> 3-节点， 含有2个键3条边，左边指向的2-3树小于小键，中边指向2-3树的键大于小键小于大键，右边指向的2-3树的键大于大键。
+
+2-3树还有最后一个要求：树中的所有结点必须位于同一层，也就是说一棵2-3树是高度平衡的。
+
+示例如下：
+
+![image-20210301224030317](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210301224030317.png)
+
+### **插入新键K的做法**
+
+1. 如果是空树，则新建一个结点插入。否则通过查找找到K合适的位置（这个位置总是叶子结点）
+2. 如果找到的叶子是2结点，直接按照大小关系插入
+3. 如果是3结点，先插入称为4结点，在分裂成3个2结点，中将的那个并入父节点中。如果父节点也变成了4结点，则需要向上分裂，直到满足定义为止。
+
+栗子：
+
+![image-20210413000457774](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413000457774.png)
+
+### 树的高度问题
+
+如果n个结点的2-3树，里面都是2结点，则h<= log(n+1)-1，如果都是3结点则h>=log~3~(n+1)-1，所以最差情况下树的查找、插入、删除时间效率属于O(logn)
+
+
+
+# 时空权衡
+
+## Horspool算法
+
+![image-20210413154708294](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413154708294.png)
+
+![image-20210413154720343](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413154720343.png)
+
+
+
+我们可以预先计算出这个算法每次移动的距离，并把他们存入表中。
+
+![image-20210413154844165](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413154844165.png)
+
+求这个表的算法：
+
+![image-20210413155131069](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413155131069.png)
+
+**Horspool 算法**
+
+1. 先构造上述表
+2. 将模式与文本的开始处对齐
+3. 从模式的最后一个字符开始，比较模式和文本中相应字符直到：所有m个字符都匹配，或者遇到了一对不匹配的字符。c是当前文本中与m对齐的最后一个字符，则模式串向右移动t(c)距离
+
+![image-20210413161102516](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210413161102516.png)
+
+Horspool霍斯普尔 算法的最差效率属于O(MN)，但是对于随机文本来说，他的效率是属于O(N)的。
+
+
+
+代码实现：
+
+```java
+public class Horspool {
+	//返回m中前m-1字符中最右边的c到达最后一个字符的距离
+	Map<Character, Integer> shiftTable(String m) {
+		int n = m.length();
+		Map<Character, Integer> map = new HashMap<>();
+		for (int i = 0; i < n - 1; i++) {
+			map.put(m.charAt(i), n - 1 - i);
+		}
+		return map;
+	}
+
+	int horspool(String t, String m) {
+		Map<Character, Integer> map = shiftTable(m);
+		int i = m.length() - 1;
+		while (i < t.length()) {
+			int k = 0;
+			//从后往前匹配
+			while (k < m.length() && m.charAt(m.length() - 1 - k) == t.charAt(i - k)) {
+				k ++;
+			}
+			if(k == m.length()){
+				return i - m.length() + 1;
+			}else {
+				i += map.getOrDefault(t.charAt(i), m.length());
+			}
+		}
+		return -1;
+	}
+
+	@Test
+	public void test(){
+		System.out.println(horspool("ABARBERA", "BARBER"));
+
+	}
+}
+```
+
+## Boyer-Moore算法
+
+
+
+
 
 # Reference
 
 凸包： https://blog.csdn.net/u011001084/article/details/72768075
 
 算法设计与分析基础
+
+算法笔记  胡凡 曾磊
 
