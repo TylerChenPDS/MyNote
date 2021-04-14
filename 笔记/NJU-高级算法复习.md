@@ -758,6 +758,125 @@ F(0,j)=c0j , F(i,0)=ci0
 
 ![image-20210414164328802](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414164328802.png)
 
+## 最优二叉查找树
+
+引入概率的概念，设a1...an是要查找的n个键，并且按照从小到大的顺序排列，p1..pn为他们查找的概率。设C(i,j)为ai...aj 构成BST中，查找次数最小的平均查找次数（显然C(1, n)是我们要求的答案）。对于ai...aj 我们需要从里面选择出来做根节点，如下图：
+
+![image-20210414165744738](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414165744738.png)
+
+![image-20210414165918257](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414165918257.png)
+
+
+
+![image-20210414165943475](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414165943475.png)
+
+可以看出C(i,j)用到的值为C(i,j)左边的值，和C(i,j)下面的值，所以可以从下往上，从左到右构造表格，也可以从左上角到右下角构造表格，两种方式都ok。
+
+为了能把得到的最优树画出来，需要构造一个根表，每次把C(i,j)选择的k放到根表R里面，显然R(i,i)=i，只能选择i为根。
+
+![image-20210414170204739](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414170204739.png)
+
+![image-20210414170712860](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414170712860.png)
+
+**R(1,4)=3，所以这棵树是以3(C)为根节点，所以对于C(1,4)选择了3，k=3， C(1,4)=C(1,k-1) + C(k+1,4) + p1+..p4=C(1,2) + C(4,4) +1.0 ，左树C(1,2)选择了2为根，右树C(4,4)没得选。**
+
+
+
+## warshall算法
+
+![image-20210414172015658](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414172015658.png)
+
+![image-20210414172039706](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414172039706.png)
+
+可以使用dfs或者bfs从第i个顶点出发，能够达到的点j 都在Tij上标记为1，这样就得到整个图的闭包。这种做法过于低效。所以引入了Warshall算法：warshall通过一系列n阶矩阵来构造闭包，
+
+![image-20210414173103360](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414173103360.png)
+
+当且仅当从第i个顶点到第j个顶点之间存在有向路径，并且路径经过的点编号不大于k的时候，矩阵R^k^的第i行j列元素rij=1。R^0^表示不允许路径中包含任何中间结点，所以R^0^等于邻接矩阵。
+
+所以R^k^的某个元素rij=1表示 存在这样一个路径`vi, 编号小于等于k的结点，vj`，R^k^的某个元素rij=1分为两种情况，
+
+- 若R^k-1^的rij=1，那么R^k^的rij=1。
+- 若R^k-1^的rij!=1，但是存在路径`vi, 编号小于等于k的结点，vk, 编号小于等于k的结点,vj`，若R^k-1^的rik=1 && rkj=1，则R^k^的rij= 1
+
+书上的描述
+
+![image-20210414174210689](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414174210689.png)
+
+![image-20210414174241009](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414174241009.png)
+
+![image-20210414174816929](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414174816929.png)
+
+![image-20210414174824329](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414174824329.png)
+
+
+
+## Floyd算法
+
+给定一个加权连通图，求完全最短路径问题：每个顶点到其他顶点之间的最短距离。
+
+![image-20210414180048865](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414180048865.png)
+
+![image-20210414180327307](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414180327307.png)
+
+```java
+const int INF = 0x3fffffff;
+const int maxv = 200;
+int n, m; //顶点数，边数
+int dis[maxv][maxv];
+int G[maxv][maxv];
+
+void Floyd(){
+    //初始化
+    //将图中的数据赋值给dis，图中不存在的边为INF，dis中需要修改下
+    for (int i = 0; i < n; ++i) {
+        dis[i][i] = 0;
+    }
+    for (int k = 0; k < n; ++k) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+				dis[i][j] = min( dis[i][k] + dis[k][j], d[i][j]);
+            }
+        }
+    }
+}
+```
+
+# 迭代改进
+
+## 单纯形法
+
+### 线性规划问题
+
+![image-20210414224625420](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414224625420.png)
+
+
+
+![image-20210414224654829](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414224654829.png)
+
+不断地对3x+5y=0这条直线进行平移，需要和阴影区域有交点，总能得到最大值。可以发现：
+
+- （**极点定理**）可行区域非空地任意线性规划问题有最优解，并且这个最优解总是能够在其可行区域地一个极点找到。
+
+但是如果要找到所有极点，代价太大，往往呈指数规模增长。
+
+### 单纯形法
+
+算法描述：先在可行区域找到一个极点，然后检查一下是不是在邻接点处可以让目标函数取值更佳。如果不是当前顶点就是最优点，然后算法停止；如果是转而处理那个能让目标函数取值更佳地邻接顶点。有限步已有，该算法要么发现了一个取到最优解的极点，要么证明了最优解不存在。
+
+要使用单纯形法，首先将其几何描述转换成为一种标准形式：
+
+- 所有变量都是非负的。
+- 都必须用等式来表示。
+
+例如：`x + y <= 4`，可以添加松弛变量u使其转换成等式`x+y+u=4, u>=0`，如果某些变量没有小于0的约束，则这个变量可以变成2个变量的差。`x=x1-x2, x1>=0, x2>=0`。
+
+
+
+![image-20210414231414241](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414231414241.png)
+
+![image-20210414233949592](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414233949592.png)
+
 
 
 # Reference
