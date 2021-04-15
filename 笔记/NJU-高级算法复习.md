@@ -877,7 +877,35 @@ void Floyd(){
 
 ![image-20210414233949592](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210414233949592.png)
 
+## 最大流量问题
 
+![image-20210415150119789](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210415150119789.png)
+
+S称之为源点，t称之为汇点。边上的（黑色）数字称为（管道的）最大容量。蓝色字称之为管道上传送的物质
+
+流过中间顶点的物质（水），必须满足流量守恒定律，即进入顶点的流量和需要等于出去的流量和，以顶点4为例进入的水为4，出去的水为2+2=4
+
+算法：看书吧，总结不来。不过，求邻接边的时候要把图想象成无向边。
+
+![image-20210415151216030](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210415151216030.png)
+
+![image-20210415151258987](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210415151258987.png)
+
+![image-20210415151316349](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210415151316349.png)
+
+![](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210415151316349.png)
+
+**最大流-最小割定理**
+
+![image-20210415153328043](https://gitee.com/CTLQAQ/picgo/raw/master/image-20210415153328043.png)
+
+通过割的边上容量和称为割的容量；
+
+定理：**网络中最大流量值等于它最小割的容量**
+
+**如果使用最短增益路径算法，最后一次迭代标记的点，到未标记的点就构成了最小割。**
+
+这个算法时间复杂度为：O(nm^2^)
 
 # Reference
 
@@ -886,4 +914,6 @@ void Floyd(){
 算法设计与分析基础
 
 算法笔记  胡凡 曾磊
+
+最大流量问题：https://www.cnblogs.com/ShaneZhang/p/3755479.html
 
